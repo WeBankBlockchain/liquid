@@ -1,0 +1,7 @@
+error: liquid functions can't be marked as `constructor` and `external` simultaneously
+  --> $DIR/09-conflict-liquid-markers.rs:12:9
+   |
+12 | /         #[liquid(constructor)]
+13 | |         #[liquid(external)]
+14 | |         fn noop(&self) {}
+   | |_________________________^

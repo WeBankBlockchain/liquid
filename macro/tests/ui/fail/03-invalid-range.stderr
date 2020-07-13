@@ -1,0 +1,5 @@
+error: expected unsuffixed integer literal
+ --> $DIR/03-invalid-range.rs:3:11
+  |
+3 | seq!(N in a..b {
+  |           ^

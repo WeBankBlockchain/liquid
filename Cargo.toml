@@ -1,0 +1,17 @@
+[workspace]
+members = [
+    "abi-coder",
+    "prelude",
+    "primitives",
+    "alloc",
+    "env",
+    "storage",
+    "lang",
+]
+exclude = [
+    "examples",
+]
+
+[profile.release]
+panic = "abort"
+lto = true

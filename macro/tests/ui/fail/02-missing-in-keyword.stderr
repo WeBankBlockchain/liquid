@@ -1,0 +1,5 @@
+error: expected `in`
+ --> $DIR/02-missing-in-keyword.rs:3:9
+  |
+3 | seq!(in 1..10 {
+  |         ^

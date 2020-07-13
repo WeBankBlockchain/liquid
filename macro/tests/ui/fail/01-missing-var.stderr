@@ -1,0 +1,5 @@
+error: expected `in`
+ --> $DIR/01-missing-var.rs:3:8
+  |
+3 | seq!(N of 1..10 {
+  |        ^^

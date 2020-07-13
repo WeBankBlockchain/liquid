@@ -1,0 +1,20 @@
+[package]
+name = "liquid_macro"
+version = "0.1.0"
+authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+proc-macro2 = "1.0.18"
+
+[dev-dependencies]
+trybuild = "1.0.30"
+
+[lib]
+proc-macro = true
+
+[features]
+default = ["std"]
+std = []

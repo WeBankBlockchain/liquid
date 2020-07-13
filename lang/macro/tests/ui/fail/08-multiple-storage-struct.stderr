@@ -1,0 +1,6 @@
+error: duplicate #[liquid(storage)] struct definition found here
+ --> $DIR/08-multiple-storage-struct.rs:8:5
+  |
+8 | /     #[liquid(storage)]
+9 | |     struct Noop_2 {}
+  | |____________________^

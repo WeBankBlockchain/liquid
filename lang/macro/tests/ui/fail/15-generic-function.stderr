@@ -1,0 +1,5 @@
+error: generic is not supported for functions in liquid contract
+  --> $DIR/15-generic-function.rs:13:16
+   |
+13 |         fn noop<T>(&self, value: T) {}
+   |                ^^^

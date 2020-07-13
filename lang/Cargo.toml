@@ -1,0 +1,27 @@
+[package]
+name = "liquid_lang"
+version = "0.1.0"
+authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+paste = "0.1.17"
+
+liquid_macro = { version = "0.1.0", path = "../macro/", default-features = false }
+liquid_lang_macro = { version = "0.1.0", path = "macro/", default-features = false }
+liquid_abi_coder = { version = "0.1.0", path = "../abi-coder/", default-features = false }
+liquid_primitives = { version = "0.1.0", path = "../primitives/", default-features = false }
+liquid_env = { version = "0.1.0", path = "../env/", default-features = false }
+liquid_storage = { version = "0.1.0", path = "../storage/", default-features = false }
+
+[features]
+default = ["std"]
+std = [
+    "liquid_lang_macro/std",
+    "liquid_abi_coder/std",
+    "liquid_primitives/std",
+    "liquid_env/std",
+    "liquid_storage/std",
+]
