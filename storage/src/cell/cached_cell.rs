@@ -15,6 +15,7 @@ use core::cell::RefCell;
 use liquid_prelude::boxed::Box;
 use liquid_primitives::Key;
 
+#[derive(Debug)]
 struct CacheEntry<T> {
     /// If the entry needs to be written back upon a flush.
     dirty: bool,
@@ -61,6 +62,7 @@ impl<T> CacheEntry<T> {
     }
 }
 
+#[derive(Debug)]
 enum Cache<T> {
     /// The cache is desynchronized with the contract storage.
     Desync,
@@ -125,6 +127,7 @@ impl<T> Cache<T> {
     }
 }
 
+#[derive(Debug)]
 pub struct CachedCell<T> {
     cell: TypedCell<T>,
     cache: RefCell<Cache<T>>,

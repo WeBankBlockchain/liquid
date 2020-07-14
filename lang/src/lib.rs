@@ -26,3 +26,8 @@ pub use contract::{CallMode, Contract};
 pub use dispatch_error::{DispatchError, DispatchResult, DispatchRetCode};
 pub use liquid_lang_macro::contract;
 pub use traits::*;
+
+// This extern crate definition is required since otherwise rustc
+// is not recognizing its allocator and panic handler definitions.
+#[cfg(not(feature = "std"))]
+extern crate liquid_alloc;

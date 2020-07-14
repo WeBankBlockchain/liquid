@@ -16,6 +16,7 @@ use liquid_primitives::Key;
 /// A typed cell.
 ///
 /// Provides interpreted access to the associated contract storage slot.
+#[derive(Debug)]
 pub struct TypedCell<T> {
     key: Key,
     marker: PhantomData<fn() -> T>,

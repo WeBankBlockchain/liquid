@@ -1,5 +1,5 @@
 [package]
-name = "hello_world"
+name = "incrementer"
 version = "0.1.0"
 authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
 edition = "2018"
@@ -13,7 +13,7 @@ liquid_primitives = { version = "0.1.0", path = "../../primitives", default-feat
 liquid_storage = { version = "0.1.0", path = "../../storage", default-features = false }
 
 [lib]
-name = "hello_world"
+name = "incrementer"
 crate-type = [
     # Used for normal contract Wasm blobs.
     "cdylib"

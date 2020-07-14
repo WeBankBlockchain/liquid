@@ -79,6 +79,7 @@ impl<'a> Storage<'a> {
 
         quote_spanned! { span =>
             #(#attrs)*
+            #[cfg_attr(test, derive(Debug))]
             pub struct Storage
                 #fields
 

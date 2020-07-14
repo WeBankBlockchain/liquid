@@ -42,7 +42,7 @@ impl<'a> GenerateCode for Dispatch<'a> {
         let entry_point = self.generate_entry_point();
 
         quote! {
-            //#[cfg(not(test))]
+            #[cfg(not(test))]
             const _: () = {
                 #marker
                 #traits

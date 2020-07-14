@@ -11,7 +11,10 @@
 // limitations under the License.
 
 use crate::{
-    codegen::{dispatch::Dispatch, env_types::EnvTypes, storage::Storage, GenerateCode},
+    codegen::{
+        dispatch::Dispatch, env_types::EnvTypes, storage::Storage, testable::Testable,
+        GenerateCode,
+    },
     ir,
 };
 use proc_macro2::TokenStream as TokenStream2;
@@ -24,6 +27,7 @@ impl GenerateCode for ir::Contract {
         let env_types = EnvTypes::from(self).generate_code();
         let storage = Storage::from(self).generate_code();
         let dispatch = Dispatch::from(self).generate_code();
+        let testable = Testable::from(self).generate_code();
         let rust_items = &self.rust_items;
 
         quote! {
@@ -35,10 +39,14 @@ impl GenerateCode for ir::Contract {
 
                     #storage
                     #dispatch
+                    #testable
                 }
 
                 #[cfg(test)]
-                pub type #storage_ident = self::__liquid_private::Storage;
+                pub type #storage_ident = __liquid_private::TestableStorage;
+
+                #[cfg(not(test))]
+                pub type #storage_ident = __liquid_private::Storage;
 
                 #(
                     #rust_items

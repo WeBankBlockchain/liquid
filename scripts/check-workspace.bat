@@ -1,6 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
 
+rem Please execute this script from the root of the project's directory.
+
 set all_crates=(abi-coder macro primitives alloc env storage lang lang\macro)
 set results=()
 
@@ -12,7 +14,7 @@ for %%c in %all_crates% do (
         set results[0].result=1
     )
 
-    cargo +nightly check --verbose --no-default-features --features "std" --manifest-path %%c\Cargo.toml
+    cargo +nightly check --verbose --no-default-features --manifest-path %%c\Cargo.toml --target=wasm32-unknown-unknown
     if !errorlevel! neq 0 (
         set results[0].result=1
     )

@@ -14,6 +14,7 @@ use crate::{Bind, CachedCell, Flush};
 use liquid_primitives::Key;
 use scale::Encode;
 
+#[derive(Debug)]
 pub struct Value<T> {
     cell: CachedCell<T>,
 }

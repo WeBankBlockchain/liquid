@@ -21,7 +21,7 @@ liquid_primitives = { version = "0.1.0", path = "../../primitives", default-feat
 [dev-dependencies]
 trybuild = "1.0.30"
 
-liquid_lang = { version = "0.1.0", path = "../", default-features = false }
+liquid_lang = { version = "0.1.0", path = "../" }
 liquid_env = { version = "0.1.0", path = "../../env" }
 liquid_storage = { version = "0.1.0", path = "../../storage" }
 
@@ -32,5 +32,6 @@ proc-macro = true
 [features]
 default = ["std"]
 std = [
+    "liquid_prelude/std",
     "liquid_primitives/std",
 ]
