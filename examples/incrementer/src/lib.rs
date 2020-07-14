@@ -19,13 +19,12 @@ mod incrementer {
 
         #[liquid(external)]
         fn inc_by(&mut self, delta: u128) {
-            let old_value = *self.value.get();
-            self.value.set(old_value + delta);
+            self.value += delta;
         }
 
         #[liquid(external)]
         fn get(&self) -> u128 {
-            *self.value.get()
+            *self.value
         }
     }
 

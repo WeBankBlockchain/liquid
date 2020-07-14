@@ -19,12 +19,12 @@ mod hello_world {
 
         #[liquid(external)]
         fn get(&self) -> String {
-            self.name.get().clone()
+            self.name.clone()
         }
 
         #[liquid(external)]
         fn set(&mut self, name: String) {
-            self.name.set(name);
+            *self.name = name;
         }
     }
 

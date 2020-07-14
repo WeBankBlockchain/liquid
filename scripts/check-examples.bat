@@ -30,7 +30,7 @@ set banner=-----------------
 echo Examples Results
 echo %banner%
 
-for /l %%i in (0,1,0) do (
+for /l %%i in (0,1,1) do (
     set cur.name=
     set cur.result=
 
