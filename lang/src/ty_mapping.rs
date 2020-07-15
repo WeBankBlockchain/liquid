@@ -10,9 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::traits::{
-    THIS_IS_NOT_A_VALID_LIQUID_INPUT_TYPE, THIS_IS_NOT_A_VALID_LIQUID_OUTPUT_TYPE,
-};
+use crate::traits::{ValidLiquidInputType, ValidLiquidOutputType};
 use liquid_env::types::String;
 use liquid_macro::seq;
 
@@ -34,8 +32,8 @@ macro_rules! mapping_type_to_sol {
             const LEN: usize = stringify!($mapped_ty).len();
         }
 
-        impl THIS_IS_NOT_A_VALID_LIQUID_INPUT_TYPE for $origin_ty {}
-        impl THIS_IS_NOT_A_VALID_LIQUID_OUTPUT_TYPE for $origin_ty {}
+        impl ValidLiquidInputType for $origin_ty {}
+        impl ValidLiquidOutputType for $origin_ty {}
     };
 }
 
@@ -59,8 +57,8 @@ impl SolTypeNameLen for () {
     const LEN: usize = 0;
 }
 
-impl THIS_IS_NOT_A_VALID_LIQUID_INPUT_TYPE for () {}
-impl THIS_IS_NOT_A_VALID_LIQUID_OUTPUT_TYPE for () {}
+impl ValidLiquidInputType for () {}
+impl ValidLiquidOutputType for () {}
 
 macro_rules! impl_len {
     ($first:tt,) => {

@@ -1,5 +1,5 @@
-error[E0277]: the trait bound `I: liquid_lang::THIS_IS_NOT_A_VALID_LIQUID_OUTPUT_TYPE` is not satisfied
+error[E0277]: the trait bound `I: liquid_lang::ValidLiquidOutputType` is not satisfied
   --> $DIR/17-invalid-return-type.rs:18:24
    |
 18 |         fn noop(&self) -> I {}
-   |                        ^^^^ the trait `liquid_lang::THIS_IS_NOT_A_VALID_LIQUID_OUTPUT_TYPE` is not implemented for `I`
+   |                        ^^^^ the trait `liquid_lang::ValidLiquidOutputType` is not implemented for `I`

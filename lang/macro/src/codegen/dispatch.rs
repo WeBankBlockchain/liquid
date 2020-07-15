@@ -117,13 +117,13 @@ impl<'a> Dispatch<'a> {
 
         let fn_input = quote_spanned! { inputs.span() =>
             impl liquid_lang::FnInput for #external_marker  {
-                type Input = (#(<#input_tys as liquid_lang::THIS_IS_NOT_A_VALID_LIQUID_INPUT_TYPE>::T,)*);
+                type Input = (#(<#input_tys as liquid_lang::ValidLiquidInputType>::T,)*);
             }
         };
 
         let fn_output = quote_spanned! { output.span() =>
             impl liquid_lang::FnOutput for #external_marker {
-                type Output = <#output_ty as liquid_lang::THIS_IS_NOT_A_VALID_LIQUID_OUTPUT_TYPE>::T;
+                type Output = <#output_ty as liquid_lang::ValidLiquidOutputType>::T;
             }
         };
 

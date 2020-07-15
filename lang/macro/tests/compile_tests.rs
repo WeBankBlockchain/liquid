@@ -35,4 +35,6 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/15-generic-function.rs");
     t.compile_fail("tests/ui/fail/16-invalid-parameter-type.rs");
     t.compile_fail("tests/ui/fail/17-invalid-return-type.rs");
+    t.compile_fail("tests/ui/fail/18-too-many-inputs.rs");
+    t.compile_fail("tests/ui/fail/19-too-many-outputs.rs");
 }
