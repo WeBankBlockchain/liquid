@@ -1,0 +1,11 @@
+error: the number of input arguments should not be more than 16
+  --> $DIR/18-too-many-inputs.rs:17:13
+   |
+17 | /             a0: u8,
+18 | |             a1: u8,
+19 | |             a2: u8,
+20 | |             a3: u8,
+...  |
+32 | |             a15: u8,
+33 | |             a16: u8,
+   | |___________________^

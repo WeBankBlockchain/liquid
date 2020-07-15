@@ -291,6 +291,7 @@ impl TryFrom<&syn::Signature> for ir::Signature {
             .cloned()
             .map(ir::FnArg::try_from)
             .collect::<Result<Punctuated<ir::FnArg, Token![,]>>>()?;
+        let output = &sig.output;
 
         if let ir::FnArg::Typed(ident_type) = &inputs[0] {
             bail_span!(
@@ -308,12 +309,37 @@ impl TryFrom<&syn::Signature> for ir::Signature {
             }
         }
 
+        let input_args_count = inputs.len() - 1;
+        if input_args_count > 16 {
+            bail_span!(
+                inputs[1]
+                    .span()
+                    .join(inputs.last().span())
+                    .expect("first argument and last argument are in the same file"),
+                "the number of input arguments should not be more than 16"
+            )
+        }
+
+        let output_args_count = match output {
+            syn::ReturnType::Default => 0,
+            syn::ReturnType::Type(_, t) => match &(**t) {
+                syn::Type::Tuple(tuple_type) => tuple_type.elems.len(),
+                _ => 1,
+            },
+        };
+        if output_args_count > 16 {
+            bail_span!(
+                output.span(),
+                "the number of output arguments should not be more than 16"
+            )
+        }
+
         Ok(ir::Signature {
             fn_token: sig.fn_token,
             ident: sig.ident.clone(),
             paren_token: sig.paren_token,
             inputs,
-            output: sig.output.clone(),
+            output: output.clone(),
         })
     }
 }
