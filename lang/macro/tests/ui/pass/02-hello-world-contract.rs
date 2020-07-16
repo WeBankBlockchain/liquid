@@ -2,7 +2,7 @@ use liquid_lang as liquid;
 
 #[liquid::contract(version = "0.1.0")]
 mod hello_world {
-    use liquid_storage as storage;
+    use liquid_core::storage;
 
     #[liquid(storage)]
     struct HelloWorld {

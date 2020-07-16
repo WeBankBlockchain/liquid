@@ -96,7 +96,7 @@ impl<'a> Testable<'a> {
         quote! {
             #(#attrs)*
             pub fn #ident(#(#args)*) -> Self {
-                let mut contract = <Storage as liquid_storage::New>::new();
+                let mut contract = <Storage as liquid_core::storage::New>::new();
                 contract.#ident(#(#arg_idents)*);
                 Self {
                     contract

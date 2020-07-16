@@ -13,7 +13,7 @@
 mod db;
 
 use self::db::ContractStorage;
-use crate::{engine::OnInstance, CallData, Env, Result};
+use crate::env::{engine::OnInstance, CallData, Env, Result};
 use core::cell::RefCell;
 use liquid_primitives::Key;
 

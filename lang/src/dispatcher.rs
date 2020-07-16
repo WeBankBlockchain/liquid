@@ -11,7 +11,7 @@
 // limitations under the License.
 
 use crate::{traits::*, DispatchError};
-use liquid_env::CallData;
+use liquid_core::env::{finish, CallData};
 
 pub type Result<T> = core::result::Result<T, DispatchError>;
 
@@ -119,7 +119,7 @@ macro_rules! impl_dispatcher_for {
             External: ExternalFn,
             <External as FnInput>::Input: liquid_abi_coder::Decode,
             <External as FnOutput>::Output: liquid_abi_coder::Encode,
-            Storage: liquid_storage::Flush,
+            Storage: liquid_core::storage::Flush,
         {
             fn dispatch(&self, storage: &mut Storage, input: &CallData) -> Result<()> {
                 let args = <<External as FnInput>::Input as liquid_abi_coder::Decode>::decode(&mut input.data.as_slice())
@@ -130,7 +130,7 @@ macro_rules! impl_dispatcher_for {
                     storage.flush();
                 }
 
-                liquid_env::finish(&result);
+                finish(&result);
                 Ok(())
             }
         }

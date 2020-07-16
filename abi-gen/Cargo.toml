@@ -1,0 +1,16 @@
+[package]
+name = "liquid_abi_gen"
+version = "0.1.0"
+authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0.114", default-features = false, features = ["derive", "alloc"] }
+
+[features]
+default = ["std"]
+std = [
+    "serde/std",
+]

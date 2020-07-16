@@ -39,3 +39,8 @@ pub trait ValidLiquidInputType: Sized {
 pub trait ValidLiquidOutputType: Sized {
     type T = Self;
 }
+
+#[cfg(feature = "liquid-abi-gen")]
+pub trait GenerateABI {
+    fn generate_abi() -> liquid_abi_gen::ContractABI;
+}

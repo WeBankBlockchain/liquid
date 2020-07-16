@@ -232,10 +232,10 @@ mod tests {
     fn selector_0() {
         let signature = "add(uint32,string)";
         let hash = keccak256(signature.as_bytes());
-        assert_eq!(hash[0], 102);
-        assert_eq!(hash[1], 137);
-        assert_eq!(hash[2], 170);
-        assert_eq!(hash[3], 21);
+        assert_eq!(hash[0], 0x66);
+        assert_eq!(hash[1], 0x89);
+        assert_eq!(hash[2], 0xaa);
+        assert_eq!(hash[3], 0x15);
     }
 
     #[test]

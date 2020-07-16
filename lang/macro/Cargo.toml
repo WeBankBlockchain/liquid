@@ -22,8 +22,8 @@ liquid_primitives = { version = "0.1.0", path = "../../primitives", default-feat
 trybuild = "1.0.30"
 
 liquid_lang = { version = "0.1.0", path = "../" }
-liquid_env = { version = "0.1.0", path = "../../env" }
-liquid_storage = { version = "0.1.0", path = "../../storage" }
+liquid_core = { version = "0.1.0", path = "../../core" }
+liquid_abi_gen = { version = "0.1.0", path = "../../abi-gen" }
 
 [lib]
 name = "liquid_lang_macro"

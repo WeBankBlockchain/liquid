@@ -7,29 +7,45 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-liquid_env = { version = "0.1.0", path = "../../env", default-features = false }
+liquid_core = { version = "0.1.0", path = "../../core", default-features = false }
 liquid_lang = { version = "0.1.0", path = "../../lang", default-features = false }
 liquid_primitives = { version = "0.1.0", path = "../../primitives", default-features = false }
-liquid_storage = { version = "0.1.0", path = "../../storage", default-features = false }
+liquid_abi_gen = { version = "0.1.0", path = "../../abi-gen", default-features = false, optional = true }
 
 [lib]
 name = "incrementer"
 crate-type = [
     # Used for normal contract Wasm blobs.
-    "cdylib"
+    "cdylib",
+    # Used for ABI generation.
+    "rlib",
 ]
 
 [features]
 default = ["std"]
 std = [
-    "liquid_env/std",
+    "liquid_core/std",
     "liquid_lang/std",
     "liquid_primitives/std",
-    "liquid_storage/std",
+    "liquid_abi_gen/std",
 ]
+liquid-abi-gen = [
+    "std",
+    "liquid_abi_gen",
+    "liquid_lang/liquid-abi-gen",
+]
+
 
 [profile.release]
 panic = "abort"
 lto = true
 opt-level = "z"
 overflow-checks = true
+
+[workspace]
+members = [
+    ".liquid/abi_gen",
+]
+exclude = [
+    ".liquid",
+]

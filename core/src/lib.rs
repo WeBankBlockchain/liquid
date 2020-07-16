@@ -10,17 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This extern crate definition is required since otherwise rustc
+// is not recognizing its allocator and panic handler definitions.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod api;
-mod backend;
-mod calldata;
-mod engine;
-mod error;
-pub mod types;
+#[cfg(not(feature = "std"))]
+extern crate liquid_alloc;
 
-pub use self::{api::*, calldata::CallData};
-use self::{
-    backend::Env,
-    error::{EnvError, Result},
-};
+pub mod env;
+pub mod storage;

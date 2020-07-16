@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{Flush, TypedCell};
+use crate::storage::{Flush, TypedCell};
 use core::cell::RefCell;
 use liquid_prelude::boxed::Box;
 use liquid_primitives::Key;

@@ -1,11 +1,11 @@
 [workspace]
 members = [
+    "abi-gen",
     "abi-coder",
     "prelude",
     "primitives",
     "alloc",
-    "env",
-    "storage",
+    "core",
     "lang",
 ]
 exclude = [

@@ -10,19 +10,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![allow(incomplete_features)]
-#![feature(const_fn)]
-#![feature(const_generics)]
-#![feature(associated_type_defaults)]
-#![cfg_attr(not(feature = "std"), no_std)]
+use crate::env::{CallData, Result};
+use liquid_primitives::Key;
 
-mod contract;
-mod dispatch_error;
-mod dispatcher;
-mod traits;
-pub mod ty_mapping;
+pub trait Env {
+    fn set_storage<V>(&mut self, key: Key, value: &V)
+    where
+        V: scale::Encode;
 
-pub use contract::{CallMode, Contract};
-pub use dispatch_error::{DispatchError, DispatchResult, DispatchRetCode};
-pub use liquid_lang_macro::contract;
-pub use traits::*;
+    fn get_storage<R>(&mut self, key: Key) -> Result<R>
+    where
+        R: scale::Decode;
+
+    fn get_call_data(&mut self) -> Result<CallData>;
+
+    fn finish<V>(&mut self, return_value: &V)
+    where
+        V: liquid_abi_coder::Encode;
+}

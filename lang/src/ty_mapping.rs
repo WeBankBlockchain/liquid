@@ -11,7 +11,7 @@
 // limitations under the License.
 
 use crate::traits::{ValidLiquidInputType, ValidLiquidOutputType};
-use liquid_env::types::String;
+use liquid_core::env::types::String;
 use liquid_macro::seq;
 
 pub trait SolTypeName {

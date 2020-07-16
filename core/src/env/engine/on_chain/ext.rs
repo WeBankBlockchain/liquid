@@ -12,7 +12,7 @@
 
 //! External C API to communicate with FISCO BCOS WASM Runtime
 
-use crate::{EnvError, Result};
+use crate::env::{EnvError, Result};
 
 mod sys {
     extern "C" {

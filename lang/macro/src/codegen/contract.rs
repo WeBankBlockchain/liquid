@@ -12,8 +12,8 @@
 
 use crate::{
     codegen::{
-        dispatch::Dispatch, env_types::EnvTypes, storage::Storage, testable::Testable,
-        GenerateCode,
+        abi_gen::ABIGen, dispatch::Dispatch, env_types::EnvTypes, storage::Storage,
+        testable::Testable, GenerateCode,
     },
     ir,
 };
@@ -28,6 +28,7 @@ impl GenerateCode for ir::Contract {
         let storage = Storage::from(self).generate_code();
         let dispatch = Dispatch::from(self).generate_code();
         let testable = Testable::from(self).generate_code();
+        let abi = ABIGen::from(self).generate_code();
         let rust_items = &self.rust_items;
 
         quote! {
@@ -40,6 +41,7 @@ impl GenerateCode for ir::Contract {
                     #storage
                     #dispatch
                     #testable
+                    #abi
                 }
 
                 #[cfg(test)]
@@ -52,6 +54,9 @@ impl GenerateCode for ir::Contract {
                     #rust_items
                 )*
             }
+
+            #[cfg(feature = "liquid-abi-gen")]
+            pub use crate::#ident::#storage_ident;
         }
     }
 }

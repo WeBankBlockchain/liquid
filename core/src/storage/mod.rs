@@ -10,21 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{CallData, Result};
-use liquid_primitives::Key;
+mod cell;
+mod traits;
+mod value;
 
-pub trait Env {
-    fn set_storage<V>(&mut self, key: Key, value: &V)
-    where
-        V: scale::Encode;
-
-    fn get_storage<R>(&mut self, key: Key) -> Result<R>
-    where
-        R: scale::Decode;
-
-    fn get_call_data(&mut self) -> Result<CallData>;
-
-    fn finish<V>(&mut self, return_value: &V)
-    where
-        V: liquid_abi_coder::Encode;
-}
+pub use self::{
+    cell::{CachedCell, TypedCell},
+    traits::*,
+    value::Value,
+};

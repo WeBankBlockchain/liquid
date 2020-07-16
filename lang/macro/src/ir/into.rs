@@ -322,8 +322,8 @@ impl TryFrom<&syn::Signature> for ir::Signature {
 
         let output_args_count = match output {
             syn::ReturnType::Default => 0,
-            syn::ReturnType::Type(_, t) => match &(**t) {
-                syn::Type::Tuple(tuple_type) => tuple_type.elems.len(),
+            syn::ReturnType::Type(_, ty) => match &(**ty) {
+                syn::Type::Tuple(tuple_ty) => tuple_ty.elems.len(),
                 _ => 1,
             },
         };

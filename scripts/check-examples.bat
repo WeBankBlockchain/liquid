@@ -12,7 +12,12 @@ set results[0].result=0
 set results[1].name=unit_test
 set results[1].result=0
 
+set results[2].name=abi_test
+set results[2].result=0
+
 for /f %%f in ('dir /b examples') do (
+    echo %%f
+
     cargo +nightly build --release --no-default-features --target=wasm32-unknown-unknown --verbose --manifest-path examples/%%f/Cargo.toml
     if !errorlevel! neq 0 (
         set results[0].result=1
@@ -22,6 +27,11 @@ for /f %%f in ('dir /b examples') do (
     if !errorlevel! neq 0 (
         set results[1].result=1
     )
+
+    cargo +nightly run --package abi-gen --manifest-path examples/%%f/Cargo.toml
+    if !errorlevel! neq 0 (
+        set results[2].result=1
+    )
 )
 
 set all_check_passed=0
@@ -30,7 +40,7 @@ set banner=-----------------
 echo Examples Results
 echo %banner%
 
-for /l %%i in (0,1,1) do (
+for /l %%i in (0,1,2) do (
     set cur.name=
     set cur.result=
 

@@ -83,9 +83,9 @@ impl<'a> Storage<'a> {
             pub struct Storage
                 #fields
 
-            impl liquid_storage::Flush for Storage {
+            impl liquid_core::storage::Flush for Storage {
                 fn flush(&mut self) {
-                    #(liquid_storage::Flush::flush(&mut self.#field_idents);)*
+                    #(liquid_core::storage::Flush::flush(&mut self.#field_idents);)*
                 }
             }
 
@@ -94,13 +94,13 @@ impl<'a> Storage<'a> {
                 const STORAGE_KEYS: [&'static str; #keys_count] = [ #keys ];
             }
 
-            impl liquid_storage::New for Storage {
+            impl liquid_core::storage::New for Storage {
                 fn new() -> Self {
                     #[allow(unused)]
                     let mut indexes = 0..#keys_count;
 
                     Self {
-                        #(#field_idents: liquid_storage::Bind::bind_with(Self::STORAGE_KEYS[indexes.next().unwrap()]),)*
+                        #(#field_idents: liquid_core::storage::Bind::bind_with(Self::STORAGE_KEYS[indexes.next().unwrap()]),)*
                     }
                 }
             }

@@ -15,7 +15,7 @@ mod ext;
 
 use self::buffer::StaticBuffer;
 use super::OnInstance;
-use crate::{CallData, Env, Result};
+use crate::env::{CallData, Env, Result};
 use liquid_primitives::Key;
 
 /// The on-chain environment

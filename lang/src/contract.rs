@@ -32,7 +32,7 @@ impl Contract<(), (), ()> {
         constructor: Constructor<Storage, ConstrInput>,
     ) -> ContractBuilder<Storage, ConstrInput, EmptyList>
     where
-        Storage: liquid_storage::New,
+        Storage: liquid_core::storage::New,
         ConstrInput: liquid_abi_coder::Decode,
     {
         ContractBuilder {
@@ -105,8 +105,8 @@ where
     ConstrInput: liquid_abi_coder::Decode,
 {
     pub fn dispatch(mut self, mode: CallMode) -> Result<()> {
-        let call_data =
-            liquid_env::get_call_data().map_err(|_| DispatchError::CouldNotReadInput)?;
+        let call_data = liquid_core::env::get_call_data()
+            .map_err(|_| DispatchError::CouldNotReadInput)?;
         match mode {
             CallMode::Deploy => {
                 let data = call_data.data;

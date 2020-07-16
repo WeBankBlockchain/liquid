@@ -24,8 +24,8 @@ pub struct EnvTypes<'a> {
 impl<'a> GenerateCode for EnvTypes<'a> {
     fn generate_code(&self) -> TokenStream2 {
         quote! {
-            type Address = liquid_env::types::Address;
-            type String = liquid_env::types::String;
+            type Address = liquid_core::env::types::Address;
+            type String = liquid_core::env::types::String;
         }
     }
 }

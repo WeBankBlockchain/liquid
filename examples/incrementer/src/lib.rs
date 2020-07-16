@@ -4,7 +4,7 @@ use liquid_lang as liquid;
 
 #[liquid::contract(version = "0.1.0")]
 mod incrementer {
-    use liquid_storage as storage;
+    use liquid_core::storage;
 
     #[liquid(storage)]
     struct Incrementer {
