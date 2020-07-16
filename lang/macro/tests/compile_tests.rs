@@ -18,6 +18,7 @@ fn compile_tests() {
     t.pass("tests/ui/pass/03-incrementer-contract.rs");
     t.pass("tests/ui/pass/04-type-alias.rs");
     t.pass("tests/ui/pass/05-different-functions-same-inputs.rs");
+    t.pass("tests/ui/pass/06-multiple-returns.rs");
     t.compile_fail("tests/ui/fail/01-constructor-returns.rs");
     t.compile_fail("tests/ui/fail/02-missing-constructor.rs");
     t.compile_fail("tests/ui/fail/03-multiple-constructors.rs");
@@ -37,4 +38,5 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/17-invalid-return-type.rs");
     t.compile_fail("tests/ui/fail/18-too-many-inputs.rs");
     t.compile_fail("tests/ui/fail/19-too-many-outputs.rs");
+    t.compile_fail("tests/ui/fail/20-invalid-constructor-parameter.rs");
 }

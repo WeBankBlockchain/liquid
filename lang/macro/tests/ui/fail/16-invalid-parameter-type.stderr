@@ -1,8 +1,8 @@
-error[E0277]: the trait bound `f32: liquid_lang::ValidLiquidInputType` is not satisfied
+error[E0277]: the trait bound `f32: liquid_lang::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type` is not satisfied
   --> $DIR/16-invalid-parameter-type.rs:13:17
    |
 13 |         fn noop(&self, value: f32) {}
-   |                 ^^^^^^^^^^^^^^^^^ the trait `liquid_lang::ValidLiquidInputType` is not implemented for `f32`
+   |                 ^^^^^^^^^^^^^^^^^ the trait `liquid_lang::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type` is not implemented for `f32`
 
 error[E0277]: the trait bound `f32: liquid_lang::ty_mapping::SolTypeNameLen` is not satisfied
  --> $DIR/16-invalid-parameter-type.rs:3:1

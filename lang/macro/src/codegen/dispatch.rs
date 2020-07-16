@@ -12,7 +12,7 @@
 
 use crate::{
     codegen::GenerateCode,
-    ir::{Contract, FnArg, Function, FunctionKind},
+    ir::{Contract, FnArg, Function, FunctionKind, Signature},
 };
 use core::cell::RefCell;
 use liquid_prelude::{collections::BTreeSet, string::String};
@@ -51,6 +51,25 @@ impl<'a> GenerateCode for Dispatch<'a> {
             };
         }
     }
+}
+
+fn generate_input_tys<'a>(sig: &'a Signature) -> Vec<&'a syn::Type> {
+    sig.inputs
+        .iter()
+        .skip(1)
+        .map(|arg| match arg {
+            FnArg::Typed(ident_type) => &ident_type.ty,
+            _ => unreachable!(),
+        })
+        .collect::<Vec<_>>()
+}
+
+fn generate_input_ty_checker(tys: &[&syn::Type]) -> TokenStream2 {
+    let guards = tys.iter().map(|ty| quote! {
+        <#ty as liquid_lang::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type>::T
+    });
+
+    quote! { (#(#guards,)*) }
 }
 
 impl<'a> Dispatch<'a> {
@@ -97,38 +116,39 @@ impl<'a> Dispatch<'a> {
         let external_marker = quote! { ExternalMarker<[(); #fn_id]> };
         let sig = &func.sig;
 
-        let inputs = &sig.inputs;
-        let input_tys = &inputs
-            .iter()
-            .skip(1)
-            .map(|arg| match arg {
-                FnArg::Typed(ident_type) => &ident_type.ty,
-                _ => unreachable!(),
-            })
-            .collect::<Vec<_>>();
+        let input_tys = generate_input_tys(sig);
+        let input_ty_checker = generate_input_ty_checker(input_tys.as_slice());
+        let fn_input = quote_spanned! { sig.inputs.span() =>
+            impl liquid_lang::FnInput for #external_marker  {
+                type Input = #input_ty_checker;
+            }
+        };
 
         let output = &sig.output;
-        let output_ty = {
-            match output {
-                syn::ReturnType::Default => quote! {()},
-                syn::ReturnType::Type(_, ty) => quote! { #ty },
-            }
-        };
+        let output_ty_checker = match output {
+            syn::ReturnType::Default => quote_spanned! { output.span() => ()},
+            syn::ReturnType::Type(_, ty) => match &(**ty) {
+                syn::Type::Tuple(tuple_ty) => {
+                    let elems = tuple_ty.elems.iter().map(|elem| {
+                        quote! {
+                            <#elem as liquid_lang::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type>::T
+                        }
+                    });
 
-        let fn_input = quote_spanned! { inputs.span() =>
-            impl liquid_lang::FnInput for #external_marker  {
-                type Input = (#(<#input_tys as liquid_lang::ValidLiquidInputType>::T,)*);
-            }
+                    quote! { (#(#elems,)*) }
+                }
+                other_ty => quote! {
+                    <#other_ty as liquid_lang::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type>::T
+                },
+            },
         };
-
         let fn_output = quote_spanned! { output.span() =>
             impl liquid_lang::FnOutput for #external_marker {
-                type Output = <#output_ty as liquid_lang::ValidLiquidOutputType>::T;
+                type Output = #output_ty_checker;
             }
         };
 
-        let mut selectors = quote_spanned! { span =>
-        };
+        let mut selectors = quote_spanned! { span => };
         for i in 1..=input_tys.len() {
             let tys = &input_tys[..i];
 
@@ -265,12 +285,19 @@ impl<'a> Dispatch<'a> {
             quote! { (#(#constr_input_idents,)*) }
         };
 
-        let constr_input_tys = constr_inputs.iter().skip(1).map(|arg| match arg {
-            FnArg::Typed(ident_type) => &ident_type.ty,
-            _ => unreachable!(),
-        });
+        let constr_input_tys = generate_input_tys(constr_sig);
+        let constr_marker = quote! { ExternalMarker<[(); 0]> };
+        let constr_input_ty_checker =
+            generate_input_ty_checker(constr_input_tys.as_slice());
+        let constr_input_ty_checker = quote_spanned! { constr_inputs.span() =>
+            impl liquid_lang::FnInput for #constr_marker  {
+                type Input = #constr_input_ty_checker;
+            }
+        };
 
         quote! {
+            #constr_input_ty_checker
+
             impl Storage {
                 pub fn dispatch_using_mode(mode: liquid_lang::CallMode) -> liquid_lang::DispatchResult {
                     liquid_lang::Contract::new_builder::<Storage, (#(#constr_input_tys,)*)>(|storage, #constr_pat_idents| {

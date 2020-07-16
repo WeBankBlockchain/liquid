@@ -32,11 +32,8 @@ pub trait FnMutability {
 
 pub trait ExternalFn: FnInput + FnOutput + FnSelectors + FnMutability {}
 
-pub trait ValidLiquidInputType: Sized {
-    type T = Self;
-}
-
-pub trait ValidLiquidOutputType: Sized {
+#[allow(non_camel_case_types)]
+pub trait The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type: Sized {
     type T = Self;
 }
 

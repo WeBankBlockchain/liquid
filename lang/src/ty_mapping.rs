@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::traits::{ValidLiquidInputType, ValidLiquidOutputType};
+use crate::traits::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type;
 use liquid_core::env::types::String;
 use liquid_macro::seq;
 
@@ -32,8 +32,7 @@ macro_rules! mapping_type_to_sol {
             const LEN: usize = stringify!($mapped_ty).len();
         }
 
-        impl ValidLiquidInputType for $origin_ty {}
-        impl ValidLiquidOutputType for $origin_ty {}
+        impl The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type for $origin_ty {}
     };
 }
 
@@ -57,10 +56,9 @@ impl SolTypeNameLen for () {
     const LEN: usize = 0;
 }
 
-impl ValidLiquidInputType for () {}
-impl ValidLiquidOutputType for () {}
+impl The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type for () {}
 
-macro_rules! impl_len {
+macro_rules! impl_len_for_tuple {
     ($first:tt,) => {
         impl<$first> SolTypeNameLen for ($first,)
         where
@@ -78,12 +76,12 @@ macro_rules! impl_len {
             const LEN: usize = <$first as SolTypeNameLen>::LEN $(+ <$rest as SolTypeNameLen>::LEN + 1)+;
         }
 
-        impl_len!($($rest,)+);
+        impl_len_for_tuple!($($rest,)+);
     };
 }
 
 seq!(N in 0..16 {
-    impl_len! {
+    impl_len_for_tuple! {
         #(T#N,)*
     }
 });

@@ -23,5 +23,6 @@ std = [
     "liquid_primitives/std",
     "liquid_prelude/std",
     "liquid_abi_coder/std",
+    "liquid_alloc/std",
     "scale/std",
 ]
