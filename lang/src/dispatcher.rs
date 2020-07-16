@@ -11,6 +11,7 @@
 // limitations under the License.
 
 use crate::{traits::*, DispatchError};
+use core::any::TypeId;
 use liquid_core::env::{finish, CallData};
 
 pub type Result<T> = core::result::Result<T, DispatchError>;
@@ -130,7 +131,9 @@ macro_rules! impl_dispatcher_for {
                     storage.flush();
                 }
 
-                finish(&result);
+                if TypeId::of::<<External as FnOutput>::Output>() != TypeId::of::<()>() {
+                    finish(&result);
+                }
                 Ok(())
             }
         }
