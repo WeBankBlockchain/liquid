@@ -10,8 +10,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::Selector;
-
 const BITS: usize = 256;
 const RATE: usize = 200 - BITS / 4;
 const DELIM: u8 = 0x01;
@@ -201,7 +199,7 @@ const fn convert_bytes_to_words(b: &[u8; BYTE]) -> [u64; WORD] {
     ret
 }
 
-pub const fn keccak256(input: &[u8]) -> Selector {
+pub const fn keccak256(input: &[u8]) -> [u8; 4] {
     let mut output = [0u8; 4];
     let mut buffer = [0u64; WORD];
 

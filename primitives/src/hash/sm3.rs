@@ -10,8 +10,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::Selector;
-
 const fn ff0(x: u32, y: u32, z: u32) -> u32 {
     x ^ y ^ z
 }
@@ -172,7 +170,7 @@ const fn pad(bytes: &[u8], padded: &mut [u8]) -> usize {
     index + 8
 }
 
-pub const fn sm3(bytes: &[u8]) -> Selector {
+pub const fn sm3(bytes: &[u8]) -> [u8; 4] {
     let mut digest: [u32; 8] = [
         0x7380_166f,
         0x4914_b2b9,

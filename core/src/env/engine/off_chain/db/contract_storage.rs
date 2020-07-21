@@ -12,11 +12,10 @@
 
 use crate::env::{EnvError, Result};
 use liquid_prelude::{collections::BTreeMap, vec::Vec};
-use liquid_primitives::Key;
 use scale::{Decode, Encode};
 
 pub struct ContractStorage {
-    entries: BTreeMap<Key, Vec<u8>>,
+    entries: BTreeMap<Vec<u8>, Vec<u8>>,
 }
 
 impl ContractStorage {
@@ -26,20 +25,20 @@ impl ContractStorage {
         }
     }
 
-    pub fn get_storage<R>(&self, key: Key) -> Result<R>
+    pub fn get_storage<R>(&self, key: &[u8]) -> Result<R>
     where
         R: Decode,
     {
-        match self.entries.get(key) {
+        match self.entries.get(&key.to_vec()) {
             Some(encoded) => <R as Decode>::decode(&mut &encoded[..]).map_err(Into::into),
             None => Err(EnvError::UnableToReadFromStorage),
         }
     }
 
-    pub fn set_storage<V>(&mut self, key: Key, value: &V)
+    pub fn set_storage<V>(&mut self, key: &[u8], value: &V)
     where
         V: Encode,
     {
-        self.entries.insert(key, value.encode());
+        self.entries.insert(key.to_vec(), value.encode());
     }
 }

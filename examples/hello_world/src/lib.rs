@@ -14,7 +14,7 @@ mod hello_world {
     impl HelloWorld {
         #[liquid(constructor)]
         fn new(&mut self) {
-            self.name.set(String::from("Hello, World!"));
+            self.name.initialize(String::from("Hello, World!"));
         }
 
         #[liquid(external)]
@@ -29,7 +29,7 @@ mod hello_world {
     }
 
     #[cfg(test)]
-    mod test {
+    mod tests {
         use super::*;
 
         #[test]

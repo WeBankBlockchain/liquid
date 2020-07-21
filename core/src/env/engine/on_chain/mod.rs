@@ -16,7 +16,6 @@ mod ext;
 use self::buffer::StaticBuffer;
 use super::OnInstance;
 use crate::env::{CallData, Env, Result};
-use liquid_primitives::Key;
 
 /// The on-chain environment
 pub struct EnvInstance {
@@ -75,19 +74,19 @@ impl EnvInstance {
 }
 
 impl Env for EnvInstance {
-    fn set_storage<V>(&mut self, key: Key, value: &V)
+    fn set_storage<V>(&mut self, key: &[u8], value: &V)
     where
         V: scale::Encode,
     {
         self.encode_into_buffer_scale(value);
-        ext::set_storage(key.as_bytes(), &self.buffer[..]);
+        ext::set_storage(key, &self.buffer[..]);
     }
 
-    fn get_storage<R>(&mut self, key: Key) -> Result<R>
+    fn get_storage<R>(&mut self, key: &[u8]) -> Result<R>
     where
         R: scale::Decode,
     {
-        let size = ext::get_storage(key.as_bytes(), &mut self.buffer[..])?;
+        let size = ext::get_storage(key, &mut self.buffer[..])?;
         self.buffer.resize(size as usize);
         self.decode_from_buffer_scale()
     }

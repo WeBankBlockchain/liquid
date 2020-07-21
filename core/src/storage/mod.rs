@@ -10,12 +10,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod cache_entry;
 mod cell;
+mod chunk;
+mod collections;
 mod traits;
 mod value;
 
 pub use self::{
+    cache_entry::CacheEntry,
     cell::{CachedCell, TypedCell},
+    chunk::{ArbitraryKey, CachedChunk, TypedChunk, U32Key},
+    collections::Vec,
     traits::*,
     value::Value,
 };

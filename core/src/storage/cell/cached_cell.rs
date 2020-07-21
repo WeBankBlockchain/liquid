@@ -10,57 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::storage::{Flush, TypedCell};
+use crate::storage::{CacheEntry, Flush, TypedCell};
 use core::cell::RefCell;
-use liquid_prelude::boxed::Box;
 use liquid_primitives::Key;
-
-#[derive(Debug)]
-struct CacheEntry<T> {
-    /// If the entry needs to be written back upon a flush.
-    dirty: bool,
-    /// The value of the cell.
-    cell_val: Box<Option<T>>,
-}
-
-impl<T> CacheEntry<T> {
-    pub fn new(val: Option<T>) -> Self {
-        Self {
-            dirty: false,
-            cell_val: Box::new(val),
-        }
-    }
-
-    pub fn is_dirty(&self) -> bool {
-        self.dirty
-    }
-
-    pub fn mark_dirty(&mut self) {
-        self.dirty = true;
-    }
-
-    pub fn mark_clean(&mut self) {
-        self.dirty = false;
-    }
-
-    /// Returns an immutable reference to the synchronized cached value.
-    pub fn get(&self) -> Option<&T> {
-        (&*self.cell_val).as_ref()
-    }
-
-    /// Returns a mutable reference to the synchronized cached value.
-    ///
-    /// This also marks the cache entry as being dirty since
-    /// the callee could potentially mutate the value.
-    pub fn get_mut(&mut self) -> Option<&mut T> {
-        self.mark_dirty();
-        (&mut *self.cell_val).as_mut()
-    }
-
-    pub fn update(&mut self, new_val: Option<T>) {
-        *self.cell_val = new_val;
-    }
-}
 
 #[derive(Debug)]
 enum Cache<T> {

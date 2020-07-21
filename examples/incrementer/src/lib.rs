@@ -14,7 +14,7 @@ mod incrementer {
     impl Incrementer {
         #[liquid(constructor)]
         fn init(&mut self) {
-            self.value.set(0);
+            self.value.initialize(0);
         }
 
         #[liquid(external)]
@@ -29,7 +29,7 @@ mod incrementer {
     }
 
     #[cfg(test)]
-    mod test {
+    mod tests {
         use super::*;
 
         #[test]

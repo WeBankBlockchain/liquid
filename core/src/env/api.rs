@@ -14,9 +14,8 @@ use crate::env::{
     engine::{EnvInstance, OnInstance},
     CallData, Env, Result,
 };
-use liquid_primitives::Key;
 
-pub fn set_storage<V>(key: Key, value: &V)
+pub fn set_storage<V>(key: &[u8], value: &V)
 where
     V: scale::Encode,
 {
@@ -25,7 +24,7 @@ where
     })
 }
 
-pub fn get_storage<R>(key: Key) -> Result<R>
+pub fn get_storage<R>(key: &[u8]) -> Result<R>
 where
     R: scale::Decode,
 {

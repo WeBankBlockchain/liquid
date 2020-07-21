@@ -37,7 +37,7 @@ where
     T: scale::Decode,
 {
     pub fn load(&self) -> Option<T> {
-        liquid_env::get_storage::<T>(self.key).ok()
+        liquid_env::get_storage::<T>(self.key.as_bytes()).ok()
     }
 }
 
@@ -46,7 +46,7 @@ where
     T: scale::Encode,
 {
     pub fn store(&mut self, new_value: &T) {
-        liquid_env::set_storage(self.key, new_value);
+        liquid_env::set_storage(self.key.as_bytes(), new_value);
     }
 }
 

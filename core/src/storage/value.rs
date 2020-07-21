@@ -40,6 +40,12 @@ impl<T> Value<T>
 where
     T: scale::Codec,
 {
+    pub fn initialize(&mut self, input: T) {
+        if self.cell.get().is_none() {
+            self.set(input);
+        }
+    }
+
     pub fn set(&mut self, new_val: T) {
         self.cell.set(new_val);
     }
@@ -185,6 +191,15 @@ where
     }
 }
 
+impl<T, I> core::ops::IndexMut<I> for Value<T>
+where
+    T: core::ops::IndexMut<I> + scale::Codec,
+{
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
+        &mut (self.get_mut()[index])
+    }
+}
+
 impl<T> PartialEq<T> for Value<T>
 where
     T: PartialEq + scale::Codec,
@@ -245,7 +260,7 @@ where
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     macro_rules! test_ops {
@@ -345,11 +360,23 @@ mod test {
 
     #[test]
     fn test_index() {
-        let mut v = Value::<Vec<i32>>::bind_with("v");
-        v.set(vec![0i32, 1, 2, 3]);
+        let mut v1 = Value::<Vec<i32>>::bind_with("v");
+        v1.set(vec![0i32, 1, 2, 3]);
+        v1[2] = 5;
+        v1.flush();
 
-        for i in 0..4 {
-            assert_eq!(v[i], i as i32);
-        }
+        let v2 = Value::<Vec<i32>>::bind_with("v");
+        assert_eq!(v2[2], 5);
+    }
+
+    #[test]
+    fn test_deref() {
+        let mut v1 = Value::<i32>::bind_with("v");
+        v1.set(2);
+        *v1 = 3;
+        v1.flush();
+
+        let v2 = Value::<i32>::bind_with("v");
+        assert_eq!(*v2, 3);
     }
 }

@@ -15,7 +15,6 @@ mod db;
 use self::db::ContractStorage;
 use crate::env::{engine::OnInstance, CallData, Env, Result};
 use core::cell::RefCell;
-use liquid_primitives::Key;
 
 #[allow(dead_code)]
 pub struct EnvInstance {
@@ -31,14 +30,14 @@ impl EnvInstance {
 }
 
 impl Env for EnvInstance {
-    fn set_storage<V>(&mut self, key: Key, value: &V)
+    fn set_storage<V>(&mut self, key: &[u8], value: &V)
     where
         V: scale::Encode,
     {
         self.contract_storage.set_storage(key, value);
     }
 
-    fn get_storage<R>(&mut self, key: Key) -> Result<R>
+    fn get_storage<R>(&mut self, key: &[u8]) -> Result<R>
     where
         R: scale::Decode,
     {

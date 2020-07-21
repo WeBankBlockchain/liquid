@@ -10,20 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::env::{CallData, Result};
+mod cached_chunk;
+mod typed_chunk;
 
-pub trait Env {
-    fn set_storage<V>(&mut self, key: &[u8], value: &V)
-    where
-        V: scale::Encode;
+pub type U32Key = u32;
+pub type ArbitraryKey = &'static [u8];
 
-    fn get_storage<R>(&mut self, key: &[u8]) -> Result<R>
-    where
-        R: scale::Decode;
-
-    fn get_call_data(&mut self) -> Result<CallData>;
-
-    fn finish<V>(&mut self, return_value: &V)
-    where
-        V: liquid_abi_coder::Encode;
-}
+pub use cached_chunk::CachedChunk;
+pub use typed_chunk::TypedChunk;
