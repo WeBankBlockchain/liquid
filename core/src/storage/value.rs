@@ -11,7 +11,6 @@
 // limitations under the License.
 
 use crate::storage::{Bind, CachedCell, Flush};
-use liquid_primitives::Key;
 use scale::Encode;
 
 #[derive(Debug)]
@@ -20,7 +19,7 @@ pub struct Value<T> {
 }
 
 impl<T> Bind for Value<T> {
-    fn bind_with(key: Key) -> Self {
+    fn bind_with(key: &[u8]) -> Self {
         Self {
             cell: CachedCell::new(key),
         }
@@ -269,9 +268,9 @@ mod tests {
             fn $test_name() {
                 let lhs = 3529;
                 let rhs = 7;
-                let mut v1 = Value::<i32>::bind_with("v1");
+                let mut v1 = Value::<i32>::bind_with(b"v1");
                 v1.set(lhs);
-                let mut v2 = Value::<i32>::bind_with("v2");
+                let mut v2 = Value::<i32>::bind_with(b"v2");
                 v2.set(rhs);
 
                 assert_eq!(v1, lhs);
@@ -285,9 +284,9 @@ mod tests {
                 fn [<$test_name _assign>]() {
                     let lhs = 3529;
                     let rhs = 7;
-                    let mut v1 = Value::<i32>::bind_with("v1");
+                    let mut v1 = Value::<i32>::bind_with(b"v1");
                     v1.set(lhs);
-                    let mut v2 = Value::<i32>::bind_with("v2");
+                    let mut v2 = Value::<i32>::bind_with(b"v2");
                     v2.set(rhs);
 
                     assert_eq!(v1, lhs);
@@ -318,7 +317,7 @@ mod tests {
 
     #[test]
     fn test_neg() {
-        let mut v1 = Value::<i32>::bind_with("v1");
+        let mut v1 = Value::<i32>::bind_with(b"v1");
         v1.set(1);
 
         assert_eq!(v1, 1);
@@ -327,7 +326,7 @@ mod tests {
 
     #[test]
     fn test_not() {
-        let mut v1 = Value::<bool>::bind_with("v1");
+        let mut v1 = Value::<bool>::bind_with(b"v1");
         v1.set(true);
 
         assert_eq!(v1, true);
@@ -336,11 +335,11 @@ mod tests {
 
     #[test]
     fn test_eq_ord() {
-        let mut v1 = Value::<i32>::bind_with("v1");
+        let mut v1 = Value::<i32>::bind_with(b"v1");
         v1.set(35);
-        let mut v2 = Value::<i32>::bind_with("v2");
+        let mut v2 = Value::<i32>::bind_with(b"v2");
         v2.set(35);
-        let mut v3 = Value::<i32>::bind_with("v3");
+        let mut v3 = Value::<i32>::bind_with(b"v3");
         v3.set(29);
 
         // Eq & Ne
@@ -360,23 +359,23 @@ mod tests {
 
     #[test]
     fn test_index() {
-        let mut v1 = Value::<Vec<i32>>::bind_with("v");
+        let mut v1 = Value::<Vec<i32>>::bind_with(b"v");
         v1.set(vec![0i32, 1, 2, 3]);
         v1[2] = 5;
         v1.flush();
 
-        let v2 = Value::<Vec<i32>>::bind_with("v");
+        let v2 = Value::<Vec<i32>>::bind_with(b"v");
         assert_eq!(v2[2], 5);
     }
 
     #[test]
     fn test_deref() {
-        let mut v1 = Value::<i32>::bind_with("v");
+        let mut v1 = Value::<i32>::bind_with(b"v");
         v1.set(2);
         *v1 = 3;
         v1.flush();
 
-        let v2 = Value::<i32>::bind_with("v");
+        let v2 = Value::<i32>::bind_with(b"v");
         assert_eq!(*v2, 3);
     }
 }

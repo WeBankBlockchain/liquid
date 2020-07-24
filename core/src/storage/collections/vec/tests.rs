@@ -14,13 +14,13 @@ use super::Vec;
 use crate::storage::traits::Bind;
 
 fn new_empty_vec() -> Vec<u8> {
-    let mut vec = Vec::<u8>::bind_with("vec");
+    let mut vec = Vec::<u8>::bind_with(b"vec");
     vec.initialize();
     vec
 }
 
 fn new_filled_vec() -> Vec<u8> {
-    let mut vec = Vec::<u8>::bind_with("vec");
+    let mut vec = Vec::<u8>::bind_with(b"vec");
     vec.initialize();
     vec.push(0x56);
     vec.push(0x49);

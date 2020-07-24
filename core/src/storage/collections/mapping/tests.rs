@@ -14,7 +14,7 @@ use super::Mapping;
 use crate::storage::traits::Bind;
 
 fn new_empty<K, V>() -> Mapping<K, V> {
-    let mut map = Mapping::<K, V>::bind_with("var");
+    let mut map = Mapping::<K, V>::bind_with(b"var");
     map.initialize();
     map
 }
@@ -61,10 +61,10 @@ fn index_works() {
 #[test]
 fn index_repeat() {
     let mut map = new_empty::<String, u8>();
-    assert_eq!(map.insert(&"Alice".to_string(), 0), None);
-    assert_eq!(map.insert(&"Bob".to_string(), 1), None);
-    assert_eq!(map[&"Alice".to_string()], 0);
-    assert_eq!(map[&"Bob".to_string()], 1);
+    let name = "Alice".to_string();
+    assert_eq!(map.insert(&name, 0), None);
+    assert_eq!(map[&name], 0);
+    assert_eq!(map[&name], 0);
 }
 
 #[test]
@@ -98,7 +98,7 @@ fn remove_works() {
 }
 
 #[test]
-fn mutate_with() {
+fn mutate_with_works() {
     let mut map = new_empty::<String, String>();
     // Inserts some elements
     assert_eq!(map.insert(&"Dog Breed".to_string(), "Akita".into()), None);
@@ -141,8 +141,4 @@ fn extend_works() {
     for i in 0..5 {
         assert_eq!(map[&keys[i]], vals[i]);
     }
-
-    let a = scale::Encode::encode(&String::from("123"));
-    let b = scale::Encode::encode(&[12u8, 49u8, 50, 51]);
-    assert_eq!(a, b);
 }

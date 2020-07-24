@@ -12,21 +12,21 @@
 
 use crate::env as liquid_env;
 use core::marker::PhantomData;
-use liquid_primitives::Key;
+use liquid_prelude::vec::Vec;
 
 /// A typed cell.
 ///
 /// Provides interpreted access to the associated contract storage slot.
 #[derive(Debug)]
 pub struct TypedCell<T> {
-    key: Key,
+    key: Vec<u8>,
     marker: PhantomData<fn() -> T>,
 }
 
 impl<T> TypedCell<T> {
-    pub fn new(key: Key) -> Self {
+    pub fn new(key: &[u8]) -> Self {
         Self {
-            key,
+            key: key.to_vec(),
             marker: Default::default(),
         }
     }
@@ -37,7 +37,7 @@ where
     T: scale::Decode,
 {
     pub fn load(&self) -> Option<T> {
-        liquid_env::get_storage::<T>(self.key.as_bytes()).ok()
+        liquid_env::get_storage::<T>(&self.key).ok()
     }
 }
 
@@ -46,7 +46,7 @@ where
     T: scale::Encode,
 {
     pub fn store(&mut self, new_value: &T) {
-        liquid_env::set_storage(self.key.as_bytes(), new_value);
+        liquid_env::set_storage(&self.key, new_value);
     }
 }
 
@@ -56,7 +56,7 @@ mod tests {
     use liquid_prelude::string::String;
 
     fn dummy_cell<T>() -> TypedCell<T> {
-        TypedCell::new("var")
+        TypedCell::new(b"var")
     }
 
     #[test]

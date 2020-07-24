@@ -13,7 +13,6 @@
 use crate::env as liquid_env;
 use core::{cell::RefCell, marker::PhantomData};
 use liquid_prelude::vec::Vec;
-use liquid_primitives::Key;
 use scale::{Decode, Encode};
 
 const SEP: u8 = 0x24; // '$'
@@ -26,11 +25,11 @@ pub struct TypedChunk<T> {
 }
 
 impl<T> TypedChunk<T> {
-    pub fn new(key: Key) -> Self {
+    pub fn new(key: &[u8]) -> Self {
         Self {
             key_buf: RefCell::new({
                 let mut vec = Vec::with_capacity(key.len() + 1);
-                vec.extend(key.as_bytes());
+                vec.extend_from_slice(key);
                 vec.push(SEP);
                 vec
             }),
@@ -90,7 +89,7 @@ mod tests {
     }
 
     fn dummy_chunk() -> TypedChunk<u32> {
-        TypedChunk::<u32>::new("var")
+        TypedChunk::<u32>::new(b"var")
     }
 
     #[test]

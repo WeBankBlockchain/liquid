@@ -10,14 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub trait Flush {
-    fn flush(&mut self) {}
-}
+mod impls;
 
-pub trait New {
-    fn new() -> Self;
-}
+#[cfg(test)]
+mod tests;
 
-pub trait Bind {
-    fn bind_with(key: &[u8]) -> Self;
-}
+pub use impls::IterableMapping;

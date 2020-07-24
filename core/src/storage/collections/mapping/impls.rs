@@ -12,7 +12,6 @@
 
 use crate::storage::{Bind, CachedCell, CachedChunk, Flush};
 use core::{borrow::Borrow, marker::PhantomData};
-use liquid_primitives::Key;
 use scale::{Codec, Encode};
 
 #[derive(Debug)]
@@ -23,7 +22,7 @@ pub struct Mapping<K, V> {
 }
 
 impl<K, V> Bind for Mapping<K, V> {
-    fn bind_with(key: Key) -> Self {
+    fn bind_with(key: &[u8]) -> Self {
         Self {
             len: CachedCell::<u32>::new(key),
             chunk: CachedChunk::<V>::new(key),
@@ -84,8 +83,8 @@ where
 
         if ret.is_none() {
             let len = self.len.get_mut().expect(
-                "[liquid_core::Mapping::insert] Error: \
-                 expected `len` field to be existed in storage",
+                "[liquid_core::Mapping::insert] Error: expected `len` field to be \
+                 existed in storage",
             );
             *len += 1;
         }
@@ -119,8 +118,8 @@ where
 
         if ret.is_some() {
             let len = self.len.get_mut().expect(
-                "[liquid_core::Mapping::remove] Error: \
-                 expected `len` field to be existed in storage",
+                "[liquid_core::Mapping::remove] Error: expected `len` field to be \
+                 existed in storage",
             );
             *len -= 1;
         }

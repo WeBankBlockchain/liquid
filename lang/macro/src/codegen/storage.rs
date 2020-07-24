@@ -100,7 +100,7 @@ impl<'a> Storage<'a> {
                     let mut indexes = 0..#keys_count;
 
                     Self {
-                        #(#field_idents: liquid_core::storage::Bind::bind_with(Self::STORAGE_KEYS[indexes.next().unwrap()]),)*
+                        #(#field_idents: liquid_core::storage::Bind::bind_with(Self::STORAGE_KEYS[indexes.next().unwrap()].as_bytes()),)*
                     }
                 }
             }

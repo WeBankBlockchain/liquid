@@ -21,7 +21,7 @@ pub use self::{
     cache_entry::CacheEntry,
     cell::{CachedCell, TypedCell},
     chunk::{CachedChunk, TypedChunk},
-    collections::{Mapping, Vec},
+    collections::{IterableMapping, Mapping, Vec},
     traits::*,
     value::Value,
 };

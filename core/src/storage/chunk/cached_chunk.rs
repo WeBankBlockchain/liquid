@@ -13,7 +13,6 @@
 use crate::storage::{CacheEntry, Flush, TypedChunk};
 use core::{borrow::Borrow, cell::RefCell};
 use liquid_prelude::{collections::BTreeMap, vec::Vec};
-use liquid_primitives::Key;
 use scale::{Codec, Decode, Encode};
 
 #[derive(Debug)]
@@ -31,7 +30,7 @@ impl<T> CachedChunk<T> {
 }
 
 impl<T> CachedChunk<T> {
-    pub fn new(key: Key) -> Self {
+    pub fn new(key: &[u8]) -> Self {
         Self {
             chunk: TypedChunk::<T>::new(key),
             cache: Default::default(),
@@ -148,7 +147,7 @@ mod tests {
     use super::*;
 
     fn dummy_chunk() -> CachedChunk<u32> {
-        CachedChunk::<u32>::new("var")
+        CachedChunk::<u32>::new(b"var")
     }
 
     #[test]

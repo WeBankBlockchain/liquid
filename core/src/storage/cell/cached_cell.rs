@@ -12,7 +12,6 @@
 
 use crate::storage::{CacheEntry, Flush, TypedCell};
 use core::cell::RefCell;
-use liquid_primitives::Key;
 
 #[derive(Debug)]
 enum Cache<T> {
@@ -86,7 +85,7 @@ pub struct CachedCell<T> {
 }
 
 impl<T> CachedCell<T> {
-    pub fn new(key: Key) -> Self {
+    pub fn new(key: &[u8]) -> Self {
         Self {
             cell: TypedCell::new(key),
             cache: Default::default(),
@@ -161,7 +160,7 @@ mod tests {
     use super::*;
 
     fn dummy_cell<T>() -> CachedCell<T> {
-        CachedCell::new("var")
+        CachedCell::new(b"var")
     }
 
     #[test]

@@ -11,7 +11,6 @@
 // limitations under the License.
 
 use crate::storage::{Bind, CachedCell, CachedChunk, Flush};
-use liquid_primitives::Key;
 use scale::{Codec, Encode};
 
 #[derive(Debug)]
@@ -80,7 +79,7 @@ where
 }
 
 impl<T> Bind for Vec<T> {
-    fn bind_with(key: Key) -> Self {
+    fn bind_with(key: &[u8]) -> Self {
         Self {
             len: CachedCell::<u32>::new(key),
             chunk: CachedChunk::<T>::new(key),
