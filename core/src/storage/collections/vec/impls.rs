@@ -10,14 +10,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::storage::{Bind, CachedCell, CachedChunk, Flush, U32Key};
+use crate::storage::{Bind, CachedCell, CachedChunk, Flush};
 use liquid_primitives::Key;
 use scale::{Codec, Encode};
 
 #[derive(Debug)]
 pub struct Vec<T> {
     len: CachedCell<u32>,
-    chunk: CachedChunk<T, U32Key>,
+    chunk: CachedChunk<T>,
 }
 
 pub struct Iter<'a, T> {
@@ -83,7 +83,7 @@ impl<T> Bind for Vec<T> {
     fn bind_with(key: Key) -> Self {
         Self {
             len: CachedCell::<u32>::new(key),
-            chunk: CachedChunk::<T, U32Key>::new(key),
+            chunk: CachedChunk::<T>::new(key),
         }
     }
 }
@@ -136,7 +136,8 @@ where
     ///
     /// Returns `None` if `n` is out of bounds.
     pub fn get(&self, n: u32) -> Option<&T> {
-        self.within_bounds(n).and_then(|n| self.chunk.get(n))
+        self.within_bounds(n)
+            .and_then(|n| self.chunk.get(&n.to_le_bytes()))
     }
 
     /// Returns a mutable reference to the `n`-th element of the vector.
@@ -144,7 +145,7 @@ where
     /// Returns `None` if `n` is out of bounds.
     pub fn get_mut(&mut self, n: u32) -> Option<&mut T> {
         self.within_bounds(n)
-            .and_then(move |n| self.chunk.get_mut(n))
+            .and_then(move |n| self.chunk.get_mut(&n.to_le_bytes()))
     }
 
     /// Mutates the `n`-th element of the vector.
@@ -156,7 +157,7 @@ where
         F: FnOnce(&mut T),
     {
         self.within_bounds(n)
-            .and_then(move |n| self.chunk.mutate_with(n, f))
+            .and_then(move |n| self.chunk.mutate_with(&n.to_le_bytes(), f))
     }
 
     /// Appends an element to the back of the vector.
@@ -168,11 +169,11 @@ where
             )
         }
 
-        self.chunk.set(self.len(), val);
         let len = self.len.get_mut().expect(
             "[liquid_core::Vec::push] Error: expected `len` field to be existed in \
              storage",
         );
+        self.chunk.set(&len.to_le_bytes(), val);
         *len += 1;
     }
 
@@ -189,7 +190,9 @@ where
              storage",
         );
         *len -= 1;
-        self.chunk.take(*len)
+        let ret = self.chunk.take(&len.to_le_bytes());
+        self.chunk.remove(&len.to_le_bytes());
+        ret
     }
 
     /// Swaps the `a`-th and the `b`-th elements.
@@ -202,19 +205,20 @@ where
             return;
         }
 
+        let a_index = a.to_le_bytes();
         self.within_bounds(a)
             .expect("[liquid_core::Vec::swap] Error: expected `a` to be within bounds");
         self.within_bounds(b)
             .expect("[liquid_core::Vec::swap] Error: expected `b` to be within bounds");
-        let item_a = self.chunk.take(a).expect(
+        let item_a = self.chunk.take(&a_index).expect(
             "[liquid_core::Vec::swap] Error: expected `Some` value since vector is not \
              empty",
         );
-        let item_b = self.chunk.put(b, item_a).expect(
+        let item_b = self.chunk.put(&b.to_le_bytes(), item_a).expect(
             "[liquid_core::Vec::swap] Error: expected `Some` value since vector is not \
              empty",
         );
-        self.chunk.set(a, item_b);
+        self.chunk.set(&a_index, item_b);
     }
 
     /// Removes the `n`-th element from the vector and returns it.
@@ -239,7 +243,7 @@ where
                  vector is not empty",
             );
 
-            self.chunk.put(n, last_elem)
+            self.chunk.put(&n.to_le_bytes(), last_elem)
         }
     }
 }

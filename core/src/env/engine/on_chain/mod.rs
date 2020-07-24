@@ -15,7 +15,8 @@ mod ext;
 
 use self::buffer::StaticBuffer;
 use super::OnInstance;
-use crate::env::{CallData, Env, Result};
+use crate::env::{CallData, Env, EnvError, Result};
+use liquid_abi_coder::Decode;
 
 /// The on-chain environment
 pub struct EnvInstance {
@@ -63,14 +64,6 @@ impl EnvInstance {
         let len = self.buffer.len();
         scale::Decode::decode(&mut &self.buffer[..len]).map_err(Into::into)
     }
-
-    fn decode_from_buffer_abi<R>(&mut self) -> Result<R>
-    where
-        R: liquid_abi_coder::Decode,
-    {
-        let len = self.buffer.len();
-        liquid_abi_coder::Decode::decode(&mut &self.buffer[..len]).map_err(Into::into)
-    }
 }
 
 impl Env for EnvInstance {
@@ -91,10 +84,20 @@ impl Env for EnvInstance {
         self.decode_from_buffer_scale()
     }
 
+    fn remove_storage(&mut self, key: &[u8]) {
+        ext::set_storage(key, &[]);
+    }
+
     fn get_call_data(&mut self) -> Result<CallData> {
-        let size = ext::get_call_data(&mut self.buffer[..])?;
-        self.buffer.resize(size as usize);
-        self.decode_from_buffer_abi()
+        let call_data_size = ext::get_call_data_size();
+        if call_data_size < 4 {
+            return Err(EnvError::UnableToReadCallData);
+        }
+
+        let mut call_data_buf =
+            liquid_prelude::vec::from_elem(0u8, call_data_size as usize);
+        ext::get_call_data(&mut call_data_buf[..]);
+        CallData::decode(&mut call_data_buf.as_slice()).map_err(Into::into)
     }
 
     fn finish<V>(&mut self, return_value: &V)

@@ -92,32 +92,23 @@ where
     }
 }
 
-pub enum CallMode {
-    // Mode for deploying a contract
-    Deploy,
-    // Mode for calling an external function
-    Call,
-}
-
 impl<Storage, ConstrInput, Externals> Contract<Storage, ConstrInput, Externals>
 where
     Externals: Dispatch<Storage>,
     ConstrInput: liquid_abi_coder::Decode,
 {
-    pub fn dispatch(mut self, mode: CallMode) -> Result<()> {
+    pub fn dispatch(mut self) -> Result<()> {
         let call_data = liquid_core::env::get_call_data()
             .map_err(|_| DispatchError::CouldNotReadInput)?;
-        match mode {
-            CallMode::Deploy => {
-                let data = call_data.data;
-                let args = <ConstrInput as liquid_abi_coder::Decode>::decode(
-                    &mut data.as_slice(),
-                )
-                .map_err(|_| DispatchError::InvalidParams)?;
-                (self.constructor)(&mut self.storage, args);
-                Ok(())
-            }
-            CallMode::Call => self.external_fns.dispatch(&mut self.storage, &call_data),
+        if call_data.selector == [0u8; 4] {
+            let data = call_data.data;
+            let args =
+                <ConstrInput as liquid_abi_coder::Decode>::decode(&mut data.as_slice())
+                    .map_err(|_| DispatchError::InvalidParams)?;
+            (self.constructor)(&mut self.storage, args);
+            Ok(())
+        } else {
+            self.external_fns.dispatch(&mut self.storage, &call_data)
         }
     }
 }

@@ -14,6 +14,7 @@ liquid_lang_macro = { version = "0.1.0", path = "macro", default-features = fals
 liquid_abi_coder = { version = "0.1.0", path = "../abi-coder", default-features = false }
 liquid_primitives = { version = "0.1.0", path = "../primitives", default-features = false }
 liquid_core = { version = "0.1.0", path = "../core", default-features = false }
+liquid_prelude = { version = "0.1.0", path = "../prelude", default-features = false }
 liquid_abi_gen = { version = "0.1.0", path = "../abi-gen", default-features = false, optional = true }
 
 [features]

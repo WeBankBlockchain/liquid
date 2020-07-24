@@ -20,8 +20,8 @@ mod value;
 pub use self::{
     cache_entry::CacheEntry,
     cell::{CachedCell, TypedCell},
-    chunk::{ArbitraryKey, CachedChunk, TypedChunk, U32Key},
-    collections::Vec,
+    chunk::{CachedChunk, TypedChunk},
+    collections::{Mapping, Vec},
     traits::*,
     value::Value,
 };

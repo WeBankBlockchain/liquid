@@ -33,6 +33,12 @@ where
     })
 }
 
+pub fn remove_storage(key: &[u8]) {
+    <EnvInstance as OnInstance>::on_instance(|instance| {
+        Env::remove_storage(instance, key);
+    })
+}
+
 pub fn get_call_data() -> Result<CallData> {
     <EnvInstance as OnInstance>::on_instance(|instance| Env::get_call_data(instance))
 }

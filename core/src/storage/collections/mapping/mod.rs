@@ -10,8 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod cached_chunk;
-mod typed_chunk;
+mod impls;
 
-pub use cached_chunk::CachedChunk;
-pub use typed_chunk::TypedChunk;
+#[cfg(test)]
+mod tests;
+
+pub use impls::Mapping;

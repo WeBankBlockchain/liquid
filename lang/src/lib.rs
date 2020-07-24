@@ -22,7 +22,7 @@ mod dispatcher;
 mod traits;
 pub mod ty_mapping;
 
-pub use contract::{CallMode, Contract};
+pub use contract::Contract;
 pub use dispatch_error::{DispatchError, DispatchResult, DispatchRetCode};
 pub use liquid_lang_macro::contract;
 pub use traits::*;

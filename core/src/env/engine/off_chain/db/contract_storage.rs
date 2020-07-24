@@ -29,7 +29,7 @@ impl ContractStorage {
     where
         R: Decode,
     {
-        match self.entries.get(&key.to_vec()) {
+        match self.entries.get(key) {
             Some(encoded) => <R as Decode>::decode(&mut &encoded[..]).map_err(Into::into),
             None => Err(EnvError::UnableToReadFromStorage),
         }
@@ -40,5 +40,9 @@ impl ContractStorage {
         V: Encode,
     {
         self.entries.insert(key.to_vec(), value.encode());
+    }
+
+    pub fn remove_storage(&mut self, key: &[u8]) {
+        self.entries.remove(key);
     }
 }

@@ -16,8 +16,6 @@ set results[2].name=abi_test
 set results[2].result=0
 
 for /f %%f in ('dir /b examples') do (
-    echo %%f
-
     cargo +nightly build --release --no-default-features --target=wasm32-unknown-unknown --verbose --manifest-path examples/%%f/Cargo.toml
     if !errorlevel! neq 0 (
         set results[0].result=1
@@ -61,10 +59,10 @@ for /l %%i in (0,1,2) do (
 echo.
 
 if !all_check_passed! equ 0 (
-    echo Workspace: All checks passed
+    echo Example: All checks passed
     echo %banner%
 ) else (
-    echo Workspace: Some checks failed
+    echo Example: Some checks failed
     echo %banner%
     exit /b 1
 )

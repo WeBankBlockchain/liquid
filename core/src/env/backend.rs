@@ -21,6 +21,8 @@ pub trait Env {
     where
         R: scale::Decode;
 
+    fn remove_storage(&mut self, key: &[u8]);
+
     fn get_call_data(&mut self) -> Result<CallData>;
 
     fn finish<V>(&mut self, return_value: &V)

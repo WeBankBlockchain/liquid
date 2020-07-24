@@ -44,6 +44,10 @@ impl Env for EnvInstance {
         self.contract_storage.get_storage::<R>(key)
     }
 
+    fn remove_storage(&mut self, key: &[u8]) {
+        self.contract_storage.remove_storage(key);
+    }
+
     fn get_call_data(&mut self) -> Result<CallData> {
         unimplemented!();
     }

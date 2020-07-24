@@ -299,7 +299,7 @@ impl<'a> Dispatch<'a> {
             #constr_input_ty_checker
 
             impl Storage {
-                pub fn dispatch_using_mode(mode: liquid_lang::CallMode) -> liquid_lang::DispatchResult {
+                pub fn dispatch() -> liquid_lang::DispatchResult {
                     liquid_lang::Contract::new_builder::<Storage, (#(#constr_input_tys,)*)>(|storage, #constr_pat_idents| {
                         storage.#constr_ident(#(#constr_input_idents,)*);
                     })
@@ -307,7 +307,7 @@ impl<'a> Dispatch<'a> {
                         #fragments
                     )*
                     .done()
-                    .dispatch(mode)
+                    .dispatch()
                 }
             }
         }
@@ -316,13 +316,8 @@ impl<'a> Dispatch<'a> {
     fn generate_entry_point(&self) -> TokenStream2 {
         quote! {
             #[no_mangle]
-            fn deploy() -> u32{
-                liquid_lang::DispatchRetCode::from(Storage::dispatch_using_mode(liquid_lang::CallMode::Deploy)).to_u32()
-            }
-
-            #[no_mangle]
             fn call() -> u32 {
-                liquid_lang::DispatchRetCode::from(Storage::dispatch_using_mode(liquid_lang::CallMode::Call)).to_u32()
+                liquid_lang::DispatchRetCode::from(Storage::dispatch()).to_u32()
             }
         }
     }

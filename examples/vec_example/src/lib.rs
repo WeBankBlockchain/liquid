@@ -3,15 +3,15 @@
 use liquid_lang as liquid;
 
 #[liquid::contract(version = "0.1.0")]
-mod summation {
+mod vec_example {
     use liquid_core::storage;
 
     #[liquid(storage)]
-    struct Summation {
+    struct VecExample {
         value: storage::Vec<u32>,
     }
 
-    impl Summation {
+    impl VecExample {
         #[liquid(constructor)]
         fn init(&mut self) {
             self.value.initialize();
@@ -38,7 +38,7 @@ mod summation {
 
         #[test]
         fn it_works() {
-            let mut contract = Summation::init();
+            let mut contract = VecExample::init();
             for i in 0..10 {
                 contract.append(i);
             }
@@ -48,7 +48,7 @@ mod summation {
         #[test]
         #[should_panic]
         fn upper_overflow() {
-            let mut contract = Summation::init();
+            let mut contract = VecExample::init();
             contract.append(u32::MAX);
             contract.append(u32::MAX);
             let _ = contract.sum();

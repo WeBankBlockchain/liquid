@@ -25,7 +25,9 @@ mod sys {
 
         pub fn get_storage(key_offset: u32, key_length: u32, result_offset: u32) -> u32;
 
-        pub fn get_call_data(result_offset: u32) -> u32;
+        pub fn get_call_data_size() -> u32;
+
+        pub fn get_call_data(result_offset: u32);
 
         pub fn finish(data_offset: u32, data_length: u32);
     }
@@ -56,12 +58,12 @@ pub fn get_storage(key: &[u8], result_offset: &mut [u8]) -> Result<u32> {
     }
 }
 
-pub fn get_call_data(result_offset: &mut [u8]) -> Result<u32> {
-    let size = unsafe { sys::get_call_data(result_offset.as_mut_ptr() as u32) };
-    match size {
-        0 => Err(EnvError::UnableToReadCallData),
-        _ => Ok(size),
-    }
+pub fn get_call_data_size() -> u32 {
+    unsafe { sys::get_call_data_size() }
+}
+
+pub fn get_call_data(result_offset: &mut [u8]) {
+    unsafe { sys::get_call_data(result_offset.as_mut_ptr() as u32) };
 }
 
 pub fn finish(return_value: &[u8]) {
