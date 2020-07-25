@@ -11,7 +11,7 @@
 // limitations under the License.
 
 use liquid_abi_coder::{Decode, Encode, Error, Input};
-use liquid_prelude::vec::Vec;
+use liquid_prelude::vec::{from_elem, Vec};
 use liquid_primitives::Selector;
 
 pub struct CallData {
@@ -27,10 +27,8 @@ impl Decode for CallData {
         }
         let mut selector: Selector = Default::default();
         input.read_bytes(&mut selector)?;
-        let mut data = Vec::with_capacity(input.remaining_len());
-        while let Ok(byte) = input.read_byte() {
-            data.push(byte);
-        }
+        let mut data = from_elem(0, input.remaining_len());
+        input.read_bytes(&mut data)?;
         Ok(Self { selector, data })
     }
 }
