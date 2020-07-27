@@ -11,7 +11,7 @@ paste = "0.1.17"
 
 liquid_macro = { version = "0.1.0", path = "../macro", default-features = false }
 liquid_lang_macro = { version = "0.1.0", path = "macro", default-features = false }
-liquid_abi_coder = { version = "0.1.0", path = "../abi-coder", default-features = false }
+liquid_abi_codec = { version = "0.1.0", path = "../abi-codec", default-features = false }
 liquid_primitives = { version = "0.1.0", path = "../primitives", default-features = false }
 liquid_core = { version = "0.1.0", path = "../core", default-features = false }
 liquid_prelude = { version = "0.1.0", path = "../prelude", default-features = false }
@@ -22,7 +22,7 @@ default = ["std"]
 std = [
     "liquid_abi_gen/std",
     "liquid_lang_macro/std",
-    "liquid_abi_coder/std",
+    "liquid_abi_codec/std",
     "liquid_primitives/std",
     "liquid_core/std",
 ]

@@ -1,5 +1,5 @@
 [package]
-name = "liquid_abi_coder"
+name = "liquid_abi_codec"
 version = "0.1.0"
 authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
 edition = "2018"

@@ -15,7 +15,7 @@ tiny-keccak = { version = "2.0.2", features = ["keccak"] }
 
 liquid_primitives = { version = "0.1.0", path = "../primitives", default-features = false }
 liquid_prelude = { version = "0.1.0", path = "../prelude", default-features = false }
-liquid_abi_coder = { version = "0.1.0", path = "../abi-coder", default-features = false }
+liquid_abi_codec = { version = "0.1.0", path = "../abi-codec", default-features = false }
 liquid_alloc = { version = "0.1.0", path = "../alloc", default-features = false }
 
 [features]
@@ -23,7 +23,7 @@ default = ["std"]
 std = [
     "liquid_primitives/std",
     "liquid_prelude/std",
-    "liquid_abi_coder/std",
+    "liquid_abi_codec/std",
     "liquid_alloc/std",
     "scale/std",
 ]

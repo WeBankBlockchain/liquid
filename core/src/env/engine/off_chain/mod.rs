@@ -54,7 +54,7 @@ impl Env for EnvInstance {
 
     fn finish<V>(&mut self, _: &V)
     where
-        V: liquid_abi_coder::Encode,
+        V: liquid_abi_codec::Encode,
     {
         unimplemented!();
     }

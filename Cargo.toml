@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "abi-gen",
-    "abi-coder",
+    "abi-codec",
     "prelude",
     "primitives",
     "alloc",

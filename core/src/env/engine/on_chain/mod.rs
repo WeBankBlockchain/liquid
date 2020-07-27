@@ -16,7 +16,7 @@ mod ext;
 use self::buffer::StaticBuffer;
 use super::OnInstance;
 use crate::env::{CallData, Env, EnvError, Result};
-use liquid_abi_coder::Decode;
+use liquid_abi_codec::Decode;
 
 /// The on-chain environment
 pub struct EnvInstance {
@@ -51,10 +51,10 @@ impl EnvInstance {
 
     fn encode_into_buffer_abi<V>(&mut self, value: &V)
     where
-        V: liquid_abi_coder::Encode,
+        V: liquid_abi_codec::Encode,
     {
         self.reset_buffer();
-        liquid_abi_coder::Encode::encode_to(value, &mut self.buffer);
+        liquid_abi_codec::Encode::encode_to(value, &mut self.buffer);
     }
 
     fn decode_from_buffer_scale<R>(&mut self) -> Result<R>
@@ -102,7 +102,7 @@ impl Env for EnvInstance {
 
     fn finish<V>(&mut self, return_value: &V)
     where
-        V: liquid_abi_coder::Encode,
+        V: liquid_abi_codec::Encode,
     {
         self.reset_buffer();
         self.encode_into_buffer_abi(return_value);

@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use liquid_abi_coder::{Decode, Encode};
+use liquid_abi_codec::{Decode, Encode};
 use liquid_primitives::Selector;
 
 pub trait FnInput {

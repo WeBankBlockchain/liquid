@@ -45,7 +45,7 @@ pub fn get_call_data() -> Result<CallData> {
 
 pub fn finish<V>(return_value: &V)
 where
-    V: liquid_abi_coder::Encode,
+    V: liquid_abi_codec::Encode,
 {
     <EnvInstance as OnInstance>::on_instance(|instance| {
         Env::finish(instance, return_value);

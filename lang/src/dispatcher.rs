@@ -95,8 +95,8 @@ macro_rules! impl_dispatcher_for {
         impl<Storage, External> $name<Storage, External>
         where
             External: FnInput + FnOutput,
-            <External as FnInput>::Input: liquid_abi_coder::Decode,
-            <External as FnOutput>::Output: liquid_abi_coder::Encode,
+            <External as FnInput>::Input: liquid_abi_codec::Decode,
+            <External as FnOutput>::Output: liquid_abi_codec::Encode,
         {
             pub fn new(dispatchable: $dispatchable_fn<Storage, External>) -> Self {
                 Self { dispatchable }
@@ -118,12 +118,12 @@ macro_rules! impl_dispatcher_for {
         impl<Storage, External> Dispatch<Storage> for $name<Storage, External>
         where
             External: ExternalFn,
-            <External as FnInput>::Input: liquid_abi_coder::Decode,
-            <External as FnOutput>::Output: liquid_abi_coder::Encode,
+            <External as FnInput>::Input: liquid_abi_codec::Decode,
+            <External as FnOutput>::Output: liquid_abi_codec::Encode,
             Storage: liquid_core::storage::Flush,
         {
             fn dispatch(&self, storage: &mut Storage, input: &CallData) -> Result<()> {
-                let args = <<External as FnInput>::Input as liquid_abi_coder::Decode>::decode(&mut input.data.as_slice())
+                let args = <<External as FnInput>::Input as liquid_abi_codec::Decode>::decode(&mut input.data.as_slice())
                     .map_err(|_| DispatchError::InvalidParams)?;
                 let result = self.eval(storage, args);
 

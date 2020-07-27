@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 rem Please execute this script from the root of the project's directory.
 
-set all_crates=(abi-coder macro primitives alloc core lang lang\macro)
+set all_crates=(abi-codec macro primitives alloc core lang lang\macro)
 set results=()
 
 set results[0].name=check_all_features

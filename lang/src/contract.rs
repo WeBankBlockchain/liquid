@@ -33,7 +33,7 @@ impl Contract<(), (), ()> {
     ) -> ContractBuilder<Storage, ConstrInput, EmptyList>
     where
         Storage: liquid_core::storage::New,
-        ConstrInput: liquid_abi_coder::Decode,
+        ConstrInput: liquid_abi_codec::Decode,
     {
         ContractBuilder {
             storage: Storage::new(),
@@ -95,7 +95,7 @@ where
 impl<Storage, ConstrInput, Externals> Contract<Storage, ConstrInput, Externals>
 where
     Externals: Dispatch<Storage>,
-    ConstrInput: liquid_abi_coder::Decode,
+    ConstrInput: liquid_abi_codec::Decode,
 {
     pub fn dispatch(mut self) -> Result<()> {
         let call_data = liquid_core::env::get_call_data()
@@ -103,7 +103,7 @@ where
         if call_data.selector == [0u8; 4] {
             let data = call_data.data;
             let args =
-                <ConstrInput as liquid_abi_coder::Decode>::decode(&mut data.as_slice())
+                <ConstrInput as liquid_abi_codec::Decode>::decode(&mut data.as_slice())
                     .map_err(|_| DispatchError::InvalidParams)?;
             (self.constructor)(&mut self.storage, args);
             Ok(())

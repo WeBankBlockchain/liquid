@@ -15,7 +15,7 @@ use derive_more::From;
 #[derive(From)]
 pub enum EnvError {
     ScaleDecode(scale::Error),
-    ABIDecode(liquid_abi_coder::Error),
+    ABIDecode(liquid_abi_codec::Error),
     UnableToReadFromStorage,
     UnableToReadCallData,
 }

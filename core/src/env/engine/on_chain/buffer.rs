@@ -63,7 +63,7 @@ impl scale::Output for StaticBuffer {
     }
 }
 
-impl liquid_abi_coder::Output for StaticBuffer {
+impl liquid_abi_codec::Output for StaticBuffer {
     fn write(&mut self, bytes: &[u8]) {
         self.write_bytes(bytes);
     }

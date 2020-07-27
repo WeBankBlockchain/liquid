@@ -27,5 +27,5 @@ pub trait Env {
 
     fn finish<V>(&mut self, return_value: &V)
     where
-        V: liquid_abi_coder::Encode;
+        V: liquid_abi_codec::Encode;
 }
