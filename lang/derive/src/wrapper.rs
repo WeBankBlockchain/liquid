@@ -10,14 +10,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![cfg_attr(not(feature = "std"), no_std)]
+use proc_macro2::TokenStream as TokenStream2;
+use quote::quote;
 
-mod codec;
+pub fn generate_wrapper(impls: TokenStream2) -> TokenStream2 {
+    quote! {
+        const _: () = {
+            use liquid_lang::ty_mapping as _ty_mapping;
 
-pub use codec::{
-    as_u32, peek, Codec, Decode, DecodeResult, Encode, Error, Input, IsDynamic, Mediate,
-    MediateDecode, MediateEncode, Output, Word, WORD_SIZE,
-};
+            #[cfg(feature = "std")]
+            mod __std {
+                pub use ::std::vec::Vec;
+            }
 
-#[cfg(test)]
-mod tests;
+            #[cfg(not(feature = "std"))]
+            mod __std {
+                extern crate alloc;
+                pub use alloc::vec::Vec;
+            }
+
+            #impls
+        };
+    }
+}

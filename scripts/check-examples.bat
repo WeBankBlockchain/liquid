@@ -3,7 +3,6 @@ setlocal enabledelayedexpansion
 
 rem Please execute this script from the root of the project's directory.
 
-set all_examples=(hello_world)
 set results=()
 
 set results[0].name=wasm_test

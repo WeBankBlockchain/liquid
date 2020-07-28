@@ -10,6 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod traits;
+pub use traits::*;
+
 use serde::Serialize;
 
 pub struct ContractABI {
@@ -19,14 +22,28 @@ pub struct ContractABI {
 
 #[derive(Serialize)]
 pub struct ParamABI {
-    name: String,
+    #[serde(skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub components: Vec<ParamABI>,
+    pub name: String,
     #[serde(rename = "type")]
-    ty: String,
+    pub ty: String,
 }
 
 impl ParamABI {
-    pub fn new(name: String, ty: String) -> Self {
-        Self { name, ty }
+    pub fn new(components: Vec<ParamABI>, name: String, ty: String) -> Self {
+        Self {
+            components,
+            name,
+            ty,
+        }
+    }
+
+    pub fn empty() -> Self {
+        Self {
+            components: Default::default(),
+            name: Default::default(),
+            ty: Default::default(),
+        }
     }
 }
 
@@ -58,8 +75,8 @@ pub struct ConstructorABIBuilder {
 }
 
 impl ConstructorABIBuilder {
-    pub fn input(mut self, name: String, ty: String) -> Self {
-        self.abi.inputs.push(ParamABI::new(name, ty));
+    pub fn input(mut self, components: Vec<ParamABI>, name: String, ty: String) -> Self {
+        self.abi.inputs.push(ParamABI::new(components, name, ty));
         self
     }
 
@@ -106,13 +123,15 @@ pub struct ExternalFnABIBuilder {
 }
 
 impl ExternalFnABIBuilder {
-    pub fn input(mut self, name: String, ty: String) -> Self {
-        self.abi.inputs.push(ParamABI::new(name, ty));
+    pub fn input(mut self, components: Vec<ParamABI>, name: String, ty: String) -> Self {
+        self.abi.inputs.push(ParamABI::new(components, name, ty));
         self
     }
 
-    pub fn output(mut self, ty: String) -> Self {
-        self.abi.outputs.push(ParamABI::new("".to_owned(), ty));
+    pub fn output(mut self, components: Vec<ParamABI>, ty: String) -> Self {
+        self.abi
+            .outputs
+            .push(ParamABI::new(components, "".to_owned(), ty));
         self
     }
 

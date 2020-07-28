@@ -9,8 +9,8 @@ edition = "2018"
 [dependencies]
 paste = "0.1.17"
 
-liquid_prelude = { version = "0.1.0", path = "../prelude/", default-features = false }
-liquid_macro = { version = "0.1.0", path = "../macro/", default-features = false }
+liquid_prelude = { version = "0.1.0", path = "../prelude", default-features = false }
+liquid_macro = { version = "0.1.0", path = "../macro", default-features = false }
 
 [dev-dependencies]
 hex-literal = "0.2.1"

@@ -10,14 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![cfg_attr(not(feature = "std"), no_std)]
-
-mod codec;
-
-pub use codec::{
-    as_u32, peek, Codec, Decode, DecodeResult, Encode, Error, Input, IsDynamic, Mediate,
-    MediateDecode, MediateEncode, Output, Word, WORD_SIZE,
-};
-
-#[cfg(test)]
-mod tests;
+#[test]
+fn compile_tests() {
+    let t = trybuild::TestCases::new();
+    t.pass("tests/ui/pass/01-non-empty-struct.rs");
+    t.pass("tests/ui/pass/02-user-defined-inputs.rs");
+    t.pass("tests/ui/pass/03-user-defined-output.rs");
+    t.compile_fail("tests/ui/fail/01-empty-struct.rs");
+    t.compile_fail("tests/ui/fail/02-enum.rs");
+    t.compile_fail("tests/ui/fail/03-union.rs");
+}

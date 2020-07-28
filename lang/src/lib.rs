@@ -22,7 +22,11 @@ mod dispatcher;
 mod traits;
 pub mod ty_mapping;
 
+#[cfg(test)]
+mod tests;
+
 pub use contract::Contract;
 pub use dispatch_error::{DispatchError, DispatchResult, DispatchRetCode};
+pub use liquid_lang_derive::InOut;
 pub use liquid_lang_macro::contract;
 pub use traits::*;

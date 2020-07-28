@@ -90,15 +90,16 @@ impl<'a> Dispatch<'a> {
 
         quote! {
             /// To evade the orphan rule in Rust.
-            struct NotOrphan<T> {
+            #[allow(non_camel_case_types)]
+            struct __liquid_not_orphan<T> {
                 marker: core::marker::PhantomData<fn() -> T>,
             }
 
-            impl liquid_lang::ty_mapping::SolTypeName for NotOrphan<()> {
+            impl liquid_lang::ty_mapping::SolTypeName for __liquid_not_orphan<()> {
                 const NAME: &'static [u8] = <() as liquid_lang::ty_mapping::SolTypeName>::NAME;
             }
 
-            impl liquid_lang::ty_mapping::SolTypeNameLen for NotOrphan<()> {
+            impl liquid_lang::ty_mapping::SolTypeNameLen for __liquid_not_orphan<()> {
                 const LEN: usize = <() as liquid_lang::ty_mapping::SolTypeNameLen>::LEN;
             }
 
@@ -162,19 +163,19 @@ impl<'a> Dispatch<'a> {
             let rest_ty = &tys[i - 1];
             if i > 1 {
                 selectors.extend(quote_spanned! { span =>
-                    impl liquid_lang::ty_mapping::SolTypeName for NotOrphan<(#(#tys,)*)> {
+                    impl liquid_lang::ty_mapping::SolTypeName for __liquid_not_orphan<(#(#tys,)*)> {
                         const NAME: &'static [u8] = {
                             const LEN: usize =
                                 <(#(#first_tys,)*) as liquid_lang::ty_mapping::SolTypeNameLen>::LEN
                                 + <#rest_ty as liquid_lang::ty_mapping::SolTypeNameLen>::LEN
                                 + 1;
-                            &liquid_lang::ty_mapping::concat::<NotOrphan<(#(#first_tys,)*)>, #rest_ty, LEN>()
+                            &liquid_lang::ty_mapping::concat::<__liquid_not_orphan<(#(#first_tys,)*)>, #rest_ty, LEN>()
                         };
                     }
                 });
             } else {
                 selectors.extend(quote_spanned! { span =>
-                    impl liquid_lang::ty_mapping::SolTypeName for NotOrphan<(#rest_ty,)> {
+                    impl liquid_lang::ty_mapping::SolTypeName for __liquid_not_orphan<(#rest_ty,)> {
                         const NAME: &'static [u8] = <#rest_ty as liquid_lang::ty_mapping::SolTypeName>::NAME;
                     }
                 });
@@ -191,7 +192,7 @@ impl<'a> Dispatch<'a> {
             const SIG: [u8; SIG_LEN] =
                 liquid_lang::ty_mapping::composite::<SIG_LEN>(
                     &[#(#fn_name_bytes),*],
-                    <NotOrphan<(#(#input_tys,)*)> as liquid_lang::ty_mapping::SolTypeName>::NAME);
+                    <__liquid_not_orphan<(#(#input_tys,)*)> as liquid_lang::ty_mapping::SolTypeName>::NAME);
         };
         selectors.extend(quote_spanned! { span =>
             impl liquid_lang::FnSelectors for #external_marker {

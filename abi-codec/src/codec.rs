@@ -44,8 +44,8 @@ impl std::fmt::Display for Error {
     }
 }
 
-const WORD_SIZE: usize = 32;
-type Word = [u8; WORD_SIZE];
+pub const WORD_SIZE: usize = 32;
+pub type Word = [u8; WORD_SIZE];
 
 /// Trait that allows reading of data into a slice.
 pub trait Input {
@@ -109,9 +109,17 @@ impl Output for Vec<u8> {
     }
 }
 
+pub trait IsDynamic {
+    fn is_dynamic() -> bool {
+        false
+    }
+}
+
 pub enum Mediate {
     Raw(Vec<Word>),
     Prefixed(Vec<Word>),
+    RawTuple(Vec<Mediate>),
+    PrefixedTuple(Vec<Mediate>),
 }
 
 fn u32_to_word(value: u32) -> Word {
@@ -124,28 +132,40 @@ impl Mediate {
     fn head_len(&self) -> usize {
         match *self {
             Mediate::Raw(ref raw) => raw.len() * WORD_SIZE,
-            Mediate::Prefixed(_) => WORD_SIZE,
+            Mediate::Prefixed(_) | Mediate::PrefixedTuple(_) => WORD_SIZE,
+            Mediate::RawTuple(ref mediates) => mediates.len() * WORD_SIZE,
         }
     }
 
     fn tail_len(&self) -> usize {
         match *self {
-            Mediate::Raw(_) => 0,
+            Mediate::Raw(_) | Mediate::RawTuple(_) => 0,
             Mediate::Prefixed(ref prefixed) => prefixed.len() * WORD_SIZE,
+            Mediate::PrefixedTuple(ref mediates) => mediates
+                .iter()
+                .fold(0, |acc, m| acc + m.head_len() + m.tail_len()),
         }
     }
 
     fn head(&self, suffix_offset: u32) -> Vec<Word> {
         match *self {
             Mediate::Raw(ref raw) => raw.clone(),
-            Mediate::Prefixed(_) => [u32_to_word(suffix_offset)].to_vec(),
+            Mediate::Prefixed(_) | Mediate::PrefixedTuple(_) => {
+                [u32_to_word(suffix_offset)].to_vec()
+            }
+            Mediate::RawTuple(ref raw) => raw
+                .iter()
+                .map(|mediate| mediate.head(0))
+                .flatten()
+                .collect(),
         }
     }
 
     fn tail(&self) -> Vec<Word> {
         match *self {
-            Mediate::Raw(_) => Vec::new(),
+            Mediate::Raw(_) | Mediate::RawTuple(_) => Vec::new(),
             Mediate::Prefixed(ref raw) => raw.clone(),
+            Mediate::PrefixedTuple(ref mediates) => encode_head_tail(mediates),
         }
     }
 }
@@ -155,8 +175,8 @@ pub trait MediateEncode {
 }
 
 pub struct DecodeResult<T: Sized> {
-    value: T,
-    new_offset: usize,
+    pub value: T,
+    pub new_offset: usize,
 }
 
 pub trait MediateDecode {
@@ -175,7 +195,9 @@ impl MediateEncode for bool {
     }
 }
 
-fn peek(slices: &[Word], position: usize) -> Result<&Word, Error> {
+impl IsDynamic for bool {}
+
+pub fn peek(slices: &[Word], position: usize) -> Result<&Word, Error> {
     match slices.get(position) {
         Some(word) => Ok(word),
         None => Err("Unable to peek slices".into()),
@@ -235,7 +257,7 @@ impl MediateDecode for bool {
 macro_rules! from_word_to_integer {
     ($( $t:ty ),*) => { $(
         paste::item! {
-            fn [<as_ $t>] (buf: &Word) -> Result<$t, Error> {
+            pub fn [<as_ $t>] (buf: &Word) -> Result<$t, Error> {
                 const TYPE_SIZE: usize = mem::size_of::<$t>();
                 let error_info: &'static str = concat!("Invalid ", stringify!($t), " representation");
                 let signed = (buf[WORD_SIZE - TYPE_SIZE] & 0x80u8) != 0;
@@ -296,6 +318,8 @@ macro_rules! impl_integer {
                     })
                 }
             }
+
+            impl IsDynamic for $t {}
         })*
     };
 }
@@ -355,6 +379,15 @@ impl MediateDecode for String {
     }
 }
 
+impl IsDynamic for String {
+    fn is_dynamic() -> bool {
+        true
+    }
+}
+
+#[cfg(feature = "liquid-abi-gen")]
+impl HasComponents for bool {}
+
 pub trait Encode {
     fn encode_to<T: Output>(&self, dest: &mut T) {
         dest.write(&self.encode());
@@ -369,7 +402,7 @@ pub trait Decode: Sized {
 
 pub trait Codec: Encode + Decode {}
 
-fn encode_head_tail(mediates: &[Mediate]) -> Vec<u8> {
+fn encode_head_tail(mediates: &[Mediate]) -> Vec<Word> {
     let heads_len = mediates.iter().fold(0, |acc, m| acc + m.head_len());
 
     let (mut result, len) = mediates.iter().fold(
@@ -389,7 +422,7 @@ fn encode_head_tail(mediates: &[Mediate]) -> Vec<u8> {
             });
 
     result.extend(tails);
-    result.iter().flat_map(|word| word.to_vec()).collect()
+    result
 }
 
 macro_rules! impl_tuple {
@@ -398,13 +431,13 @@ macro_rules! impl_tuple {
     ) => {
         impl<$first: MediateEncode> Encode for ($first,) {
             fn encode(&self) -> Vec<u8> {
-                encode_head_tail(&[<$first as MediateEncode>::encode(&self.0)])
+                encode_head_tail(&[<$first as MediateEncode>::encode(&self.0)]).iter().flat_map(|word| word.to_vec()).collect()
             }
         }
 
         impl<$first: MediateEncode> Encode for $first {
             fn encode(&self) -> Vec<u8> {
-                encode_head_tail(&[<$first as MediateEncode>::encode(&self)])
+                encode_head_tail(&[<$first as MediateEncode>::encode(&self)]).iter().flat_map(|word| word.to_vec()).collect()
             }
         }
 
@@ -457,7 +490,7 @@ macro_rules! impl_tuple {
 
                 mediates.push($first.encode());
                 $( mediates.push($rest.encode()); )+
-                encode_head_tail(&mediates)
+                encode_head_tail(&mediates).iter().flat_map(|word| word.to_vec()).collect()
             }
         }
 

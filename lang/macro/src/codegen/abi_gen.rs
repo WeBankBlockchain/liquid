@@ -48,16 +48,35 @@ impl<'a> GenerateCode for ABIGen<'a> {
     }
 }
 
+fn generate_components(ty: &syn::Type) -> TokenStream2 {
+    quote! {
+        <#ty as liquid_abi_gen::GenerateComponents>::generate_components()
+    }
+}
+
+fn generate_ty_name(ty: &syn::Type) -> TokenStream2 {
+    quote! {
+        if <#ty as liquid_abi_gen::HasComponents>::has_components() {
+            String::from("tuple")
+        } else {
+            String::from_utf8((<#ty as liquid_lang::ty_mapping::SolTypeName>::NAME).to_vec()).expect("the type name of a function argument must an valid utf-8 string")
+        }
+    }
+}
+
 fn generate_fn_inputs<'a>(sig: &'a Signature) -> impl Iterator<Item = TokenStream2> + 'a {
     sig.inputs.iter().skip(1).map(|arg| match arg {
         FnArg::Typed(ident_type) => {
             let ident = &ident_type.ident.to_string();
             let ty = &ident_type.ty;
 
+            let ty_name = generate_ty_name(ty);
+            let components = generate_components(ty);
+
             quote! {
-                String::from(#ident), String::from_utf8((<#ty as liquid_lang::ty_mapping::SolTypeName>::NAME).to_vec()).expect("the type name of a function argument must an valid utf-8 string")
+                #components, String::from(#ident), #ty_name
             }
-        },
+        }
         _ => unreachable!(),
     })
 }
@@ -69,13 +88,20 @@ fn generate_fn_outputs(sig: &Signature) -> Vec<TokenStream2> {
         syn::ReturnType::Default => Vec::new(),
         syn::ReturnType::Type(_, ty) => {
             if let syn::Type::Tuple(tuple_ty) = &(**ty) {
-                tuple_ty.elems.iter().map(|elem| {
+                tuple_ty
+                    .elems
+                    .iter()
+                    .map(|elem| {
+                        let ty_name = generate_ty_name(elem);
+                        let components = generate_components(elem);
                         quote! {
-                            String::from_utf8((<#elem as liquid_lang::ty_mapping::SolTypeName>::NAME).to_vec()).expect("the type name of a function argument must an valid utf-8 string")
+                            #components, #ty_name
                         }
-                    }).collect::<Vec<_>>()
+                    })
+                    .collect::<Vec<_>>()
             } else {
                 vec![quote! {
+                    Vec::new(),
                     String::from_utf8((<#ty as liquid_lang::ty_mapping::SolTypeName>::NAME).to_vec()).expect("the type name of a function argument must an valid utf-8 string")
                 }]
             }

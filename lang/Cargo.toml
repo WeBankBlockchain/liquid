@@ -8,6 +8,9 @@ edition = "2018"
 
 [dependencies]
 paste = "0.1.17"
+quote = "1.0.7"
+syn = { version = "1.0.33", features = ["full", "extra-traits", "parsing"] }
+proc-macro2 = "1.0.18"
 
 liquid_macro = { version = "0.1.0", path = "../macro", default-features = false }
 liquid_lang_macro = { version = "0.1.0", path = "macro", default-features = false }
@@ -16,6 +19,11 @@ liquid_primitives = { version = "0.1.0", path = "../primitives", default-feature
 liquid_core = { version = "0.1.0", path = "../core", default-features = false }
 liquid_prelude = { version = "0.1.0", path = "../prelude", default-features = false }
 liquid_abi_gen = { version = "0.1.0", path = "../abi-gen", default-features = false, optional = true }
+liquid_lang_derive = { version = "0.1.0", path = "derive", default-features = false }
+
+[dev-dependencies]
+hex-literal = "0.2.1"
+pretty_assertions = "0.6.1"
 
 [features]
 default = ["std"]
@@ -25,6 +33,7 @@ std = [
     "liquid_abi_codec/std",
     "liquid_primitives/std",
     "liquid_core/std",
+    "liquid_lang_derive/std",
 ]
 liquid-abi-gen = [
     "std",

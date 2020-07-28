@@ -1,0 +1,9 @@
+error: unions are not supported
+ --> $DIR/03-union.rs:5:1
+  |
+5 | / #[repr(C)]
+6 | | union MyUnion {
+7 | |     f1: u32,
+8 | |     f2: f32,
+9 | | }
+  | |_^

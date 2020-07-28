@@ -10,6 +10,7 @@ edition = "2018"
 liquid_core = { version = "0.1.0", path = "../../core", default-features = false }
 liquid_lang = { version = "0.1.0", path = "../../lang", default-features = false }
 liquid_primitives = { version = "0.1.0", path = "../../primitives", default-features = false }
+liquid_abi_codec = { version = "0.1.0", path = "../../abi-codec", default-features = false }
 liquid_abi_gen = { version = "0.1.0", path = "../../abi-gen", default-features = false, optional = true }
 
 [lib]

@@ -12,12 +12,15 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod codec;
+extern crate proc_macro;
 
-pub use codec::{
-    as_u32, peek, Codec, Decode, DecodeResult, Encode, Error, Input, IsDynamic, Mediate,
-    MediateDecode, MediateEncode, Output, Word, WORD_SIZE,
-};
+#[macro_use]
+mod error;
 
-#[cfg(test)]
-mod tests;
+mod in_out;
+mod wrapper;
+
+#[proc_macro_derive(InOut)]
+pub fn in_out_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    wrapper::generate_wrapper(in_out::generate(input.into())).into()
+}
