@@ -51,3 +51,12 @@ where
         Env::finish(instance, return_value);
     })
 }
+
+pub fn revert<V>(return_value: &V)
+where
+    V: liquid_abi_codec::Encode,
+{
+    <EnvInstance as OnInstance>::on_instance(|instance| {
+        Env::revert(instance, return_value);
+    })
+}

@@ -314,11 +314,20 @@ impl<'a> Dispatch<'a> {
         }
     }
 
+    #[cfg(feature = "std")]
+    fn generate_entry_point(&self) -> TokenStream2 {
+        quote!()
+    }
+
+    #[cfg(not(feature = "std"))]
     fn generate_entry_point(&self) -> TokenStream2 {
         quote! {
             #[no_mangle]
-            fn call() -> u32 {
-                liquid_lang::DispatchRetCode::from(Storage::dispatch()).to_u32()
+            fn main() {
+                let ret_info = liquid_lang::DispatchRetInfo::from(Storage::dispatch());
+                if !ret_info.is_success() {
+                    liquid_core::env::revert(&ret_info.get_info_string());
+                }
             }
         }
     }

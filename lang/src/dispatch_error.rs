@@ -10,36 +10,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use liquid_prelude::string::String;
+
 pub enum DispatchError {
     UnknownSelector,
     InvalidParams,
     CouldNotReadInput,
 }
 
-pub struct DispatchRetCode(u32);
+pub struct DispatchRetInfo(bool, &'static str);
 
-impl From<DispatchError> for DispatchRetCode {
+impl From<DispatchError> for DispatchRetInfo {
     fn from(err: DispatchError) -> Self {
         match err {
-            DispatchError::UnknownSelector => Self(0x01),
-            DispatchError::InvalidParams => Self(0x02),
-            DispatchError::CouldNotReadInput => Self(0x03),
+            DispatchError::UnknownSelector => Self(false, "unknown selector"),
+            DispatchError::InvalidParams => Self(false, "invalid params"),
+            DispatchError::CouldNotReadInput => Self(false, "could not read input"),
         }
     }
 }
 
-impl DispatchRetCode {
-    pub fn to_u32(&self) -> u32 {
+impl DispatchRetInfo {
+    pub fn get_info_string(&self) -> String {
+        String::from(self.1)
+    }
+
+    pub fn is_success(&self) -> bool {
         self.0
     }
 }
 
 pub type DispatchResult = core::result::Result<(), DispatchError>;
 
-impl From<DispatchResult> for DispatchRetCode {
+impl From<DispatchResult> for DispatchRetInfo {
     fn from(result: DispatchResult) -> Self {
         match result {
-            Ok(_) => Self(0x00),
+            Ok(_) => Self(true, ""),
             Err(error) => Self::from(error),
         }
     }

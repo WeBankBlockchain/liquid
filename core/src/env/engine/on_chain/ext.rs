@@ -16,26 +16,28 @@ use crate::env::{EnvError, Result};
 
 mod sys {
     extern "C" {
-        pub fn set_storage(
+        pub fn setStorage(
             key_offset: u32,
             key_length: u32,
             value_offset: u32,
             value_length: u32,
         );
 
-        pub fn get_storage(key_offset: u32, key_length: u32, result_offset: u32) -> u32;
+        pub fn getStorage(key_offset: u32, key_length: u32, result_offset: u32) -> u32;
 
-        pub fn get_call_data_size() -> u32;
+        pub fn getCallDataSize() -> u32;
 
-        pub fn get_call_data(result_offset: u32);
+        pub fn getCallData(result_offset: u32);
 
         pub fn finish(data_offset: u32, data_length: u32);
+
+        pub fn revert(data_offset: u32, data_length: u32);
     }
 }
 
 pub fn set_storage(key: &[u8], encoded_value: &[u8]) {
     unsafe {
-        sys::set_storage(
+        sys::setStorage(
             key.as_ptr() as u32,
             key.len() as u32,
             encoded_value.as_ptr() as u32,
@@ -46,7 +48,7 @@ pub fn set_storage(key: &[u8], encoded_value: &[u8]) {
 
 pub fn get_storage(key: &[u8], result_offset: &mut [u8]) -> Result<u32> {
     let size = unsafe {
-        sys::get_storage(
+        sys::getStorage(
             key.as_ptr() as u32,
             key.len() as u32,
             result_offset.as_mut_ptr() as u32,
@@ -59,13 +61,23 @@ pub fn get_storage(key: &[u8], result_offset: &mut [u8]) -> Result<u32> {
 }
 
 pub fn get_call_data_size() -> u32 {
-    unsafe { sys::get_call_data_size() }
+    unsafe { sys::getCallDataSize() }
 }
 
 pub fn get_call_data(result_offset: &mut [u8]) {
-    unsafe { sys::get_call_data(result_offset.as_mut_ptr() as u32) };
+    unsafe {
+        sys::getCallData(result_offset.as_mut_ptr() as u32);
+    }
 }
 
 pub fn finish(return_value: &[u8]) {
-    unsafe { sys::finish(return_value.as_ptr() as u32, return_value.len() as u32) }
+    unsafe {
+        sys::finish(return_value.as_ptr() as u32, return_value.len() as u32);
+    }
+}
+
+pub fn revert(revert_info: &[u8]) {
+    unsafe {
+        sys::revert(revert_info.as_ptr() as u32, revert_info.len() as u32);
+    }
 }

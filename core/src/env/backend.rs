@@ -28,4 +28,8 @@ pub trait Env {
     fn finish<V>(&mut self, return_value: &V)
     where
         V: liquid_abi_codec::Encode;
+
+    fn revert<V>(&mut self, revert_into: &V)
+    where
+        V: liquid_abi_codec::Encode;
 }

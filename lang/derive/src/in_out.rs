@@ -125,7 +125,6 @@ fn generate_abi_gen(
 
 fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
     let mut ast: DeriveInput = syn::parse2(input)?;
-
     let ident = &ast.ident;
 
     let struct_data = match &ast.data {

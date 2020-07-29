@@ -108,4 +108,13 @@ impl Env for EnvInstance {
         self.encode_into_buffer_abi(return_value);
         ext::finish(&self.buffer[..self.buffer.len()]);
     }
+
+    fn revert<V>(&mut self, revert_info: &V)
+    where
+        V: liquid_abi_codec::Encode,
+    {
+        self.reset_buffer();
+        self.encode_into_buffer_abi(revert_info);
+        ext::revert(&self.buffer[..self.buffer.len()]);
+    }
 }

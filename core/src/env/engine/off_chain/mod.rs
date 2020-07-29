@@ -58,6 +58,13 @@ impl Env for EnvInstance {
     {
         unimplemented!();
     }
+
+    fn revert<V>(&mut self, _: &V)
+    where
+        V: liquid_abi_codec::Encode,
+    {
+        unimplemented!();
+    }
 }
 
 impl OnInstance for EnvInstance {
