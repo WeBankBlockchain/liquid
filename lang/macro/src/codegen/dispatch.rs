@@ -14,23 +14,18 @@ use crate::{
     codegen::GenerateCode,
     ir::{Contract, FnArg, Function, FunctionKind, Signature},
 };
-use core::cell::RefCell;
-use liquid_prelude::{collections::BTreeSet, string::String};
+use liquid_prelude::string::String;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, quote_spanned};
 use syn::spanned::Spanned;
 
 pub struct Dispatch<'a> {
     contract: &'a Contract,
-    inputs_set: RefCell<BTreeSet<String>>,
 }
 
 impl<'a> From<&'a Contract> for Dispatch<'a> {
     fn from(contract: &'a Contract) -> Self {
-        Self {
-            contract,
-            inputs_set: RefCell::new(Default::default()),
-        }
+        Self { contract }
     }
 }
 
@@ -89,20 +84,6 @@ impl<'a> Dispatch<'a> {
             .map(|func| self.generate_external_fn_trait(func));
 
         quote! {
-            /// To evade the orphan rule in Rust.
-            #[allow(non_camel_case_types)]
-            struct __liquid_not_orphan<T> {
-                marker: core::marker::PhantomData<fn() -> T>,
-            }
-
-            impl liquid_lang::ty_mapping::SolTypeName for __liquid_not_orphan<()> {
-                const NAME: &'static [u8] = <() as liquid_lang::ty_mapping::SolTypeName>::NAME;
-            }
-
-            impl liquid_lang::ty_mapping::SolTypeNameLen for __liquid_not_orphan<()> {
-                const LEN: usize = <() as liquid_lang::ty_mapping::SolTypeNameLen>::LEN;
-            }
-
             #(#traits)*
         }
     }
@@ -149,33 +130,43 @@ impl<'a> Dispatch<'a> {
             }
         };
 
-        let mut selectors = quote_spanned! { span => };
+        let ident = &sig.ident;
+        let mut helper_ident = String::from("__liquid_dispatch_helper_");
+        helper_ident.push_str(&ident.to_string());
+        let helper_ident = proc_macro2::Ident::new(&helper_ident, span);
+
+        let mut selectors = quote_spanned! { span =>
+            /// To evade the orphan rule in Rust.
+            #[allow(non_camel_case_types)]
+            struct #helper_ident<T> {
+                marker: core::marker::PhantomData<fn() -> T>,
+            }
+            impl liquid_lang::ty_mapping::SolTypeName for #helper_ident<()> {
+                const NAME: &'static [u8] = <() as liquid_lang::ty_mapping::SolTypeName>::NAME;
+            }
+            impl liquid_lang::ty_mapping::SolTypeNameLen for #helper_ident<()> {
+                const LEN: usize = <() as liquid_lang::ty_mapping::SolTypeNameLen>::LEN;
+            }
+        };
         for i in 1..=input_tys.len() {
             let tys = &input_tys[..i];
-
-            let tys_str = quote! { #(#tys)* }.to_string();
-            if self.inputs_set.borrow().contains(&tys_str) {
-                continue;
-            } else {
-                self.inputs_set.borrow_mut().insert(tys_str);
-            }
             let first_tys = &tys[0..i - 1];
             let rest_ty = &tys[i - 1];
             if i > 1 {
                 selectors.extend(quote_spanned! { span =>
-                    impl liquid_lang::ty_mapping::SolTypeName for __liquid_not_orphan<(#(#tys,)*)> {
+                    impl liquid_lang::ty_mapping::SolTypeName for #helper_ident<(#(#tys,)*)> {
                         const NAME: &'static [u8] = {
                             const LEN: usize =
                                 <(#(#first_tys,)*) as liquid_lang::ty_mapping::SolTypeNameLen>::LEN
                                 + <#rest_ty as liquid_lang::ty_mapping::SolTypeNameLen>::LEN
                                 + 1;
-                            &liquid_lang::ty_mapping::concat::<__liquid_not_orphan<(#(#first_tys,)*)>, #rest_ty, LEN>()
+                            &liquid_lang::ty_mapping::concat::<#helper_ident<(#(#first_tys,)*)>, #rest_ty, LEN>()
                         };
                     }
                 });
             } else {
                 selectors.extend(quote_spanned! { span =>
-                    impl liquid_lang::ty_mapping::SolTypeName for __liquid_not_orphan<(#rest_ty,)> {
+                    impl liquid_lang::ty_mapping::SolTypeName for #helper_ident<(#rest_ty,)> {
                         const NAME: &'static [u8] = <#rest_ty as liquid_lang::ty_mapping::SolTypeName>::NAME;
                     }
                 });
@@ -192,7 +183,7 @@ impl<'a> Dispatch<'a> {
             const SIG: [u8; SIG_LEN] =
                 liquid_lang::ty_mapping::composite::<SIG_LEN>(
                     &[#(#fn_name_bytes),*],
-                    <__liquid_not_orphan<(#(#input_tys,)*)> as liquid_lang::ty_mapping::SolTypeName>::NAME);
+                    <#helper_ident<(#(#input_tys,)*)> as liquid_lang::ty_mapping::SolTypeName>::NAME);
         };
         selectors.extend(quote_spanned! { span =>
             impl liquid_lang::FnSelectors for #external_marker {

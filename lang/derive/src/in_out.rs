@@ -26,7 +26,7 @@ pub fn generate(input: TokenStream2) -> TokenStream2 {
 }
 
 fn generate_not_orphan_ident(ident: &Ident) -> Ident {
-    let mut not_orphan_ident = String::from("__liquid_not_orphan_");
+    let mut not_orphan_ident = String::from("__liquid_inout_helper_");
     not_orphan_ident.push_str(&ident.to_string());
     Ident::new(&not_orphan_ident, Span::call_site())
 }
