@@ -77,6 +77,12 @@ impl<'a> Storage<'a> {
             .collect::<Punctuated<syn::LitStr, Token![,]>>();
         let keys_count = keys.len();
 
+        let bind_stats = field_idents.iter().enumerate().map(|(i, ident)| {
+            quote_spanned! { span => 
+                #ident: liquid_core::storage::Bind::bind_with(Self::STORAGE_KEYS[#i].as_bytes()),
+            }
+        });
+
         quote_spanned! { span =>
             #(#attrs)*
             #[cfg_attr(test, derive(Debug))]
@@ -96,11 +102,8 @@ impl<'a> Storage<'a> {
 
             impl liquid_core::storage::New for Storage {
                 fn new() -> Self {
-                    #[allow(unused)]
-                    let mut indexes = 0..#keys_count;
-
                     Self {
-                        #(#field_idents: liquid_core::storage::Bind::bind_with(Self::STORAGE_KEYS[indexes.next().unwrap()].as_bytes()),)*
+                        #(#bind_stats)*
                     }
                 }
             }
