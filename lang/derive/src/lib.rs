@@ -18,9 +18,16 @@ extern crate proc_macro;
 mod error;
 
 mod in_out;
+mod state;
+mod utils;
 mod wrapper;
 
 #[proc_macro_derive(InOut)]
 pub fn in_out_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     wrapper::generate_wrapper(in_out::generate(input.into())).into()
+}
+
+#[proc_macro_derive(State)]
+pub fn state_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    wrapper::generate_wrapper(state::generate(input.into())).into()
 }

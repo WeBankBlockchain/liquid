@@ -511,17 +511,6 @@ impl TryFrom<syn::ItemImpl> for ir::ItemImpl {
     }
 }
 
-fn is_empty_generics(generics: &syn::Generics) -> bool {
-    if generics.lt_token.is_none()
-        && generics.params.is_empty()
-        && generics.gt_token.is_none()
-        && generics.where_clause.is_none()
-    {
-        return true;
-    }
-    false
-}
-
 impl TryFrom<syn::ItemStruct> for ir::ItemStorage {
     type Error = Error;
     fn try_from(item_struct: syn::ItemStruct) -> Result<Self> {
@@ -532,7 +521,7 @@ impl TryFrom<syn::ItemStruct> for ir::ItemStorage {
             )
         }
 
-        if !is_empty_generics(&item_struct.generics) {
+        if item_struct.generics.type_params().count() > 0 {
             bail!(
                 item_struct.generics,
                 "generics are not allowed for `#[liquid(storage)]` struct"

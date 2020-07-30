@@ -10,10 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crate::utils;
 use liquid_prelude::{string::ToString, vec::Vec};
 use proc_macro2::{Ident, TokenStream as TokenStream2};
 use quote::quote;
-use syn::{self, parse::Result, Data, DeriveInput, Fields};
+use syn::{self, parse::Result, DeriveInput};
 
 pub fn generate(input: TokenStream2) -> TokenStream2 {
     match generate_impl(input) {
@@ -114,34 +115,10 @@ fn generate_abi_gen(
 }
 
 fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
-    let mut ast: DeriveInput = syn::parse2(input)?;
+    let ast: DeriveInput = syn::parse2(input)?;
+    let (field_names, field_tys): (Vec<_>, Vec<_>) = utils::struct_syntax_check(&ast)?;
     let ident = &ast.ident;
-
-    let struct_data = match &ast.data {
-        Data::Struct(ref struct_data) => struct_data,
-        Data::Enum(_) => bail!(&ast, "enums are not supported"),
-        Data::Union(_) => bail!(&ast, "unions are not supported"),
-    };
-
-    if ast.generics.type_params_mut().count() > 0 {
-        bail!(&ast, "generic structs are not supported")
-    }
-
-    let fields = &struct_data.fields;
-    let (field_names, field_tys): (Vec<_>, Vec<_>) = match fields {
-        Fields::Named(fields_named) => fields_named
-            .named
-            .iter()
-            .map(|field| (field.ident.as_ref().unwrap(), &field.ty))
-            .unzip(),
-        Fields::Unnamed(_) => bail!(&ast, "unnamed structs are not supported"),
-        Fields::Unit => bail!(&ast, "unit structs are not supported"),
-    };
     let fields_count = field_names.len();
-
-    if field_names.is_empty() {
-        bail!(&ast, "empty structs are not supported")
-    }
 
     let mut decode_tokens = Vec::new();
     for i in 0..fields_count {
@@ -163,7 +140,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
     Ok(quote! {
         impl liquid_abi_codec::IsDynamic for #ident {
             fn is_dynamic() -> bool {
-                #(<#field_tys as liquid_abi_codec::IsDynamic>::is_dynamic() ||)*false
+                #(<#field_tys as liquid_abi_codec::IsDynamic>::is_dynamic() ||)* false
             }
         }
 

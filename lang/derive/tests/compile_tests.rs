@@ -16,6 +16,7 @@ fn compile_tests() {
     t.pass("tests/ui/pass/01-non-empty-struct.rs");
     t.pass("tests/ui/pass/02-user-defined-inputs.rs");
     t.pass("tests/ui/pass/03-user-defined-output.rs");
+    t.pass("tests/ui/pass/04-user-defined-state.rs");
     t.compile_fail("tests/ui/fail/01-empty-struct.rs");
     t.compile_fail("tests/ui/fail/02-enum.rs");
     t.compile_fail("tests/ui/fail/03-union.rs");
