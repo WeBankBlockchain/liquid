@@ -1,0 +1,5 @@
+error: generics are not allowed for `#[liquid(storage)]` struct
+ --> $DIR/21-generic-storage.rs:6:16
+  |
+6 |     struct Noop<T> {
+  |                ^^^

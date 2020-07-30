@@ -39,4 +39,5 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/18-too-many-inputs.rs");
     t.compile_fail("tests/ui/fail/19-too-many-outputs.rs");
     t.compile_fail("tests/ui/fail/20-invalid-constructor-parameter.rs");
+    t.compile_fail("tests/ui/fail/21-generic-storage.rs");
 }

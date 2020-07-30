@@ -511,6 +511,17 @@ impl TryFrom<syn::ItemImpl> for ir::ItemImpl {
     }
 }
 
+fn is_empty_generics(generics: &syn::Generics) -> bool {
+    if generics.lt_token.is_none()
+        && generics.params.is_empty()
+        && generics.gt_token.is_none()
+        && generics.where_clause.is_none()
+    {
+        return true;
+    }
+    false
+}
+
 impl TryFrom<syn::ItemStruct> for ir::ItemStorage {
     type Error = Error;
     fn try_from(item_struct: syn::ItemStruct) -> Result<Self> {
@@ -518,6 +529,13 @@ impl TryFrom<syn::ItemStruct> for ir::ItemStorage {
             bail!(
                 item_struct.vis,
                 "visibility modifiers are not allowed for `#[liquid(storage)]` struct",
+            )
+        }
+
+        if !is_empty_generics(&item_struct.generics) {
+            bail!(
+                item_struct.generics,
+                "generics are not allowed for `#[liquid(storage)]` struct"
             )
         }
 
