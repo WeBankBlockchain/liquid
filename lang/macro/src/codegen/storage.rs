@@ -78,7 +78,7 @@ impl<'a> Storage<'a> {
         let keys_count = keys.len();
 
         let bind_stats = field_idents.iter().enumerate().map(|(i, ident)| {
-            quote_spanned! { span => 
+            quote_spanned! { span =>
                 #ident: liquid_core::storage::Bind::bind_with(Self::STORAGE_KEYS[#i].as_bytes()),
             }
         });

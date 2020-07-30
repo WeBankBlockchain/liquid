@@ -10,11 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use liquid_prelude::{
-    string::{String, ToString},
-    vec::Vec,
-};
-use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
+use liquid_prelude::{string::ToString, vec::Vec};
+use proc_macro2::{Ident, TokenStream as TokenStream2};
 use quote::quote;
 use syn::{self, parse::Result, Data, DeriveInput, Fields};
 
@@ -25,25 +22,18 @@ pub fn generate(input: TokenStream2) -> TokenStream2 {
     }
 }
 
-fn generate_not_orphan_ident(ident: &Ident) -> Ident {
-    let mut not_orphan_ident = String::from("__liquid_inout_helper_");
-    not_orphan_ident.push_str(&ident.to_string());
-    Ident::new(&not_orphan_ident, Span::call_site())
-}
-
-fn generate_ty_mapping(input_tys: &[&syn::Type], ident: &Ident) -> TokenStream2 {
-    let not_orphan_ident = generate_not_orphan_ident(ident);
+fn generate_ty_mapping(input_tys: &[&syn::Type]) -> TokenStream2 {
     let mut expanded = quote! {
         #[allow(non_camel_case_types)]
-        struct #not_orphan_ident<T> {
+        struct TyMappingHelper<T> {
             marker: core::marker::PhantomData<fn() -> T>,
         }
 
-        impl _ty_mapping::SolTypeName for #not_orphan_ident<()> {
+        impl _ty_mapping::SolTypeName for TyMappingHelper<()> {
             const NAME: &'static [u8] = <() as _ty_mapping::SolTypeName>::NAME;
         }
 
-        impl _ty_mapping::SolTypeNameLen for #not_orphan_ident<()> {
+        impl _ty_mapping::SolTypeNameLen for TyMappingHelper<()> {
             const LEN: usize = <() as _ty_mapping::SolTypeNameLen>::LEN;
         }
     };
@@ -54,27 +44,27 @@ fn generate_ty_mapping(input_tys: &[&syn::Type], ident: &Ident) -> TokenStream2 
         let rest_ty = &tys[i - 1];
         if i > 1 {
             expanded.extend(quote! {
-                impl _ty_mapping::SolTypeName for #not_orphan_ident<(#(#tys,)*)> {
+                impl _ty_mapping::SolTypeName for TyMappingHelper<(#(#tys,)*)> {
                     const NAME: &'static [u8] = {
                         const LEN: usize =
                             <(#(#first_tys,)*) as _ty_mapping::SolTypeNameLen>::LEN
                             + <#rest_ty as _ty_mapping::SolTypeNameLen>::LEN
                             + 1;
-                        &_ty_mapping::concat::<#not_orphan_ident<(#(#first_tys,)*)>, #rest_ty, LEN>()
+                        &_ty_mapping::concat::<TyMappingHelper<(#(#first_tys,)*)>, #rest_ty, LEN>()
                     };
                 }
 
-                impl _ty_mapping::SolTypeNameLen for #not_orphan_ident<(#(#tys,)*)> {
-                    const LEN: usize = <#not_orphan_ident<(#(#first_tys,)*)> as _ty_mapping::SolTypeNameLen>::LEN + <#rest_ty as _ty_mapping::SolTypeNameLen>::LEN + 1;
+                impl _ty_mapping::SolTypeNameLen for TyMappingHelper<(#(#tys,)*)> {
+                    const LEN: usize = <TyMappingHelper<(#(#first_tys,)*)> as _ty_mapping::SolTypeNameLen>::LEN + <#rest_ty as _ty_mapping::SolTypeNameLen>::LEN + 1;
                 }
             });
         } else {
             expanded.extend(quote! {
-                impl _ty_mapping::SolTypeName for #not_orphan_ident<(#rest_ty,)> {
+                impl _ty_mapping::SolTypeName for TyMappingHelper<(#rest_ty,)> {
                     const NAME: &'static [u8] = <#rest_ty as _ty_mapping::SolTypeName>::NAME;
                 }
 
-                impl _ty_mapping::SolTypeNameLen for #not_orphan_ident<(#rest_ty,)>{
+                impl _ty_mapping::SolTypeNameLen for TyMappingHelper<(#rest_ty,)>{
                     const LEN: usize = <#rest_ty as _ty_mapping::SolTypeNameLen>::LEN;
                 }
             });
@@ -167,8 +157,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
         });
     }
 
-    let ty_mapping_helper = generate_ty_mapping(&field_tys, &ident);
-    let not_orphan_ident = generate_not_orphan_ident(&ident);
+    let ty_mapping_helper = generate_ty_mapping(&field_tys);
     let abi_gen_helper = generate_abi_gen(&field_names, &field_tys, &ident);
 
     Ok(quote! {
@@ -220,19 +209,19 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
 
         impl _ty_mapping::SolTypeNameLen for #ident {
             const LEN: usize =
-            <#not_orphan_ident<(#(#field_tys,)*)> as _ty_mapping::SolTypeNameLen>::LEN
+            <TyMappingHelper<(#(#field_tys,)*)> as _ty_mapping::SolTypeNameLen>::LEN
             + 2;
         }
 
         impl _ty_mapping::SolTypeName for #ident {
             const NAME: &'static [u8] = {
                 const LEN: usize =
-                <#not_orphan_ident<(#(#field_tys,)*)> as _ty_mapping::SolTypeNameLen>::LEN
+                <TyMappingHelper<(#(#field_tys,)*)> as _ty_mapping::SolTypeNameLen>::LEN
                 + 2;
 
                 &_ty_mapping::composite::<LEN>(
                     b"",
-                    <#not_orphan_ident<(#(#field_tys,)*)> as _ty_mapping::SolTypeName>::NAME)
+                    <TyMappingHelper<(#(#field_tys,)*)> as _ty_mapping::SolTypeName>::NAME)
             };
         }
 
