@@ -3,22 +3,22 @@
 use liquid_lang as liquid;
 
 #[liquid::contract(version = "0.1.0")]
-mod iterable_mapping_example {
+mod sum_2 {
     use liquid_core::storage;
 
     #[liquid(storage)]
-    struct IterableMappingExample {
+    struct Sum2 {
         values: storage::IterableMapping<String, u32>,
     }
 
-    impl IterableMappingExample {
+    impl Sum2 {
         #[liquid(constructor)]
         fn init(&mut self) {
             self.values.initialize();
         }
 
         #[liquid(external)]
-        fn register(&mut self, key: String, val: u32) {
+        fn insert(&mut self, key: String, val: u32) {
             self.values.insert(key, val);
         }
 
@@ -38,9 +38,9 @@ mod iterable_mapping_example {
 
         #[test]
         fn it_works() {
-            let mut contract = IterableMappingExample::init();
+            let mut contract = Sum2::init();
             for i in 0..10 {
-                contract.register(i.to_string(), i);
+                contract.insert(i.to_string(), i);
             }
             assert_eq!(contract.sum(), 45);
         }

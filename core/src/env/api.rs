@@ -12,6 +12,7 @@
 
 use crate::env::{
     engine::{EnvInstance, OnInstance},
+    types::Address,
     CallData, Env, Result,
 };
 
@@ -59,4 +60,8 @@ where
     <EnvInstance as OnInstance>::on_instance(|instance| {
         Env::revert(instance, return_value);
     })
+}
+
+pub fn get_caller() -> Address {
+    <EnvInstance as OnInstance>::on_instance(|instance| Env::get_caller(instance))
 }

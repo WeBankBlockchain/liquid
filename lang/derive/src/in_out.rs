@@ -43,30 +43,34 @@ fn generate_ty_mapping(input_tys: &[&syn::Type]) -> TokenStream2 {
         let tys = &input_tys[..i];
         let first_tys = &tys[0..i - 1];
         let rest_ty = &tys[i - 1];
+
         if i > 1 {
             expanded.extend(quote! {
                 impl _ty_mapping::SolTypeName for TyMappingHelper<(#(#tys,)*)> {
                     const NAME: &'static [u8] = {
                         const LEN: usize =
-                            <(#(#first_tys,)*) as _ty_mapping::SolTypeNameLen>::LEN
-                            + <#rest_ty as _ty_mapping::SolTypeNameLen>::LEN
+                            <(#(#first_tys,)*) as _ty_mapping::SolTypeNameLen<_>>::LEN
+                            + <#rest_ty as _ty_mapping::SolTypeNameLen<_>>::LEN
                             + 1;
-                        &_ty_mapping::concat::<TyMappingHelper<(#(#first_tys,)*)>, #rest_ty, LEN>()
+                        &_ty_mapping::concat::<TyMappingHelper<(#(#first_tys,)*)>, #rest_ty, (), (), LEN>(true)
                     };
                 }
 
                 impl _ty_mapping::SolTypeNameLen for TyMappingHelper<(#(#tys,)*)> {
-                    const LEN: usize = <TyMappingHelper<(#(#first_tys,)*)> as _ty_mapping::SolTypeNameLen>::LEN + <#rest_ty as _ty_mapping::SolTypeNameLen>::LEN + 1;
+                    const LEN: usize =
+                        <TyMappingHelper<(#(#first_tys,)*)> as _ty_mapping::SolTypeNameLen<_>>::LEN
+                        + <#rest_ty as _ty_mapping::SolTypeNameLen<_>>::LEN
+                        + 1;
                 }
             });
         } else {
             expanded.extend(quote! {
                 impl _ty_mapping::SolTypeName for TyMappingHelper<(#rest_ty,)> {
-                    const NAME: &'static [u8] = <#rest_ty as _ty_mapping::SolTypeName>::NAME;
+                    const NAME: &'static [u8] = <#rest_ty as _ty_mapping::SolTypeName<_>>::NAME;
                 }
 
-                impl _ty_mapping::SolTypeNameLen for TyMappingHelper<(#rest_ty,)>{
-                    const LEN: usize = <#rest_ty as _ty_mapping::SolTypeNameLen>::LEN;
+                impl _ty_mapping::SolTypeNameLen for TyMappingHelper<(#rest_ty,)> {
+                    const LEN: usize = <#rest_ty as _ty_mapping::SolTypeNameLen<_>>::LEN;
                 }
             });
         }
@@ -107,9 +111,12 @@ fn generate_abi_gen(
 
         #[cfg(feature = "liquid-abi-gen")]
         impl liquid_abi_gen::HasComponents for #ident {
-            fn has_components() -> bool {
-                true
-            }
+            const HAS_COMPONENTS: bool = true;
+        }
+
+        #[cfg(feature = "liquid-abi-gen")]
+        impl liquid_abi_gen::IsDynamicArray for #ident {
+            const IS_DYNAMIC_ARRAY: bool = true;
         }
     }
 }
@@ -186,15 +193,15 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
 
         impl _ty_mapping::SolTypeNameLen for #ident {
             const LEN: usize =
-            <TyMappingHelper<(#(#field_tys,)*)> as _ty_mapping::SolTypeNameLen>::LEN
-            + 2;
+                <TyMappingHelper<(#(#field_tys,)*)> as _ty_mapping::SolTypeNameLen>::LEN
+                + 2;
         }
 
         impl _ty_mapping::SolTypeName for #ident {
             const NAME: &'static [u8] = {
                 const LEN: usize =
-                <TyMappingHelper<(#(#field_tys,)*)> as _ty_mapping::SolTypeNameLen>::LEN
-                + 2;
+                    <TyMappingHelper<(#(#field_tys,)*)> as _ty_mapping::SolTypeNameLen>::LEN
+                    + 2;
 
                 &_ty_mapping::composite::<LEN>(
                     b"",
@@ -203,6 +210,18 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
         }
 
         impl liquid_lang::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type for #ident {}
+
+        impl _ty_mapping::SolTypeNameLen<#ident> for liquid_core::env::types::Vec<#ident> {
+            const LEN: usize = <#ident as _ty_mapping::SolTypeNameLen>::LEN + 2;
+        }
+
+        impl _ty_mapping::SolTypeName<#ident> for liquid_core::env::types::Vec<#ident> {
+            const NAME: &'static [u8] = {
+                const LEN: usize = <#ident as _ty_mapping::SolTypeNameLen>::LEN + 2;
+
+                &_ty_mapping::concat::<#ident, _ty_mapping::DynamicArraySuffix, (), (), LEN>(false)
+            };
+        }
 
         #abi_gen_helper
     })

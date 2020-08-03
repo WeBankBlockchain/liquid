@@ -11,28 +11,51 @@
 // limitations under the License.
 
 use crate::ParamABI;
+use liquid_prelude::{string::String, vec::Vec};
 
-pub trait HasComponents {
-    fn has_components() -> bool {
-        false
-    }
+pub trait HasComponents<T = ()> {
+    const HAS_COMPONENTS: bool = false;
 }
 
-pub trait GenerateComponents {
-    fn generate_components() -> Vec<ParamABI>;
+pub trait IsDynamicArray<T = ()> {
+    const IS_DYNAMIC_ARRAY: bool = false;
+}
+
+pub trait GenerateComponents<T = ()> {
+    fn generate_components() -> Vec<ParamABI> {
+        Vec::new()
+    }
 }
 
 macro_rules! impl_primitive_tys {
     ($( $t:ty ),*) => {
         $(
-            impl GenerateComponents for $t {
-                fn generate_components() -> Vec<ParamABI> {
-                    Vec::new()
-                }
-            }
+            impl GenerateComponents for $t {}
 
             impl HasComponents for $t {}
+
+            impl IsDynamicArray for $t {}
         )*
     };
 }
 impl_primitive_tys!(bool, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, String);
+
+impl<T> HasComponents for Vec<T>
+where
+    T: HasComponents,
+{
+    const HAS_COMPONENTS: bool = <T as HasComponents>::HAS_COMPONENTS;
+}
+
+impl<T> GenerateComponents for Vec<T>
+where
+    T: GenerateComponents,
+{
+    fn generate_components() -> Vec<ParamABI> {
+        <T as GenerateComponents>::generate_components()
+    }
+}
+
+impl<T> IsDynamicArray for Vec<T> {
+    const IS_DYNAMIC_ARRAY: bool = true;
+}

@@ -32,6 +32,8 @@ mod sys {
         pub fn finish(data_offset: u32, data_length: u32);
 
         pub fn revert(data_offset: u32, data_length: u32);
+
+        pub fn getCaller(data_offset: u32);
     }
 }
 
@@ -79,5 +81,11 @@ pub fn finish(return_value: &[u8]) {
 pub fn revert(revert_info: &[u8]) {
     unsafe {
         sys::revert(revert_info.as_ptr() as u32, revert_info.len() as u32);
+    }
+}
+
+pub fn get_caller(result_offset: &mut [u8]) {
+    unsafe {
+        sys::getCaller(result_offset.as_mut_ptr() as u32);
     }
 }

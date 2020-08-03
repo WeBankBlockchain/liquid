@@ -10,26 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![allow(incomplete_features)]
-#![feature(const_fn)]
-#![feature(const_generics)]
-#![feature(associated_type_defaults)]
-#![cfg_attr(not(feature = "std"), no_std)]
+use liquid_core::env::{self, types::Address};
 
-mod contract;
-mod dispatch_error;
-mod dispatcher;
-mod env_access;
-pub mod intrinsics;
-mod traits;
-pub mod ty_mapping;
+pub struct EnvAccess;
 
-#[cfg(test)]
-mod tests;
-
-pub use contract::Contract;
-pub use dispatch_error::{DispatchError, DispatchResult, DispatchRetInfo};
-pub use env_access::EnvAccess;
-pub use liquid_lang_derive::{InOut, State};
-pub use liquid_lang_macro::contract;
-pub use traits::*;
+impl EnvAccess {
+    pub fn get_caller(self) -> Address {
+        env::get_caller()
+    }
+}

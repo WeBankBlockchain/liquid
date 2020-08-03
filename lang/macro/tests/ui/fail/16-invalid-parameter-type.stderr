@@ -4,12 +4,12 @@ error[E0277]: the trait bound `f32: liquid_lang::The_Type_You_Used_Here_Must_Be_
 13 |         fn noop(&self, value: f32) {}
    |                 ^^^^^^^^^^^^^^^^^ the trait `liquid_lang::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type` is not implemented for `f32`
 
-error[E0277]: the trait bound `f32: liquid_lang::ty_mapping::SolTypeNameLen` is not satisfied
+error[E0277]: the trait bound `f32: liquid_lang::ty_mapping::SolTypeNameLen<_>` is not satisfied
  --> $DIR/16-invalid-parameter-type.rs:3:1
   |
 3 | #[liquid::contract(version = "0.1.0")]
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `liquid_lang::ty_mapping::SolTypeNameLen` is not implemented for `f32`
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `liquid_lang::ty_mapping::SolTypeNameLen<_>` is not implemented for `f32`
   |
-  = note: required because of the requirements on the impl of `liquid_lang::ty_mapping::SolTypeNameLen` for `(f32,)`
+  = note: required because of the requirements on the impl of `liquid_lang::ty_mapping::SolTypeNameLen<_>` for `(f32,)`
   = note: required by `liquid_lang::ty_mapping::SolTypeNameLen::LEN`
   = note: this error originates in an attribute macro (in Nightly builds, run with -Z macro-backtrace for more info)

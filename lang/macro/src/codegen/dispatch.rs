@@ -151,17 +151,17 @@ impl<'a> Dispatch<'a> {
                     impl liquid_lang::ty_mapping::SolTypeName for DispatchHelper<#external_marker, (#(#tys,)*)> {
                         const NAME: &'static [u8] = {
                             const LEN: usize =
-                                <(#(#first_tys,)*) as liquid_lang::ty_mapping::SolTypeNameLen>::LEN
-                                + <#rest_ty as liquid_lang::ty_mapping::SolTypeNameLen>::LEN
+                                <(#(#first_tys,)*) as liquid_lang::ty_mapping::SolTypeNameLen<_>>::LEN
+                                + <#rest_ty as liquid_lang::ty_mapping::SolTypeNameLen<_>>::LEN
                                 + 1;
-                            &liquid_lang::ty_mapping::concat::<DispatchHelper<#external_marker, (#(#first_tys,)*)>, #rest_ty, LEN>()
+                            &liquid_lang::ty_mapping::concat::<DispatchHelper<#external_marker, (#(#first_tys,)*)>, #rest_ty, (), _, LEN>(true)
                         };
                     }
                 });
             } else {
                 selectors.extend(quote_spanned! { span =>
                     impl liquid_lang::ty_mapping::SolTypeName for DispatchHelper<#external_marker, (#rest_ty,)> {
-                        const NAME: &'static [u8] = <#rest_ty as liquid_lang::ty_mapping::SolTypeName>::NAME;
+                        const NAME: &'static [u8] = <#rest_ty as liquid_lang::ty_mapping::SolTypeName<_>>::NAME;
                     }
                 });
             }
@@ -172,12 +172,12 @@ impl<'a> Dispatch<'a> {
         let fn_name_len = fn_name_bytes.len();
         let composite_sig = quote! {
             const SIG_LEN: usize =
-                <(#(#input_tys,)*) as liquid_lang::ty_mapping::SolTypeNameLen>::LEN + #fn_name_len
+                <(#(#input_tys,)*) as liquid_lang::ty_mapping::SolTypeNameLen<_>>::LEN + #fn_name_len
                 + 2;
             const SIG: [u8; SIG_LEN] =
                 liquid_lang::ty_mapping::composite::<SIG_LEN>(
                     &[#(#fn_name_bytes),*],
-                    <DispatchHelper<#external_marker, (#(#input_tys,)*)> as liquid_lang::ty_mapping::SolTypeName>::NAME);
+                    <DispatchHelper<#external_marker, (#(#input_tys,)*)> as liquid_lang::ty_mapping::SolTypeName<_>>::NAME);
         };
         selectors.extend(quote_spanned! { span =>
             impl liquid_lang::FnSelectors for #external_marker {

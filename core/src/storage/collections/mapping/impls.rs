@@ -77,6 +77,13 @@ where
         K: Borrow<Q>,
         Q: Encode,
     {
+        if self.len() == u32::MAX {
+            panic!(
+                "[liquid_core::Mapping::insert] Error: cannot insert more elements than \
+                 `u32::MAX`"
+            );
+        }
+
         let encoded_key = key.encode();
         let ret = self.chunk.take(&encoded_key);
         self.chunk.set(&encoded_key, val);

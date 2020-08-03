@@ -13,7 +13,7 @@
 mod db;
 
 use self::db::ContractStorage;
-use crate::env::{engine::OnInstance, CallData, Env, Result};
+use crate::env::{engine::OnInstance, types::Address, CallData, Env, Result};
 use core::cell::RefCell;
 
 #[allow(dead_code)]
@@ -59,11 +59,18 @@ impl Env for EnvInstance {
         unimplemented!();
     }
 
-    fn revert<V>(&mut self, _: &V)
+    fn revert<V>(&mut self, msg: &V)
     where
         V: liquid_abi_codec::Encode,
     {
-        unimplemented!();
+        // Ensure that `V` can only be String.
+        panic!(<String as liquid_abi_codec::Decode>::decode(
+            &mut msg.encode().as_slice()
+        ));
+    }
+
+    fn get_caller(&mut self) -> Address {
+        Address::from("0x3e9afaa4a062a49d64b8ab057b3cb51892e17ecb")
     }
 }
 

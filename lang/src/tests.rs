@@ -65,8 +65,8 @@ struct T1 {
 #[allow(non_snake_case)]
 fn test_T1() {
     assert_eq!(<T1 as IsDynamic>::is_dynamic(), true);
-    assert_eq!(<T1 as SolTypeName>::NAME, b"(uint128,string,bool)");
-    assert_eq!(<T1 as SolTypeNameLen>::LEN, 21);
+    assert_eq!(<T1 as SolTypeName<_>>::NAME, b"(uint128,string,bool)");
+    assert_eq!(<T1 as SolTypeNameLen<_>>::LEN, 21);
 
     let t1 = T1 {
         a: 42,
@@ -87,12 +87,12 @@ struct T2 {
 fn test_T2() {
     assert_eq!(<T2 as IsDynamic>::is_dynamic(), true);
     assert_eq!(
-        <T2 as SolTypeName>::NAME,
+        <T2 as SolTypeName<_>>::NAME,
         "((uint128,bool),(uint128,string,bool))"
             .to_string()
             .as_bytes()
     );
-    assert_eq!(<T2 as SolTypeNameLen>::LEN, 38);
+    assert_eq!(<T2 as SolTypeNameLen<_>>::LEN, 38);
 
     let t2 = T2 {
         a: T0 { a: 0, b: true },
@@ -103,4 +103,19 @@ fn test_T2() {
         },
     };
     test_encode_decode!(T2, t2, "0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000002a00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b48656c6c6f2c576f726c64000000000000000000000000000000000000000000");
+}
+
+use liquid_core::env::types::Vec;
+
+#[test]
+fn test_dynamic_array() {
+    type Array = Vec<T2>;
+    assert_eq!(<Array as IsDynamic>::is_dynamic(), true);
+    assert_eq!(
+        <Array as SolTypeName<_>>::NAME,
+        "((uint128,bool),(uint128,string,bool))[]"
+            .to_string()
+            .as_bytes()
+    );
+    assert_eq!(<Array as SolTypeNameLen<_>>::LEN, 40);
 }

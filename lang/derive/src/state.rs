@@ -52,7 +52,7 @@ fn generate_encode_shadow_struct(
 
         impl scale::Encode for #ident {
             fn encode(&self) -> __std::Vec<u8> {
-                use scale::Encode as _;
+                use scale::Encode;
 
                 let encode_shadow: EncodeShadow::<'_> = self.into();
                 encode_shadow.encode()
@@ -82,7 +82,7 @@ fn generate_decode_shadow_struct(
 
         impl scale::Decode for #ident {
             fn decode<I: scale::Input>(value: &mut I) -> Result<Self, scale::Error> {
-                use scale::Decode as _;
+                use scale::Decode;
 
                 let origin = <DecodeShadow as scale::Decode>::decode(value)?;
                 Ok(Self {

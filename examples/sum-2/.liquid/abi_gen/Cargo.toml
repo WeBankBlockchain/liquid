@@ -10,7 +10,7 @@ name = "abi-gen"
 path = "main.rs"
 
 [dependencies]
-contract = { path = "../..", package = "iterable_mapping_example", default-features = false, features = ["liquid-abi-gen"] }
+contract = { path = "../..", package = "sum_2", default-features = false, features = ["liquid-abi-gen"] }
 liquid_lang = { path = "../../../../lang", default-features = false, features = ["liquid-abi-gen"] }
 serde = "1.0"
 serde_json = "1.0"

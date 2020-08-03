@@ -56,8 +56,13 @@ fn generate_components(ty: &syn::Type) -> TokenStream2 {
 
 fn generate_ty_name(ty: &syn::Type) -> TokenStream2 {
     quote! {
-        if <#ty as liquid_abi_gen::HasComponents>::has_components() {
-            String::from("tuple")
+        if <#ty as liquid_abi_gen::HasComponents>::HAS_COMPONENTS {
+            if <#ty as liquid_abi_gen::IsDynamicArray>::IS_DYNAMIC_ARRAY {
+                String::from("tuple[]")
+            }
+            else {
+                String::from("tuple")
+            }
         } else {
             String::from_utf8((<#ty as liquid_lang::ty_mapping::SolTypeName>::NAME).to_vec()).expect("the type name of a function argument must an valid utf-8 string")
         }

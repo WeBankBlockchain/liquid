@@ -17,6 +17,7 @@ fn compile_tests() {
     t.pass("tests/ui/pass/02-expand-body.rs");
     t.pass("tests/ui/pass/03-expand-enum.rs");
     t.pass("tests/ui/pass/04-expand-array.rs");
+    t.pass("tests/ui/pass/05-expand-tuple.rs");
     t.compile_fail("tests/ui/fail/01-missing-var.rs");
     t.compile_fail("tests/ui/fail/02-missing-in-keyword.rs");
     t.compile_fail("tests/ui/fail/03-invalid-range.rs");

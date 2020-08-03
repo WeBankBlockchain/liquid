@@ -36,7 +36,7 @@ impl StaticBuffer {
 
     pub fn write_bytes(&mut self, bytes: &[u8]) {
         if self.len + bytes.len() > Self::CAPACITY {
-            panic!("static buffer overflowed")
+            panic!("static buffer overflowed");
         }
 
         let start = self.len;

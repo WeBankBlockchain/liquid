@@ -165,7 +165,7 @@ where
             panic!(
                 "[liquid_core::Vec::push] Error: cannot push more elements than \
                  `u32::MAX`"
-            )
+            );
         }
 
         let len = self.len.get_mut().expect(

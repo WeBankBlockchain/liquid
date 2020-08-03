@@ -98,6 +98,11 @@ impl<'a> Storage<'a> {
             impl Storage {
                 #[allow(unused)]
                 const STORAGE_KEYS: [&'static str; #keys_count] = [ #keys ];
+
+                #[allow(unused)]
+                pub fn env(&self) -> liquid_lang::EnvAccess {
+                    liquid_lang::EnvAccess {}
+                }
             }
 
             impl liquid_core::storage::New for Storage {

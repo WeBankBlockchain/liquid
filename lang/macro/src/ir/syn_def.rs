@@ -156,6 +156,8 @@ impl ToTokens for FnArg {
 pub struct IdentType {
     /// The attributes of the argument
     pub attrs: Vec<syn::Attribute>,
+    /// The mutability of the argument
+    pub mutability: Option<Token![mut]>,
     /// The name of the argument.
     pub ident: Ident,
     /// The `:` token.
@@ -169,6 +171,7 @@ pub struct IdentType {
 impl ToTokens for IdentType {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         self.attrs.iter().for_each(|attr| attr.to_tokens(tokens));
+        self.mutability.to_tokens(tokens);
         self.ident.to_tokens(tokens);
         self.colon_token.to_tokens(tokens);
         self.ty.to_tokens(tokens);

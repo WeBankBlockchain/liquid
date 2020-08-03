@@ -1,6 +1,5 @@
 fn main() -> Result<(), std::io::Error> {
-    let contract_abi =
-        <contract::MappingExample as liquid_lang::GenerateABI>::generate_abi();
+    let contract_abi = <contract::Sum2 as liquid_lang::GenerateABI>::generate_abi();
     let mut final_abi = Vec::with_capacity(contract_abi.external_fn_abis.len() + 1);
     final_abi.push(serde_json::to_string(&contract_abi.constructor_abi)?);
     final_abi.extend(
@@ -14,6 +13,6 @@ fn main() -> Result<(), std::io::Error> {
     let contents = final_abi.join(",");
     let contents = format!("[{}]", contents);
     std::fs::create_dir("target").ok();
-    std::fs::write("target/mapping_example.json", contents)?;
+    std::fs::write("target/sum_2.json", contents)?;
     Ok(())
 }

@@ -9,6 +9,8 @@ edition = "2018"
 [dependencies]
 serde = { version = "1.0.114", default-features = false, features = ["derive", "alloc"] }
 
+liquid_prelude = { version = "0.1.0", path = "../prelude", default-features = false }
+
 [features]
 default = ["std"]
 std = [

@@ -26,6 +26,7 @@ impl<'a> GenerateCode for EnvTypes<'a> {
         quote! {
             type Address = liquid_core::env::types::Address;
             type String = liquid_core::env::types::String;
+            type Vec<T> = liquid_core::env::types::Vec<T>;
         }
     }
 }

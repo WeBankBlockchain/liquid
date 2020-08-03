@@ -38,4 +38,5 @@ std = [
 liquid-abi-gen = [
     "std",
     "liquid_abi_gen",
+    "liquid_core/liquid-abi-gen"
 ]

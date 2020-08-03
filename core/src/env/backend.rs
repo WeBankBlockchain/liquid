@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::env::{CallData, Result};
+use crate::env::{types::Address, CallData, Result};
 
 pub trait Env {
     fn set_storage<V>(&mut self, key: &[u8], value: &V)
@@ -32,4 +32,6 @@ pub trait Env {
     fn revert<V>(&mut self, revert_into: &V)
     where
         V: liquid_abi_codec::Encode;
+
+    fn get_caller(&mut self) -> Address;
 }

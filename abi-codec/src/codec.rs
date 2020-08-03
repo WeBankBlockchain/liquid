@@ -120,6 +120,7 @@ pub enum Mediate {
     Prefixed(Vec<Word>),
     RawTuple(Vec<Mediate>),
     PrefixedTuple(Vec<Mediate>),
+    PrefixedArrayWithLength(Vec<Mediate>),
 }
 
 fn u32_to_word(value: u32) -> Word {
@@ -132,7 +133,9 @@ impl Mediate {
     fn head_len(&self) -> usize {
         match *self {
             Mediate::Raw(ref raw) => raw.len() * WORD_SIZE,
-            Mediate::Prefixed(_) | Mediate::PrefixedTuple(_) => WORD_SIZE,
+            Mediate::Prefixed(_)
+            | Mediate::PrefixedTuple(_)
+            | Mediate::PrefixedArrayWithLength(_) => WORD_SIZE,
             Mediate::RawTuple(ref mediates) => mediates.len() * WORD_SIZE,
         }
     }
@@ -144,13 +147,18 @@ impl Mediate {
             Mediate::PrefixedTuple(ref mediates) => mediates
                 .iter()
                 .fold(0, |acc, m| acc + m.head_len() + m.tail_len()),
+            Mediate::PrefixedArrayWithLength(ref mediates) => mediates
+                .iter()
+                .fold(WORD_SIZE, |acc, m| acc + m.head_len() + m.tail_len()),
         }
     }
 
     fn head(&self, suffix_offset: u32) -> Vec<Word> {
         match *self {
             Mediate::Raw(ref raw) => raw.clone(),
-            Mediate::Prefixed(_) | Mediate::PrefixedTuple(_) => {
+            Mediate::Prefixed(_)
+            | Mediate::PrefixedTuple(_)
+            | Mediate::PrefixedArrayWithLength(_) => {
                 [u32_to_word(suffix_offset)].to_vec()
             }
             Mediate::RawTuple(ref raw) => raw
@@ -166,6 +174,13 @@ impl Mediate {
             Mediate::Raw(_) | Mediate::RawTuple(_) => Vec::new(),
             Mediate::Prefixed(ref raw) => raw.clone(),
             Mediate::PrefixedTuple(ref mediates) => encode_head_tail(mediates),
+            Mediate::PrefixedArrayWithLength(ref mediates) => {
+                // + `WORD_SIZE` added to offset represents len of the array prepanded to tail
+                let mut result = [u32_to_word(mediates.len() as u32)].to_vec();
+                let head_tail = encode_head_tail(mediates);
+                result.extend(head_tail);
+                result
+            }
         }
     }
 }
@@ -385,8 +400,48 @@ impl IsDynamic for String {
     }
 }
 
-#[cfg(feature = "liquid-abi-gen")]
-impl HasComponents for bool {}
+impl<T> MediateEncode for Vec<T>
+where
+    T: MediateEncode,
+{
+    fn encode(&self) -> Mediate {
+        let mediates = self.iter().map(|elem| elem.encode()).collect::<_>();
+        Mediate::PrefixedArrayWithLength(mediates)
+    }
+}
+
+impl<T> MediateDecode for Vec<T>
+where
+    T: MediateDecode,
+{
+    fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error> {
+        let offset_slice = peek(slices, offset)?;
+        let len_offset = (as_u32(offset_slice)? / (WORD_SIZE as u32)) as usize;
+        let len_slice = peek(slices, len_offset)?;
+        let len = as_u32(len_slice)? as usize;
+
+        let tail = &slices[len_offset + 1..];
+        let mut ret = Vec::with_capacity(len);
+        let mut new_offset = 0;
+
+        for _ in 0..len {
+            let elem = <T as MediateDecode>::decode(&tail, new_offset)?;
+            new_offset = elem.new_offset;
+            ret.push(elem.value);
+        }
+
+        Ok(DecodeResult {
+            value: ret,
+            new_offset: offset + 1,
+        })
+    }
+}
+
+impl<T> IsDynamic for Vec<T> {
+    fn is_dynamic() -> bool {
+        true
+    }
+}
 
 pub trait Encode {
     fn encode_to<T: Output>(&self, dest: &mut T) {

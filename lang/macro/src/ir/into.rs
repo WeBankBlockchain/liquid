@@ -215,6 +215,7 @@ impl TryFrom<syn::FnArg> for ir::FnArg {
 
                     Ok(Box::new(ir::IdentType {
                         attrs: pat_ident.attrs,
+                        mutability: pat_ident.mutability,
                         ident: pat_ident.ident,
                         colon_token: pat_type.colon_token,
                         ty: *pat_type.ty,

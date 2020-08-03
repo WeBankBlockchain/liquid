@@ -16,6 +16,7 @@ liquid_primitives = { version = "0.1.0", path = "../primitives", default-feature
 liquid_prelude = { version = "0.1.0", path = "../prelude", default-features = false }
 liquid_abi_codec = { version = "0.1.0", path = "../abi-codec", default-features = false }
 liquid_alloc = { version = "0.1.0", path = "../alloc", default-features = false }
+liquid_abi_gen = { version = "0.1.0", path = "../abi-gen", default-features = false, optional = true }
 
 [features]
 default = ["std"]
@@ -25,4 +26,7 @@ std = [
     "liquid_abi_codec/std",
     "liquid_alloc/std",
     "scale/std",
+]
+liquid-abi-gen = [
+    "liquid_abi_gen"
 ]

@@ -33,6 +33,7 @@ impl GenerateCode for ir::Contract {
 
         quote! {
             mod #ident {
+                use liquid_lang::intrinsics::*;
                 #env_types
 
                 mod __liquid_private {

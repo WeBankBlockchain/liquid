@@ -15,7 +15,10 @@ mod ext;
 
 use self::buffer::StaticBuffer;
 use super::OnInstance;
-use crate::env::{CallData, Env, EnvError, Result};
+use crate::env::{
+    types::{Address, ADDRESS_LENGTH},
+    CallData, Env, EnvError, Result,
+};
 use liquid_abi_codec::Decode;
 
 /// The on-chain environment
@@ -116,5 +119,12 @@ impl Env for EnvInstance {
         self.reset_buffer();
         self.encode_into_buffer_abi(revert_info);
         ext::revert(&self.buffer[..self.buffer.len()]);
+    }
+
+    fn get_caller(&mut self) -> Address {
+        ext::get_caller(&mut self.buffer[..ADDRESS_LENGTH]);
+        let mut address = [0u8; ADDRESS_LENGTH];
+        address.copy_from_slice(&self.buffer[..ADDRESS_LENGTH]);
+        Address::new(address)
     }
 }

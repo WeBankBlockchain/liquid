@@ -1,5 +1,5 @@
 [package]
-name = "iterable_mapping_example"
+name = "sum_2"
 version = "0.1.0"
 authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
 edition = "2018"
@@ -14,7 +14,7 @@ liquid_abi_codec = { version = "0.1.0", path = "../../abi-codec", default-featur
 liquid_abi_gen = { version = "0.1.0", path = "../../abi-gen", default-features = false, optional = true }
 
 [lib]
-name = "iterable_mapping_example"
+name = "sum_2"
 crate-type = [
     # Used for normal contract Wasm blobs.
     "cdylib",
