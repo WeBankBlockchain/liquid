@@ -42,14 +42,14 @@ mod hello_world {
 
         #[test]
         fn get_works() {
-            let contract = HelloWorld::new();
+            let contract = HelloWorld();
             assert_eq!(contract.get(), "Hello, World!".to_owned());
         }
 
         #[test]
         fn set_works() {
             let new_name = "Bye, world!".to_owned();
-            let mut contract = HelloWorld::new();
+            let mut contract = HelloWorld();
             contract.set(new_name.clone());
             assert_eq!(contract.get(), new_name);
         }

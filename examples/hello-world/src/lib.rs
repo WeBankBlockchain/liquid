@@ -37,20 +37,20 @@ mod hello_world {
         #[test]
         #[should_panic]
         fn require_works() {
-            let contract = HelloWorld::constructor();
+            let contract = HelloWorld();
             contract.test_require();
         }
 
         #[test]
         fn get_works() {
-            let contract = HelloWorld::constructor();
+            let contract = HelloWorld();
             assert_eq!(contract.get(), "Hello, World!".to_owned());
         }
 
         #[test]
         fn set_works() {
             let new_name = "Bye, world!".to_owned();
-            let mut contract = HelloWorld::constructor();
+            let mut contract = HelloWorld();
             contract.set(new_name.clone());
             assert_eq!(contract.get(), new_name);
         }

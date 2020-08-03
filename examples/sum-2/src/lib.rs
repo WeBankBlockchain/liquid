@@ -36,7 +36,7 @@ mod sum_2 {
 
         #[test]
         fn it_works() {
-            let mut contract = Sum2::constructor();
+            let mut contract = Sum2();
             for i in 0..10 {
                 contract.insert(i.to_string(), i);
             }

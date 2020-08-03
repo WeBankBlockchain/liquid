@@ -145,6 +145,17 @@ impl Signature {
             _ => unreachable!("First argument of liquid function must be an receiver"),
         }
     }
+
+    pub fn input_args(&self) -> impl Iterator<Item = &FnArg> {
+        self.inputs.iter().skip(1)
+    }
+
+    pub fn input_arg_idents(&self) -> impl Iterator<Item = &Ident> {
+        self.input_args().map(|arg| match arg {
+            FnArg::Typed(ident_type) => &ident_type.ident,
+            _ => unreachable!(),
+        })
+    }
 }
 
 #[derive(From)]

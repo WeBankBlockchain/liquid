@@ -36,7 +36,7 @@ mod sum_1 {
 
         #[test]
         fn it_works() {
-            let mut contract = Sum1::constructor();
+            let mut contract = Sum1();
             for i in 0..10 {
                 contract.append(i);
             }
@@ -46,7 +46,7 @@ mod sum_1 {
         #[test]
         #[should_panic]
         fn upper_overflow() {
-            let mut contract = Sum1::constructor();
+            let mut contract = Sum1();
             contract.append(u32::MAX);
             contract.append(u32::MAX);
             let _ = contract.sum();
