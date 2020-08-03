@@ -125,6 +125,15 @@ pub struct Signature {
     pub output: syn::ReturnType,
 }
 
+impl Spanned for Signature {
+    fn span(&self) -> Span {
+        self.fn_token
+            .span()
+            .join(self.output.span())
+            .expect("fn token and fn output are in the same file")
+    }
+}
+
 impl Signature {
     pub fn is_mut(&self) -> bool {
         self.self_arg().mutability.is_some()

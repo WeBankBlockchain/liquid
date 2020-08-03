@@ -1,5 +1,5 @@
 error: `unsafe` is not supported for functions in liquid contract
-  --> $DIR/11-unsafe-function.rs:13:9
+  --> $DIR/11-unsafe-function.rs:12:13
    |
-13 |         unsafe fn noop(&self) {}
-   |         ^^^^^^
+12 |         pub unsafe fn noop(&self) {}
+   |             ^^^^^^

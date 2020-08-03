@@ -24,7 +24,7 @@ mod ballot {
         vote: u32,
     }
 
-    // This is a type for a single proposal.
+    /// This is a type for a single proposal.
     #[derive(State)]
     #[cfg_attr(feature = "std", derive(Debug, PartialEq, Eq))]
     pub struct Proposal {
@@ -46,10 +46,13 @@ mod ballot {
         proposals: storage::Vec<Proposal>,
     }
 
+    #[liquid(methods)]
     impl Ballot {
         /// Create a new ballot to choose one of `proposalNames`.
-        #[liquid(constructor)]
-        fn constructor(&mut self, proposal_names: liquid_core::env::types::Vec<String>) {
+        pub fn constructor(
+            &mut self,
+            proposal_names: liquid_core::env::types::Vec<String>,
+        ) {
             let chair_person = self.env().get_caller();
             self.chair_person.initialize(chair_person);
 
@@ -73,8 +76,7 @@ mod ballot {
 
         /// Give `voter` the right to vote on this ballot.
         /// May only be called by `chairperson`.
-        #[liquid(external)]
-        fn give_right_to_vote(&mut self, voter: Address) {
+        pub fn give_right_to_vote(&mut self, voter: Address) {
             // If the first argument of `require` evaluates
             // to `false`, execution terminates and all
             // changes to the state and to Ether balances
@@ -95,8 +97,7 @@ mod ballot {
         }
 
         /// Delegate your vote to the voter `to`.
-        #[liquid(external)]
-        fn delegate(&mut self, mut to: Address) {
+        pub fn delegate(&mut self, mut to: Address) {
             require(
                 to != self.env().get_caller(),
                 "Self-delegation is disallowed.",
@@ -143,8 +144,7 @@ mod ballot {
 
         /// Give your vote (including votes delegated to you)
         /// to proposal `proposals[proposal].name`.
-        #[liquid(external)]
-        fn vote(&mut self, proposal: u32) {
+        pub fn vote(&mut self, proposal: u32) {
             let caller = self.env().get_caller();
             let sender = &mut self.voters[&caller];
             require(sender.weight != 0, "Has no right to vote");
@@ -160,8 +160,7 @@ mod ballot {
 
         /// Computes the winning proposal taking all
         /// previous votes into account.
-        #[liquid(external)]
-        fn winning_proposal(&self) -> u32 {
+        pub fn winning_proposal(&self) -> u32 {
             let mut winning_vote_count = 0;
             let mut winning_proposal = 0;
 
@@ -178,8 +177,7 @@ mod ballot {
         /// Calls winningProposal() function to get the index
         /// of the winner contained in the proposals array and then
         /// returns the name of the winner.
-        #[liquid(external)]
-        fn winner_name(&self) -> String {
+        pub fn winner_name(&self) -> String {
             self.proposals[self.winning_proposal()].name.clone()
         }
     }

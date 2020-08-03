@@ -1,5 +1,5 @@
 error: constructor of liquid contract should not have return value
-  --> $DIR/01-constructor-returns.rs:10:38
+  --> $DIR/01-constructor-returns.rs:10:39
    |
-10 |         fn invalid_return(&mut self) -> Self {}
-   |                                      ^^^^^^^
+10 |         pub fn constructor(&mut self) -> Self {}
+   |                                       ^^^^^^^

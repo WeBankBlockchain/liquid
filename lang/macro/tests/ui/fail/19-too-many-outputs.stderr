@@ -1,12 +1,12 @@
 error: the number of output arguments should not be more than 16
-  --> $DIR/19-too-many-outputs.rs:17:11
+  --> $DIR/19-too-many-outputs.rs:16:11
    |
-17 |           ) -> (
+16 |           ) -> (
    |  ___________^
+17 | |             u8,
 18 | |             u8,
 19 | |             u8,
-20 | |             u8,
 ...  |
-34 | |             u8,
-35 | |         ) {
+33 | |             u8,
+34 | |         ) {
    | |_________^

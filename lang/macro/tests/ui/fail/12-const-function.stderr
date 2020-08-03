@@ -1,5 +1,5 @@
 error: `const` is not supported for functions in liquid contract
-  --> $DIR/12-const-function.rs:13:9
+  --> $DIR/12-const-function.rs:12:13
    |
-13 |         const fn noop(&self) {}
-   |         ^^^^^
+12 |         pub const fn noop(&self) {}
+   |             ^^^^^

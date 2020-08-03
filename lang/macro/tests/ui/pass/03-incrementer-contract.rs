@@ -9,40 +9,18 @@ mod incrementer {
         value: storage::Value<u128>,
     }
 
+    #[liquid(methods)]
     impl Incrementer {
-        #[liquid(constructor)]
-        fn init(&mut self) {
+        pub fn constructor(&mut self) {
             self.value.initialize(0);
         }
 
-        #[liquid(external)]
-        fn inc_by(&mut self, delta: u128) {
+        pub fn inc_by(&mut self, delta: u128) {
             self.value += delta;
         }
 
-        #[liquid(external)]
-        fn get(&self) -> u128 {
+        pub fn get(&self) -> u128 {
             *self.value
-        }
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-
-        #[test]
-        fn init_works() {
-            let contract = Incrementer::init();
-            assert_eq!(contract.get(), 0);
-        }
-
-        #[test]
-        fn inc_by_works() {
-            let mut contract = Incrementer::init();
-            contract.inc_by(42);
-            assert_eq!(contract.get(), 42);
-            contract.inc_by(42);
-            assert_eq!(contract.get(), 84);
         }
     }
 }

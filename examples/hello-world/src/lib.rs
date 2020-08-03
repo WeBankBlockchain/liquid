@@ -11,24 +11,21 @@ mod hello_world {
         name: storage::Value<String>,
     }
 
+    #[liquid(methods)]
     impl HelloWorld {
-        #[liquid(constructor)]
-        fn new(&mut self) {
+        pub fn constructor(&mut self) {
             self.name.initialize(String::from("Hello, World!"));
         }
 
-        #[liquid(external)]
-        fn get(&self) -> String {
+        pub fn get(&self) -> String {
             self.name.clone()
         }
 
-        #[liquid(external)]
-        fn set(&mut self, name: String) {
+        pub fn set(&mut self, name: String) {
             *self.name = name;
         }
 
-        #[liquid(external)]
-        fn test_require(&self) {
+        pub fn test_require(&self) {
             require(false, "test");
         }
     }
@@ -40,20 +37,20 @@ mod hello_world {
         #[test]
         #[should_panic]
         fn require_works() {
-            let contract = HelloWorld::new();
+            let contract = HelloWorld::constructor();
             contract.test_require();
         }
 
         #[test]
         fn get_works() {
-            let contract = HelloWorld::new();
+            let contract = HelloWorld::constructor();
             assert_eq!(contract.get(), "Hello, World!".to_owned());
         }
 
         #[test]
         fn set_works() {
             let new_name = "Bye, world!".to_owned();
-            let mut contract = HelloWorld::new();
+            let mut contract = HelloWorld::constructor();
             contract.set(new_name.clone());
             assert_eq!(contract.get(), new_name);
         }

@@ -5,9 +5,9 @@ mod noop {
     #[liquid(storage)]
     struct Noop {}
 
+    #[liquid(methods)]
     impl Noop {
-        #[liquid(external)]
-        fn noop(&self) {}
+        pub fn noop(&self) {}
     }
 }
 

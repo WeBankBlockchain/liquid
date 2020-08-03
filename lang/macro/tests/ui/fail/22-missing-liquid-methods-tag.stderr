@@ -1,0 +1,9 @@
+error: impl blocks in liquid contract should be tagged with `#[liquid(methods)]`
+  --> $DIR/22-missing-liquid-methods-tag.rs:8:5
+   |
+8  | /     impl Noop {
+9  | |         pub fn constructor(&mut self) {}
+10 | |
+11 | |         pub fn noop(&self) {}
+12 | |     }
+   | |_____^

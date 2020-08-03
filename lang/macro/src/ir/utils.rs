@@ -18,13 +18,6 @@ pub fn is_liquid_attribute(attr: &syn::Attribute) -> bool {
     attr.path.is_ident("liquid")
 }
 
-pub fn has_liquid_attribute<I>(attrs: I) -> bool
-where
-    I: Iterator<Item = syn::Attribute>,
-{
-    attrs.filter(is_liquid_attribute).count() > 0
-}
-
 pub fn filter_non_liquid_attributes<'a, I>(
     attrs: I,
 ) -> impl Iterator<Item = &'a syn::Attribute>
@@ -32,16 +25,6 @@ where
     I: IntoIterator<Item = &'a syn::Attribute>,
 {
     attrs.into_iter().filter(|attr| !is_liquid_attribute(attr))
-}
-
-#[allow(dead_code)]
-pub fn filter_liquid_attributes<'a, I>(
-    attrs: I,
-) -> impl Iterator<Item = &'a syn::Attribute>
-where
-    I: IntoIterator<Item = &'a syn::Attribute>,
-{
-    attrs.into_iter().filter(|attr| is_liquid_attribute(attr))
 }
 
 pub fn filter_map_liquid_attributes<'a, I>(attrs: I) -> impl Iterator<Item = Marker>

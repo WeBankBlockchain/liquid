@@ -5,12 +5,11 @@ mod noop {
     #[liquid(storage)]
     struct Noop {}
 
+    #[liquid(methods)]
     impl Noop {
-        #[liquid(constructor)]
-        fn invalid_return(&mut self) -> Self {}
+        pub fn constructor(&mut self) -> Self {}
 
-        #[liquid(message)]
-        fn noop(&self, i: u8, s: String) -> (bool, i32) {}
+        pub fn noop(&self, i: u8, s: String) -> (bool, i32) {}
     }
 }
 

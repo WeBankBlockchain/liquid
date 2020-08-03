@@ -27,8 +27,8 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/06-constructor-no-mut-ref.rs");
     t.compile_fail("tests/ui/fail/07-missing-storage-struct.rs");
     t.compile_fail("tests/ui/fail/08-multiple-storage-struct.rs");
-    t.compile_fail("tests/ui/fail/09-conflict-liquid-markers.rs");
-    t.compile_fail("tests/ui/fail/10-unknown-function-marker.rs");
+    t.compile_fail("tests/ui/fail/09-invalid-visibility.rs");
+    t.compile_fail("tests/ui/fail/10-private-constructor.rs");
     t.compile_fail("tests/ui/fail/11-unsafe-function.rs");
     t.compile_fail("tests/ui/fail/12-const-function.rs");
     t.compile_fail("tests/ui/fail/13-async-function.rs");
@@ -40,4 +40,5 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/19-too-many-outputs.rs");
     t.compile_fail("tests/ui/fail/20-invalid-constructor-parameter.rs");
     t.compile_fail("tests/ui/fail/21-generic-storage.rs");
+    t.compile_fail("tests/ui/fail/22-missing-liquid-methods-tag.rs");
 }

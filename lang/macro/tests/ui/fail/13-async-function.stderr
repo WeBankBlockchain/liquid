@@ -1,5 +1,5 @@
 error: `async` is not supported for functions in liquid contract
-  --> $DIR/13-async-function.rs:13:9
+  --> $DIR/13-async-function.rs:12:13
    |
-13 |         async fn noop(&self) {}
-   |         ^^^^^
+12 |         pub async fn noop(&self) {}
+   |             ^^^^^

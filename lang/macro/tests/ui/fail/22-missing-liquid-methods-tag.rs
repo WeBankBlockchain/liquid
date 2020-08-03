@@ -6,12 +6,9 @@ mod noop {
     struct Noop {}
 
     impl Noop {
-        #[liquid(constructor)]
-        fn init(&mut self) {}
+        pub fn constructor(&mut self) {}
 
-        #[liquid(constructor)]
-        #[liquid(external)]
-        fn noop(&self) {}
+        pub fn noop(&self) {}
     }
 }
 

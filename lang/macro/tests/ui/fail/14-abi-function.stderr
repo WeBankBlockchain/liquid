@@ -1,5 +1,5 @@
 error: specifying ABI is not supported for functions in liquid contract
-  --> $DIR/14-abi-function.rs:13:9
+  --> $DIR/14-abi-function.rs:12:13
    |
-13 |         extern "C" fn noop(&self) {}
-   |         ^^^^^^^^^^
+12 |         pub extern "C" fn noop(&self) {}
+   |             ^^^^^^^^^^

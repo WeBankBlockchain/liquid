@@ -11,19 +11,17 @@ mod sum_1 {
         value: storage::Vec<u32>,
     }
 
+    #[liquid(methods)]
     impl Sum1 {
-        #[liquid(constructor)]
-        fn init(&mut self) {
+        pub fn constructor(&mut self) {
             self.value.initialize();
         }
 
-        #[liquid(external)]
-        fn append(&mut self, elem: u32) {
+        pub fn append(&mut self, elem: u32) {
             self.value.push(elem);
         }
 
-        #[liquid(external)]
-        fn sum(&self) -> u32 {
+        pub fn sum(&self) -> u32 {
             let mut ret = 0u32;
             for elem in self.value.iter() {
                 ret += elem;
@@ -38,7 +36,7 @@ mod sum_1 {
 
         #[test]
         fn it_works() {
-            let mut contract = Sum1::init();
+            let mut contract = Sum1::constructor();
             for i in 0..10 {
                 contract.append(i);
             }
@@ -48,7 +46,7 @@ mod sum_1 {
         #[test]
         #[should_panic]
         fn upper_overflow() {
-            let mut contract = Sum1::init();
+            let mut contract = Sum1::constructor();
             contract.append(u32::MAX);
             contract.append(u32::MAX);
             let _ = contract.sum();

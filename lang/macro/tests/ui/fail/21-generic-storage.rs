@@ -7,12 +7,11 @@ mod noop {
         t: T,
     }
 
+    #[liquid(methods)]
     impl Noop {
-        #[liquid(constructor)]
-        fn init(&mut self) {}
+        pub fn constructor(&mut self) {}
 
-        #[liquid(external)]
-        fn noop(&self) {}
+        pub fn noop(&self) {}
     }
 }
 

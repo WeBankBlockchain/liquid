@@ -8,20 +8,18 @@ mod noop {
     #[liquid(storage)]
     struct Noop_2 {}
 
+    #[liquid(methods)]
     impl Noop_1 {
-        #[liquid(constructor)]
-        fn init(&mut self) {}
+        pub fn constructor(&mut self) {}
 
-        #[liquid(external)]
-        fn noop(&self) {}
+        pub fn noop(&self) {}
     }
 
+    #[liquid(methods)]
     impl Noop_2 {
-        #[liquid(constructor)]
-        fn init(&mut self) {}
+        pub fn constructor(&mut self) {}
 
-        #[liquid(external)]
-        fn noop(&self) {}
+        pub fn noop(&self) {}
     }
 }
 

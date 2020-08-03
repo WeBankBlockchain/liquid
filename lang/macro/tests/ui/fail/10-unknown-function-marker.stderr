@@ -1,5 +1,0 @@
-error: unknown marker for the liquid function
-  --> $DIR/10-unknown-function-marker.rs:12:17
-   |
-12 |         #[liquid(unknown)]
-   |                 ^^^^^^^^^

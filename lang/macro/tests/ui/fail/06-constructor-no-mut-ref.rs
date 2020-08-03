@@ -5,12 +5,11 @@ mod noop {
     #[liquid(storage)]
     struct Noop {}
 
+    #[liquid(methods)]
     impl Noop {
-        #[liquid(constructor)]
-        fn init(&self) {}
+        pub fn constructor(&self) {}
 
-        #[liquid(external)]
-        fn noop(&self) {}
+        pub fn noop(&self) {}
     }
 }
 

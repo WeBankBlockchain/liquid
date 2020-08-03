@@ -17,14 +17,13 @@ mod noop {
         value: storage::Value<MyState>,
     }
 
+    #[liquid(methods)]
     impl Noop {
-        #[liquid(constructor)]
-        fn init(&mut self) {
+        pub fn constructor(&mut self) {
             self.value.initialize(MyState { b: false, i: 0i32 });
         }
 
-        #[liquid(external)]
-        fn noop(&self) -> bool {
+        pub fn noop(&self) -> bool {
             self.value.b
         }
     }

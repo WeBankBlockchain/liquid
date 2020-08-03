@@ -1,5 +1,5 @@
 error: `&mut self` is mandatory for constructor of liquid contract
-  --> $DIR/06-constructor-no-mut-ref.rs:10:17
+  --> $DIR/06-constructor-no-mut-ref.rs:10:28
    |
-10 |         fn init(&self) {}
-   |                 ^^^^^
+10 |         pub fn constructor(&self) {}
+   |                            ^^^^^

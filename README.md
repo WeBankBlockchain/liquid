@@ -21,19 +21,17 @@ mod hello_world {
         name: storage::Value<String>,
     }
 
+    #[liquid(methods)]
     impl HelloWorld {
-        #[liquid(constructor)]
-        fn new(&mut self) {
+        pub fn constructor(&mut self) {
             self.name.initialize(String::from("Hello, World!"));
         }
 
-        #[liquid(external)]
-        fn get(&self) -> String {
+        pub fn get(&self) -> String {
             self.name.clone()
         }
 
-        #[liquid(external)]
-        fn set(&mut self, name: String) {
+        pub fn set(&mut self, name: String) {
             *self.name = name;
         }
     }

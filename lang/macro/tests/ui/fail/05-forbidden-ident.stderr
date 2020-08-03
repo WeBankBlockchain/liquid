@@ -1,5 +1,5 @@
 error: identifiers starting with `__liquid` are forbidden in liquid contract
-  --> $DIR/05-forbidden-ident.rs:13:12
+  --> $DIR/05-forbidden-ident.rs:12:12
    |
-13 |         fn __liquid_noop(&self) {}
+12 |         fn __liquid_noop(&self) {}
    |            ^^^^^^^^^^^^^

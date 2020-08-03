@@ -11,19 +11,17 @@ mod sum_2 {
         values: storage::IterableMapping<String, u32>,
     }
 
+    #[liquid(methods)]
     impl Sum2 {
-        #[liquid(constructor)]
-        fn init(&mut self) {
+        pub fn constructor(&mut self) {
             self.values.initialize();
         }
 
-        #[liquid(external)]
-        fn insert(&mut self, key: String, val: u32) {
+        pub fn insert(&mut self, key: String, val: u32) {
             self.values.insert(key, val);
         }
 
-        #[liquid(external)]
-        fn sum(&self) -> u32 {
+        pub fn sum(&self) -> u32 {
             let mut ret = 0u32;
             for (_, v) in self.values.iter() {
                 ret += v;
@@ -38,7 +36,7 @@ mod sum_2 {
 
         #[test]
         fn it_works() {
-            let mut contract = Sum2::init();
+            let mut contract = Sum2::constructor();
             for i in 0..10 {
                 contract.insert(i.to_string(), i);
             }

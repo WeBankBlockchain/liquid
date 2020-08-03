@@ -7,22 +7,19 @@ mod noop {
 
     type MyInt = i32;
 
+    #[liquid(methods)]
     impl Noop {
-        #[liquid(constructor)]
-        fn init(&mut self) {}
+        pub fn constructor(&mut self) {}
 
-        #[liquid(external)]
-        fn noop_0(&self, _i: i32, _s: String, _b: bool) -> bool {
+        pub fn noop_0(&self, _i: i32, _s: String, _b: bool) -> bool {
             false
         }
 
-        #[liquid(external)]
-        fn noop_1(&self, _i: i32, _s: String, _b: bool) -> i32 {
+        pub fn noop_1(&self, _i: i32, _s: String, _b: bool) -> i32 {
             0i32
         }
 
-        #[liquid(external)]
-        fn noop_2(&self, _i: MyInt, _s: String, _b: bool) -> i32 {
+        pub fn noop_2(&self, _i: MyInt, _s: String, _b: bool) -> i32 {
             0i32
         }
     }

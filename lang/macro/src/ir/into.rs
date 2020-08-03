@@ -349,13 +349,6 @@ impl TryFrom<syn::ImplItemMethod> for ir::Function {
     type Error = Error;
 
     fn try_from(method: syn::ImplItemMethod) -> Result<Self> {
-        if method.vis != syn::Visibility::Inherited {
-            bail!(
-                method.vis,
-                "visibility modifiers are not allowed for liquid functions",
-            )
-        }
-
         if method.defaultness.is_some() {
             bail!(
                 method.defaultness,
@@ -363,64 +356,55 @@ impl TryFrom<syn::ImplItemMethod> for ir::Function {
             )
         }
 
-        let span = method.span();
-        let sig = ir::Signature::try_from(&method.sig)?;
-
-        let (liquid_markers, non_liquid_markers): (Vec<_>, Vec<_>) = method
-            .attrs
-            .into_iter()
-            .partition_map(|attr| match ir::Marker::try_from(attr.clone()) {
-                Ok(marker) => Either::Left(marker),
-                Err(_) => Either::Right(attr),
-            });
-
-        let (mut has_constructor_marker, mut has_external_marker) = (false, false);
-        for marker in liquid_markers {
-            match marker.ident.to_string().as_str() {
-                "constructor" => has_constructor_marker = true,
-                "external" => has_external_marker = true,
-                _ => bail_span!(marker.span(), "unknown marker for the liquid function"),
-            }
+        match method.vis {
+            syn::Visibility::Crate(_) | syn::Visibility::Restricted(_) => bail!(
+                method.vis,
+                "crate-level visibility or visibility level restricted to some path is \
+                 not supported for liquid functions",
+            ),
+            _ => (),
         }
 
-        let kind = match (has_constructor_marker, has_external_marker) {
-            (true, true) => bail_span!(
-                span,
-                "liquid functions can't be marked as `constructor` and `external` \
-                 simultaneously"
-            ),
-            (true, false) => {
-                if !sig.is_mut() {
-                    bail_span!(
-                        sig.inputs[0].span(),
-                        "`&mut self` is mandatory for constructor of liquid contract"
-                    )
-                }
+        let span = method.span();
+        let sig = ir::Signature::try_from(&method.sig)?;
+        let ident = &sig.ident;
 
-                if let syn::ReturnType::Type(t, ty) = sig.output {
-                    bail_span!(
-                        t.span().join(ty.span()).expect(
-                            "right arrow token and return type are in the same file"
-                        ),
-                        "constructor of liquid contract should not have return value"
-                    )
-                }
+        let kind = if ident == "constructor" {
+            match method.vis {
+                syn::Visibility::Public(_) => {
+                    if !sig.is_mut() {
+                        bail_span!(
+                            sig.inputs[0].span(),
+                            "`&mut self` is mandatory for constructor of liquid contract"
+                        )
+                    }
+                    if let syn::ReturnType::Type(t, ty) = sig.output {
+                        bail_span!(
+                            t.span().join(ty.span()).expect(
+                                "right arrow token and return type are in the same file"
+                            ),
+                            "constructor of liquid contract should not have return value"
+                        )
+                    }
 
-                ir::FunctionKind::Constructor
+                    ir::FunctionKind::Constructor
+                }
+                _ => bail!(
+                    ident,
+                    "the visibility for constructor of liquid contract should be `pub`",
+                ),
             }
-            (false, true) => {
-                let fn_name = method.sig.ident;
-                let fn_hash = liquid_primitives::hash::keccak::keccak256(
-                    fn_name.to_string().as_bytes(),
-                );
-                let fn_id = u32::from_be_bytes(fn_hash) as usize;
-                ir::FunctionKind::External(fn_id)
-            }
-            _ => ir::FunctionKind::Normal,
+        } else if let syn::Visibility::Public(_) = method.vis {
+            let fn_name_hash =
+                liquid_primitives::hash::keccak::keccak256(ident.to_string().as_bytes());
+            let fn_id = u32::from_be_bytes(fn_name_hash) as usize;
+            ir::FunctionKind::External(fn_id)
+        } else {
+            ir::FunctionKind::Normal
         };
 
         Ok(Self {
-            attrs: non_liquid_markers,
+            attrs: method.attrs,
             kind,
             sig,
             body: method.block,
@@ -434,13 +418,16 @@ impl TryFrom<syn::ItemImpl> for ir::ItemImpl {
 
     fn try_from(item_impl: syn::ItemImpl) -> Result<Self> {
         if item_impl.defaultness.is_some() {
-            bail!(item_impl.defaultness, "`default` not supported in liquid",)
+            bail!(
+                item_impl.defaultness,
+                "default implementation blocks not supported in liquid",
+            )
         }
 
         if item_impl.unsafety.is_some() {
             bail!(
                 item_impl.unsafety,
-                "`unsafe` implementation blocks are not supported in liquid",
+                "unsafe implementation blocks are not supported in liquid",
             )
         }
 
@@ -485,7 +472,7 @@ impl TryFrom<syn::ItemImpl> for ir::ItemImpl {
             Some(ident) => ident.clone(),
             None => bail!(
                 type_path.path,
-                "encountered invalid liquid implementer type path",
+                "don't use type path for liquid storage implementer",
             ),
         };
 
@@ -558,40 +545,41 @@ impl TryFrom<syn::Item> for ir::Item {
     fn try_from(item: syn::Item) -> Result<Self> {
         match item.clone() {
             syn::Item::Struct(item_struct) => {
-                let markers = utils::filter_map_liquid_attributes(&item_struct.attrs)
-                    .collect::<Vec<_>>();
-                let storage_marker_pos =
-                    markers.iter().position(|marker| marker.ident == "storage");
-
-                match storage_marker_pos {
-                    Some(_) => ir::ItemStorage::try_from(item_struct)
-                        .map(Into::into)
-                        .map(Box::new)
-                        .map(ir::Item::Liquid),
-                    _ => Ok(ir::Item::Rust(Box::new(item.into()))),
+                let is_contract_storage;
+                {
+                    let mut markers =
+                        utils::filter_map_liquid_attributes(&item_struct.attrs);
+                    is_contract_storage = markers.any(|marker| marker.ident == "storage");
                 }
-            }
-            syn::Item::Impl(item_impl) => {
-                let has_liquid_functions = item_impl
-                    .items
-                    .iter()
-                    .filter_map(|item| match item {
-                        syn::ImplItem::Method(method) => Some(method),
-                        _ => None,
-                    })
-                    .filter(|method| {
-                        utils::has_liquid_attribute(method.attrs.iter().cloned())
-                    })
-                    .count()
-                    > 0;
 
-                if has_liquid_functions {
-                    ir::ItemImpl::try_from(item_impl)
+                if is_contract_storage {
+                    ir::ItemStorage::try_from(item_struct)
                         .map(Into::into)
                         .map(Box::new)
                         .map(ir::Item::Liquid)
                 } else {
                     Ok(ir::Item::Rust(Box::new(item.into())))
+                }
+            }
+            syn::Item::Impl(item_impl) => {
+                let is_contract_impl;
+                {
+                    let mut markers =
+                        utils::filter_map_liquid_attributes(&item_impl.attrs);
+                    is_contract_impl = markers.any(|marker| marker.ident == "methods");
+                }
+
+                if is_contract_impl {
+                    ir::ItemImpl::try_from(item_impl)
+                        .map(Into::into)
+                        .map(Box::new)
+                        .map(ir::Item::Liquid)
+                } else {
+                    bail!(
+                        item_impl,
+                        "impl blocks in liquid contract should be tagged with \
+                         `#[liquid(methods)]`"
+                    )
                 }
             }
             _ => Ok(ir::Item::Rust(Box::new(item.into()))),
