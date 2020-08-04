@@ -10,6 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod block;
 mod contract_storage;
+mod exec_context;
 
+pub use block::Block;
 pub use contract_storage::ContractStorage;
+pub use exec_context::ExecContext;

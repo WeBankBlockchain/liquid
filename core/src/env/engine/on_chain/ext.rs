@@ -34,6 +34,10 @@ mod sys {
         pub fn revert(data_offset: u32, data_length: u32);
 
         pub fn getCaller(data_offset: u32);
+
+        pub fn getBlockTimestamp() -> u64;
+
+        pub fn getBlockNumber() -> u64;
     }
 }
 
@@ -88,4 +92,12 @@ pub fn get_caller(result_offset: &mut [u8]) {
     unsafe {
         sys::getCaller(result_offset.as_mut_ptr() as u32);
     }
+}
+
+pub fn get_block_timestamp() -> u64 {
+    unsafe { sys::getBlockTimestamp() }
+}
+
+pub fn get_block_number() -> u64 {
+    unsafe { sys::getBlockNumber() }
 }

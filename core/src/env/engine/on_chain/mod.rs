@@ -16,7 +16,7 @@ mod ext;
 use self::buffer::StaticBuffer;
 use super::OnInstance;
 use crate::env::{
-    types::{Address, ADDRESS_LENGTH},
+    types::{Address, BlockNumber, Timestamp, ADDRESS_LENGTH},
     CallData, Env, EnvError, Result,
 };
 use liquid_abi_codec::Decode;
@@ -126,5 +126,13 @@ impl Env for EnvInstance {
         let mut address = [0u8; ADDRESS_LENGTH];
         address.copy_from_slice(&self.buffer[..ADDRESS_LENGTH]);
         Address::new(address)
+    }
+
+    fn now(&mut self) -> Timestamp {
+        ext::get_block_timestamp() as Timestamp
+    }
+
+    fn get_block_number(&mut self) -> BlockNumber {
+        ext::get_block_number() as BlockNumber
     }
 }

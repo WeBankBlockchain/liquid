@@ -23,7 +23,7 @@ cfg_if! {
         mod on_chain;
         pub use self::on_chain::EnvInstance;
     } else if #[cfg(feature = "std")] {
-        mod off_chain;
+        pub mod off_chain;
         pub use self::off_chain::EnvInstance;
     } else {
         compile_error! {

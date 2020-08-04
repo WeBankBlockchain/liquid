@@ -1,5 +1,5 @@
 error[E0277]: the trait bound `f32: liquid_lang::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type` is not satisfied
-  --> $DIR/20-invalid-constructor-parameter.rs:10:28
+  --> $DIR/20-invalid-constructor-parameter.rs:10:20
    |
-10 |         pub fn constructor(&mut self, value: f32) {}
-   |                            ^^^^^^^^^^^^^^^^^^^^^ the trait `liquid_lang::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type` is not implemented for `f32`
+10 |         pub fn new(&mut self, value: f32) {}
+   |                    ^^^^^^^^^^^^^^^^^^^^^ the trait `liquid_lang::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type` is not implemented for `f32`

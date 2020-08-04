@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use core::cmp::Ordering;
 use liquid_abi_codec::{
     peek, DecodeResult, Error, IsDynamic, Mediate, MediateDecode, MediateEncode, Word,
     WORD_SIZE,
@@ -86,11 +87,11 @@ impl ToString for Address {
     }
 }
 
-impl<Q> From<Q> for Address
-where
-    Q: AsRef<str>,
-{
-    fn from(origin: Q) -> Self {
+impl Address {
+    pub fn from_string<Q>(origin: Q) -> Self
+    where
+        Q: AsRef<str>,
+    {
         let addr_str: &str = origin.as_ref();
 
         if !addr_str.is_ascii() {
@@ -116,6 +117,49 @@ where
 
         Self(address)
     }
+
+    pub fn from_bytes(bytes: &[u8; ADDRESS_LENGTH]) -> Self {
+        Self(*bytes)
+    }
+}
+
+impl PartialEq<[u8; ADDRESS_LENGTH]> for Address {
+    fn eq(&self, rhs: &[u8; ADDRESS_LENGTH]) -> bool {
+        self.0.eq(rhs)
+    }
+}
+
+impl PartialEq<str> for Address {
+    fn eq(&self, rhs: &str) -> bool {
+        if !rhs.is_ascii() {
+            return false;
+        }
+
+        if rhs.len() != ADDRESS_LENGTH * 2 + 2 {
+            return false;
+        }
+
+        if !rhs.starts_with("0x") && !rhs.starts_with("0X") {
+            return false;
+        }
+
+        let bytes = rhs.as_bytes();
+        for i in 0..ADDRESS_LENGTH {
+            let digit = (self.0)[i];
+            let low = digit & 0x0fu8;
+            let high = digit >> 4;
+            if high != bytes[2 + i * 2] || low != bytes[3 + i * 2] {
+                return false;
+            }
+        }
+        true
+    }
+}
+
+impl PartialOrd<[u8; ADDRESS_LENGTH]> for Address {
+    fn partial_cmp(&self, other: &[u8; ADDRESS_LENGTH]) -> Option<Ordering> {
+        self.0.partial_cmp(other)
+    }
 }
 
 #[cfg(feature = "liquid-abi-gen")]
@@ -129,6 +173,9 @@ impl GenerateComponents for Address {}
 
 #[cfg(feature = "liquid-abi-gen")]
 impl IsDynamicArray for Address {}
+
+pub type Timestamp = u64;
+pub type BlockNumber = u64;
 
 #[cfg(test)]
 mod tests {
@@ -188,27 +235,27 @@ mod tests {
         let address = Address(TEST_ADDR.clone());
         let addr_str = "0x3e9afaa4a062a49d64b8ab057b3cb51892e17ecb";
         assert_eq!(address.to_string(), addr_str);
-        assert_eq!(Address::from(addr_str), address);
+        assert_eq!(Address::from_string(addr_str), address);
 
         let addr_str = String::from(addr_str);
-        assert_eq!(Address::from(&addr_str), address);
+        assert_eq!(Address::from_string(&addr_str), address);
     }
 
     #[test]
     #[should_panic]
     fn invalid_addr_length() {
-        let _ = Address::from("0x3e9afaa4a062a49d64b8ab057b3cb51892e1");
+        let _ = Address::from_string("0x3e9afaa4a062a49d64b8ab057b3cb51892e1");
     }
 
     #[test]
     #[should_panic]
     fn invalid_addr_start() {
-        let _ = Address::from("0b3e9afaa4a062a49d64b8ab057b3cb51892e17ecb");
+        let _ = Address::from_string("0b3e9afaa4a062a49d64b8ab057b3cb51892e17ecb");
     }
 
     #[test]
     #[should_panic]
     fn invalid_addr_str_encode() {
-        let _ = Address::from("羞答答小白虎头李荣浩");
+        let _ = Address::from_string("羞答答小白虎头李荣浩");
     }
 }

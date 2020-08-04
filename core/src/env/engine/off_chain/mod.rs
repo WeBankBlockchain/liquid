@@ -11,21 +11,44 @@
 // limitations under the License.
 
 mod db;
+pub mod test_api;
 
-use self::db::ContractStorage;
-use crate::env::{engine::OnInstance, types::Address, CallData, Env, Result};
+use self::db::{Block, ContractStorage, ExecContext};
+use crate::env::{
+    engine::OnInstance,
+    types::{Address, BlockNumber, Timestamp},
+    CallData, Env, Result,
+};
 use core::cell::RefCell;
 
-#[allow(dead_code)]
 pub struct EnvInstance {
     contract_storage: ContractStorage,
+    blocks: Vec<Block>,
+    exec_contexts: Vec<ExecContext>,
 }
 
 impl EnvInstance {
     pub fn new() -> Self {
+        let mut blocks = Vec::new();
+        blocks.push(Block::new(0));
+
         Self {
             contract_storage: ContractStorage::new(),
+            blocks,
+            exec_contexts: Vec::new(),
         }
+    }
+
+    pub fn current_exec_context(&self) -> &ExecContext {
+        self.exec_contexts
+            .last()
+            .expect("there must be at least one execution context in test environment")
+    }
+
+    pub fn current_block(&self) -> &Block {
+        self.blocks
+            .last()
+            .expect("there must be at least one block in test environment")
     }
 }
 
@@ -63,14 +86,23 @@ impl Env for EnvInstance {
     where
         V: liquid_abi_codec::Encode,
     {
-        // Ensure that `V` can only be String.
+        // Ensure that the type of `V` can only be String.
         panic!(<String as liquid_abi_codec::Decode>::decode(
             &mut msg.encode().as_slice()
-        ));
+        )
+        .unwrap());
     }
 
     fn get_caller(&mut self) -> Address {
-        Address::from("0x3e9afaa4a062a49d64b8ab057b3cb51892e17ecb")
+        self.current_exec_context().caller()
+    }
+
+    fn now(&mut self) -> Timestamp {
+        self.current_block().timestamp()
+    }
+
+    fn get_block_number(&mut self) -> BlockNumber {
+        self.current_block().block_number()
     }
 }
 

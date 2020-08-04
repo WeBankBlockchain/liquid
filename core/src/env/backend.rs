@@ -10,7 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::env::{types::Address, CallData, Result};
+use crate::env::{
+    types::{Address, BlockNumber, Timestamp},
+    CallData, Result,
+};
 
 pub trait Env {
     fn set_storage<V>(&mut self, key: &[u8], value: &V)
@@ -34,4 +37,8 @@ pub trait Env {
         V: liquid_abi_codec::Encode;
 
     fn get_caller(&mut self) -> Address;
+
+    fn now(&mut self) -> Timestamp;
+
+    fn get_block_number(&mut self) -> BlockNumber;
 }

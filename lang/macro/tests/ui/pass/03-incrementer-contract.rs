@@ -11,7 +11,7 @@ mod incrementer {
 
     #[liquid(methods)]
     impl Incrementer {
-        pub fn constructor(&mut self) {
+        pub fn new(&mut self) {
             self.value.initialize(0);
         }
 

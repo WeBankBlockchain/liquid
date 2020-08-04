@@ -19,7 +19,7 @@ mod noop {
 
     #[liquid(methods)]
     impl Noop {
-        pub fn constructor(&mut self) {
+        pub fn new(&mut self) {
             self.value.initialize(MyState { b: false, i: 0i32 });
         }
 

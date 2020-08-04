@@ -16,7 +16,7 @@ mod noop {
 
     #[liquid(methods)]
     impl Noop {
-        pub fn constructor(&mut self) {}
+        pub fn new(&mut self) {}
 
         pub fn noop(&self, _s: Vec<MyStruct>) -> Vec<MyStruct> {
             Vec::new()

@@ -369,7 +369,7 @@ impl TryFrom<syn::ImplItemMethod> for ir::Function {
         let sig = ir::Signature::try_from(&method.sig)?;
         let ident = &sig.ident;
 
-        let kind = if ident == "constructor" {
+        let kind = if ident == "new" {
             match method.vis {
                 syn::Visibility::Public(_) => {
                     if !sig.is_mut() {

@@ -31,9 +31,6 @@ impl GenerateCode for ir::Contract {
         let abi = ABIGen::from(self).generate_code();
         let rust_items = &self.rust_items;
 
-        let constr_args = self.constructor.sig.input_args();
-        let constr_arg_idents = self.constructor.sig.input_arg_idents();
-
         quote! {
             mod #ident {
                 use liquid_lang::intrinsics::*;
@@ -50,9 +47,8 @@ impl GenerateCode for ir::Contract {
 
                 #[cfg(test)]
                 #[allow(non_snake_case)]
-                pub fn #storage_ident(#(#constr_args)*) -> __liquid_private::TestableStorage {
-                    __liquid_private::TestableStorage::constructor(#(#constr_arg_idents)*)
-                }
+                pub type #storage_ident = __liquid_private::TestableStorage;
+
 
                 #[cfg(not(test))]
                 pub type #storage_ident = __liquid_private::Storage;

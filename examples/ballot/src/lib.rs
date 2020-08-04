@@ -49,15 +49,20 @@ mod ballot {
     #[liquid(methods)]
     impl Ballot {
         /// Create a new ballot to choose one of `proposalNames`.
-        pub fn constructor(
-            &mut self,
-            proposal_names: liquid_core::env::types::Vec<String>,
-        ) {
+        pub fn new(&mut self, proposal_names: liquid_core::env::types::Vec<String>) {
             let chair_person = self.env().get_caller();
             self.chair_person.initialize(chair_person);
 
             self.voters.initialize();
-            self.voters[&chair_person].weight = 1;
+            self.voters.insert(
+                &chair_person,
+                Voter {
+                    weight: 1,
+                    voted: false,
+                    delegate: Address::empty(),
+                    vote: 0,
+                },
+            );
 
             // For each of the provided proposal names,
             // create a new proposal object and add it
@@ -91,9 +96,22 @@ mod ballot {
                 self.env().get_caller() == *self.chair_person,
                 "Only chairperson can give right to vote.",
             );
-            require(!self.voters[&voter].voted, "The voter already voted.");
-            require(self.voters[&voter].weight == 0, "");
-            self.voters[&voter].weight = 1;
+
+            if let Some(voter) = self.voters.get_mut(&voter) {
+                require(!voter.voted, "The voter already voted.");
+                require(voter.weight == 0, "The weight of voter is not zero.");
+                voter.weight = 1;
+            } else {
+                self.voters.insert(
+                    &voter,
+                    Voter {
+                        weight: 1,
+                        voted: false,
+                        delegate: Address::empty(),
+                        vote: 0,
+                    },
+                );
+            }
         }
 
         /// Delegate your vote to the voter `to`.
@@ -101,6 +119,10 @@ mod ballot {
             require(
                 to != self.env().get_caller(),
                 "Self-delegation is disallowed.",
+            );
+            require(
+                self.voters.contains_key(&to),
+                "Can not delegate to an inexistent voter",
             );
 
             // assigns reference
@@ -124,7 +146,7 @@ mod ballot {
             }
 
             // Since `sender` is a reference, this
-            // modifies `voters[msg.sender].voted`
+            // modifies `self.voters[msg.sender].voted`
             let sender = &mut self.voters[caller];
             sender.voted = true;
             sender.delegate = to;
@@ -179,6 +201,215 @@ mod ballot {
         /// returns the name of the winner.
         pub fn winner_name(&self) -> String {
             self.proposals[self.winning_proposal()].name.clone()
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use liquid_core::env::test;
+
+        fn deploy_contract() -> Ballot {
+            // The address of chairman is "0x000...000".
+            test::push_execution_context(Address::from_bytes(&[0u8; 20]));
+
+            let proposal_names = vec![
+                "play with cat".to_string(),
+                "eat".to_string(),
+                "sleep".to_string(),
+            ];
+            Ballot::new(proposal_names)
+        }
+
+        #[test]
+        fn constructor_works() {
+            let ballot = deploy_contract();
+            let chair_person = Address::from_bytes(&[0u8; 20]);
+            assert_eq!(*ballot.chair_person, chair_person);
+            assert_eq!(ballot.voters.len(), 1);
+
+            let voter = &ballot.voters[&chair_person];
+            assert_eq!(voter.weight, 1);
+            assert_eq!(voter.voted, false);
+            assert_eq!(voter.delegate, Address::empty());
+            assert_eq!(voter.vote, 0);
+
+            assert_eq!(ballot.proposals.len(), 3);
+            assert_eq!(ballot.proposals[0].name, "play with cat");
+            assert_eq!(ballot.proposals[0].vote_count, 0);
+            assert_eq!(ballot.proposals[1].name, "eat");
+            assert_eq!(ballot.proposals[1].vote_count, 0);
+            assert_eq!(ballot.proposals[2].name, "sleep");
+            assert_eq!(ballot.proposals[2].vote_count, 0);
+        }
+
+        #[test]
+        #[should_panic]
+        fn no_right_to_give_vote_right() {
+            let mut ballot = deploy_contract();
+
+            // Another account who wants to distribute right to vote
+            test::push_execution_context(Address::from_bytes(&[1u8; 20]));
+            ballot.give_right_to_vote(Address::from_bytes(&[2u8; 20]));
+        }
+
+        #[test]
+        #[should_panic]
+        fn voted_voter() {
+            let mut ballot = deploy_contract();
+            let voter = Address::from_bytes(&[1u8; 20]);
+
+            ballot.give_right_to_vote(voter);
+            test::push_execution_context(voter);
+            ballot.vote(0);
+            test::pop_execution_context();
+            ballot.give_right_to_vote(voter);
+        }
+
+        #[test]
+        #[should_panic]
+        fn voter_has_weight() {
+            let mut ballot = deploy_contract();
+            let voter = Address::from_bytes(&[1u8; 20]);
+
+            ballot.give_right_to_vote(voter);
+            test::push_execution_context(voter);
+            test::pop_execution_context();
+            ballot.give_right_to_vote(voter);
+        }
+
+        #[test]
+        fn give_right_works() {
+            let mut ballot = deploy_contract();
+            let voter = Address::from_bytes(&[1u8; 20]);
+
+            ballot.give_right_to_vote(voter);
+            assert_eq!(ballot.voters.len(), 2);
+            assert_eq!(ballot.voters.contains_key(&voter), true);
+            assert_eq!(
+                ballot.voters[&voter],
+                Voter {
+                    weight: 1,
+                    voted: false,
+                    delegate: Address::empty(),
+                    vote: 0,
+                }
+            );
+        }
+
+        #[test]
+        fn delegate_works_1() {
+            let mut ballot = deploy_contract();
+            let alice = Address::from_bytes(&[1u8; 20]);
+            let bob = Address::from_bytes(&[2u8; 20]);
+            ballot.give_right_to_vote(alice);
+            ballot.give_right_to_vote(bob);
+
+            test::push_execution_context(alice);
+            ballot.delegate(bob);
+            assert_eq!(ballot.voters[&alice].delegate, bob);
+            assert_eq!(ballot.voters[&alice].voted, true);
+            assert_eq!(ballot.voters[&bob].weight, 2);
+        }
+
+        #[test]
+        fn delegate_works_2() {
+            let mut ballot = deploy_contract();
+            let alice = Address::from_bytes(&[1u8; 20]);
+            let bob = Address::from_bytes(&[2u8; 20]);
+            ballot.give_right_to_vote(alice);
+            ballot.give_right_to_vote(bob);
+            test::push_execution_context(bob);
+            ballot.vote(0);
+            test::pop_execution_context();
+            assert_eq!(ballot.proposals[0].vote_count, 1);
+
+            test::push_execution_context(alice);
+            ballot.delegate(bob);
+            assert_eq!(ballot.voters[&alice].delegate, bob);
+            assert_eq!(ballot.voters[&alice].voted, true);
+            assert_eq!(ballot.voters[&bob].weight, 1);
+            assert_eq!(ballot.proposals[0].vote_count, 2);
+        }
+
+        #[test]
+        #[should_panic]
+        fn delegate_to_self() {
+            let mut ballot = deploy_contract();
+            let alice = Address::from_bytes(&[1u8; 20]);
+            ballot.give_right_to_vote(alice);
+
+            test::push_execution_context(alice);
+            ballot.delegate(alice);
+        }
+
+        #[test]
+        #[should_panic]
+        fn delegate_to_inexistent_account() {
+            let mut ballot = deploy_contract();
+            let alice = Address::from_bytes(&[1u8; 20]);
+            ballot.give_right_to_vote(alice);
+
+            test::push_execution_context(alice);
+            let bob = Address::from_bytes(&[2u8; 20]);
+            ballot.delegate(bob);
+        }
+
+        #[test]
+        #[should_panic]
+        fn delegate_after_voted() {
+            let mut ballot = deploy_contract();
+            let alice = Address::from_bytes(&[1u8; 20]);
+            let bob = Address::from_bytes(&[2u8; 20]);
+            ballot.give_right_to_vote(alice);
+            ballot.give_right_to_vote(bob);
+
+            test::push_execution_context(alice);
+            ballot.vote(0);
+            ballot.delegate(bob);
+        }
+
+        #[test]
+        #[should_panic]
+        fn delegate_loop() {
+            let mut ballot = deploy_contract();
+            let alice = Address::from_bytes(&[1u8; 20]);
+            let bob = Address::from_bytes(&[2u8; 20]);
+            ballot.give_right_to_vote(alice);
+            ballot.give_right_to_vote(bob);
+
+            test::push_execution_context(bob);
+            ballot.delegate(alice);
+            test::pop_execution_context();
+
+            test::push_execution_context(alice);
+            ballot.delegate(bob);
+        }
+
+        #[test]
+        fn vote_works() {
+            let mut ballot = deploy_contract();
+            let alice = Address::from_bytes(&[1u8; 20]);
+            let bob = Address::from_bytes(&[2u8; 20]);
+            let charlie = Address::from_bytes(&[3u8; 20]);
+            ballot.give_right_to_vote(alice);
+            ballot.give_right_to_vote(bob);
+            ballot.give_right_to_vote(charlie);
+
+            test::push_execution_context(alice);
+            ballot.vote(0);
+            test::pop_execution_context();
+
+            test::push_execution_context(bob);
+            ballot.vote(0);
+            test::pop_execution_context();
+
+            test::push_execution_context(charlie);
+            ballot.vote(1);
+            test::pop_execution_context();
+
+            assert_eq!(ballot.winning_proposal(), 0);
+            assert_eq!(ballot.winner_name(), "play with cat");
         }
     }
 }

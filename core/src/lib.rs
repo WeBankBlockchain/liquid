@@ -18,5 +18,8 @@
 #[cfg(not(feature = "std"))]
 extern crate liquid_alloc;
 
+#[cfg(feature = "std")]
+extern crate chrono;
+
 pub mod env;
 pub mod storage;

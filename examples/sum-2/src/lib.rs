@@ -13,7 +13,7 @@ mod sum_2 {
 
     #[liquid(methods)]
     impl Sum2 {
-        pub fn constructor(&mut self) {
+        pub fn new(&mut self) {
             self.values.initialize();
         }
 
@@ -36,7 +36,7 @@ mod sum_2 {
 
         #[test]
         fn it_works() {
-            let mut contract = Sum2();
+            let mut contract = Sum2::new();
             for i in 0..10 {
                 contract.insert(i.to_string(), i);
             }

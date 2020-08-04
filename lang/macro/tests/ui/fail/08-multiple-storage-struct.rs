@@ -10,14 +10,14 @@ mod noop {
 
     #[liquid(methods)]
     impl Noop_1 {
-        pub fn constructor(&mut self) {}
+        pub fn new(&mut self) {}
 
         pub fn noop(&self) {}
     }
 
     #[liquid(methods)]
     impl Noop_2 {
-        pub fn constructor(&mut self) {}
+        pub fn new(&mut self) {}
 
         pub fn noop(&self) {}
     }

@@ -13,7 +13,7 @@ mod incrementer {
 
     #[liquid(methods)]
     impl Incrementer {
-        pub fn constructor(&mut self, init: u128) {
+        pub fn new(&mut self, init: u128) {
             self.value.initialize(init);
         }
 
@@ -32,13 +32,13 @@ mod incrementer {
 
         #[test]
         fn init_works() {
-            let contract = Incrementer(0);
+            let contract = Incrementer::new(0);
             assert_eq!(contract.get(), 0);
         }
 
         #[test]
         fn inc_by_works() {
-            let mut contract = Incrementer(0);
+            let mut contract = Incrementer::new(0);
             contract.inc_by(42);
             assert_eq!(contract.get(), 42);
             contract.inc_by(42);

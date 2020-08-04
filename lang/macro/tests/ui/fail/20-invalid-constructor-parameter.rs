@@ -7,7 +7,7 @@ mod noop {
 
     #[liquid(methods)]
     impl Noop {
-        pub fn constructor(&mut self, value: f32) {}
+        pub fn new(&mut self, value: f32) {}
 
         pub fn noop(&self) {}
     }

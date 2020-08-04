@@ -1,5 +1,5 @@
 error: duplicate constructor definition found here
   --> $DIR/03-multiple-constructors.rs:12:9
    |
-12 |         pub fn constructor(&mut self) {}
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 |         pub fn new(&mut self) {}
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^

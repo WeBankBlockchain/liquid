@@ -11,6 +11,7 @@ paste = "0.1.17"
 scale = { package = "parity-scale-codec", version = "1.3.1", default-features = false, features = ["derive", "full"] }
 cfg-if = "0.1.10"
 derive_more = "0.99.9"
+chrono = { version = "0.4.13", optional = true }
 
 liquid_primitives = { version = "0.1.0", path = "../primitives", default-features = false }
 liquid_prelude = { version = "0.1.0", path = "../prelude", default-features = false }
@@ -26,6 +27,7 @@ std = [
     "liquid_abi_codec/std",
     "liquid_alloc/std",
     "scale/std",
+    "chrono",
 ]
 liquid-abi-gen = [
     "liquid_abi_gen"

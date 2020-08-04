@@ -1,5 +1,5 @@
 error: the visibility for constructor of liquid contract should be `pub`
   --> $DIR/10-private-constructor.rs:10:12
    |
-10 |         fn constructor(&mut self) {}
-   |            ^^^^^^^^^^^
+10 |         fn new(&mut self) {}
+   |            ^^^

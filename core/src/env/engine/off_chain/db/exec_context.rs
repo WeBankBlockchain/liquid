@@ -10,19 +10,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod api;
-mod backend;
-mod calldata;
-mod engine;
-mod error;
-pub mod types;
+use crate::env::types::Address;
 
-pub use self::{
-    api::*,
-    backend::Env,
-    calldata::CallData,
-    error::{EnvError, Result},
-};
+pub struct ExecContext {
+    /// The caller of the contract execution.
+    ///
+    /// Might be user or another contract.
+    pub caller: Address,
+}
 
-#[cfg(any(feature = "std", test))]
-pub use self::engine::off_chain::test_api as test;
+impl ExecContext {
+    pub fn new(caller: Address) -> Self {
+        Self { caller }
+    }
+
+    pub fn caller(&self) -> Address {
+        self.caller
+    }
+}
