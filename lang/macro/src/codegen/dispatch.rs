@@ -81,21 +81,39 @@ impl<'a> Dispatch<'a> {
     }
 
     fn generate_external_fn_traits(&self) -> TokenStream2 {
-        let traits = self
+        let (traits, external_markers): (Vec<_>, Vec<_>) = self
             .contract
             .functions
             .iter()
-            .map(|func| self.generate_external_fn_trait(func));
+            .filter(|func| match &func.kind {
+                FunctionKind::External(_) => true,
+                _ => false,
+            })
+            .map(|func| self.generate_external_fn_trait(func))
+            .unzip();
+        let selectors = external_markers.iter().map(|marker| {
+            quote!(
+                <#marker as liquid_lang::FnSelectors>::KECCAK256_SELECTOR,
+                <#marker as liquid_lang::FnSelectors>::SM3_SELECTOR)
+        });
+        let selector_conflict_detector = quote! {
+            const _: () = liquid_lang::selector_conflict_detect::detect(&[#(#selectors,)*]);
+        };
 
         quote! {
             #(#traits)*
+
+            #selector_conflict_detector
         }
     }
 
-    fn generate_external_fn_trait(&self, func: &Function) -> TokenStream2 {
+    fn generate_external_fn_trait(
+        &self,
+        func: &Function,
+    ) -> (TokenStream2, TokenStream2) {
         let fn_id = match &func.kind {
             FunctionKind::External(fn_id) => fn_id,
-            _ => return quote! {},
+            _ => unreachable!(),
         };
 
         let span = func.span();
@@ -199,13 +217,16 @@ impl<'a> Dispatch<'a> {
             }
         };
 
-        quote_spanned! { span =>
-            #fn_input
-            #fn_output
-            #selectors
-            #mutability
-            impl liquid_lang::ExternalFn for #external_marker {}
-        }
+        (
+            quote_spanned! { span =>
+                #fn_input
+                #fn_output
+                #selectors
+                #mutability
+                impl liquid_lang::ExternalFn for #external_marker {}
+            },
+            external_marker,
+        )
     }
 
     fn generate_dispatch_fragment(&self, func: &Function) -> TokenStream2 {

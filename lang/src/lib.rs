@@ -14,6 +14,7 @@
 #![feature(const_fn)]
 #![feature(const_generics)]
 #![feature(associated_type_defaults)]
+#![feature(const_panic)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod contract;
@@ -21,6 +22,7 @@ mod dispatch_error;
 mod dispatcher;
 mod env_access;
 pub mod intrinsics;
+pub mod selector_conflict_detect;
 mod traits;
 pub mod ty_mapping;
 
