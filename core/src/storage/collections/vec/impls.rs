@@ -10,7 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::storage::{Bind, CachedCell, CachedChunk, Flush};
+use crate::storage::{
+    Bind, CachedCell, CachedChunk, Flush,
+    You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage,
+};
 use scale::{Codec, Encode};
 
 #[derive(Debug)]
@@ -296,3 +299,5 @@ where
         )
     }
 }
+
+impl<T> You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage for Vec<T> {}

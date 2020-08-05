@@ -10,7 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::storage::{Bind, Flush, Mapping, Vec};
+use crate::storage::{
+    Bind, Flush, Mapping, Vec,
+    You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage,
+};
 use core::borrow::Borrow;
 use scale::{Codec, Decode, Encode};
 
@@ -268,4 +271,9 @@ where
     fn extend<T: IntoIterator<Item = (&'a K, &'a V)>>(&mut self, iter: T) {
         self.extend(iter.into_iter().map(|(k, v)| (*k, *v)))
     }
+}
+
+impl<K: Codec, V: Codec> You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage
+    for IterableMapping<K, V>
+{
 }

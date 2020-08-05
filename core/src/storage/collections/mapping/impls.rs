@@ -10,7 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::storage::{Bind, CachedCell, CachedChunk, Flush};
+use crate::storage::{
+    Bind, CachedCell, CachedChunk, Flush,
+    You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage,
+};
 use core::{borrow::Borrow, marker::PhantomData};
 use scale::{Codec, Encode};
 
@@ -214,4 +217,9 @@ where
     {
         self.extend(iter.into_iter().map(|(k, v)| (*k, *v)))
     }
+}
+
+impl<K, V> You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage
+    for Mapping<K, V>
+{
 }

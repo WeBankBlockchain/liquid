@@ -16,7 +16,7 @@ use crate::{
 };
 use derive_more::From;
 use proc_macro2::{Span, TokenStream as TokenStream2};
-use quote::quote_spanned;
+use quote::{quote, quote_spanned};
 use syn::{punctuated::Punctuated, spanned::Spanned, Token};
 
 #[derive(From)]
@@ -57,7 +57,10 @@ impl<'a> Storage<'a> {
         fields.named.iter_mut().for_each(|field| {
             field.vis = syn::Visibility::Public(syn::VisPublic {
                 pub_token: Default::default(),
-            })
+            });
+
+            let ty = &field.ty;
+            field.ty = syn::parse2::<syn::Type>(quote!(<#ty as liquid_core::storage::You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage>::T)).unwrap();
         });
 
         let field_idents = fields

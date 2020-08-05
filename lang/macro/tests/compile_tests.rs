@@ -41,4 +41,5 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/20-invalid-constructor-parameter.rs");
     t.compile_fail("tests/ui/fail/21-generic-storage.rs");
     t.compile_fail("tests/ui/fail/22-missing-liquid-methods-tag.rs");
+    t.compile_fail("tests/ui/fail/23-non-storage-fields.rs");
 }

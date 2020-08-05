@@ -10,7 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::storage::{Bind, CachedCell, Flush};
+use crate::storage::{
+    Bind, CachedCell, Flush, You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage,
+};
 use scale::Encode;
 
 #[derive(Debug)]
@@ -379,3 +381,5 @@ mod tests {
         assert_eq!(*v2, 3);
     }
 }
+
+impl<T> You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage for Value<T> {}

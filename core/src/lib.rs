@@ -14,6 +14,7 @@
 // is not recognizing its allocator and panic handler definitions.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![feature(associated_type_defaults)]
 
 #[cfg(not(feature = "std"))]
 extern crate liquid_alloc;
