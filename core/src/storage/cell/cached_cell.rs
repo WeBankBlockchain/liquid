@@ -36,10 +36,7 @@ impl<T> Cache<T> {
     }
 
     pub fn is_synced(&self) -> bool {
-        match self {
-            Cache::Sync(_) => true,
-            _ => false,
-        }
+        matches!(self, Cache::Sync(_))
     }
 
     pub fn is_dirty(&self) -> bool {

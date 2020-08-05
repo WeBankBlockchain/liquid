@@ -157,10 +157,7 @@ where
         Q: Encode,
     {
         let encoded_key = key.encode();
-        match self.chunk.get(&encoded_key) {
-            Some(_) => true,
-            _ => false,
-        }
+        matches!(self.chunk.get(&encoded_key), Some(_))
     }
 }
 

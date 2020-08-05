@@ -85,10 +85,7 @@ impl<'a> Dispatch<'a> {
             .contract
             .functions
             .iter()
-            .filter(|func| match &func.kind {
-                FunctionKind::External(_) => true,
-                _ => false,
-            })
+            .filter(|func| matches!(&func.kind, FunctionKind::External(_)))
             .map(|func| self.generate_external_fn_trait(func))
             .unzip();
         let selectors = external_markers.iter().map(|marker| {
