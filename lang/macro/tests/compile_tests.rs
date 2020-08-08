@@ -19,6 +19,7 @@ fn compile_tests() {
     t.pass("tests/ui/pass/04-type-alias.rs");
     t.pass("tests/ui/pass/05-different-functions-same-inputs.rs");
     t.pass("tests/ui/pass/06-multiple-returns.rs");
+    t.pass("tests/ui/pass/07-getter.rs");
     t.compile_fail("tests/ui/fail/01-constructor-returns.rs");
     t.compile_fail("tests/ui/fail/02-missing-constructor.rs");
     t.compile_fail("tests/ui/fail/03-multiple-constructors.rs");

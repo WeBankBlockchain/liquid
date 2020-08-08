@@ -124,7 +124,10 @@ pub struct ExternalFnABIBuilder {
 
 impl ExternalFnABIBuilder {
     pub fn input(mut self, components: Vec<ParamABI>, name: String, ty: String) -> Self {
-        self.abi.inputs.push(ParamABI::new(components, name, ty));
+        // If type of the input is `()`, just skip it.
+        if !ty.is_empty() {
+            self.abi.inputs.push(ParamABI::new(components, name, ty));
+        }
         self
     }
 

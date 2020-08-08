@@ -11,7 +11,7 @@
 // limitations under the License.
 
 use crate::storage::{
-    Bind, CachedCell, CachedChunk, Flush,
+    Bind, CachedCell, CachedChunk, Flush, Getter,
     You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage,
 };
 use scale::{Codec, Encode};
@@ -97,6 +97,22 @@ where
     fn flush(&mut self) {
         self.len.flush();
         self.chunk.flush();
+    }
+}
+
+impl<T> Getter for Vec<T>
+where
+    T: Codec + Clone,
+{
+    type Index = u32;
+    type Output = T;
+
+    fn getter_impl(&self, index: Self::Index) -> Self::Output {
+        self.get(index)
+            .expect(
+                "[liquid_core::Vec::getter] Error: expected `index` to be within bounds",
+            )
+            .clone()
     }
 }
 

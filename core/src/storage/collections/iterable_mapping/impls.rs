@@ -11,7 +11,7 @@
 // limitations under the License.
 
 use crate::storage::{
-    Bind, Flush, Mapping, Vec,
+    Bind, Flush, Getter, Mapping, Vec,
     You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage,
 };
 use core::borrow::Borrow;
@@ -112,6 +112,24 @@ where
     fn flush(&mut self) {
         self.keys.flush();
         self.mapping.flush();
+    }
+}
+
+impl<K, V> Getter for IterableMapping<K, V>
+where
+    K: Codec + liquid_abi_codec::Decode,
+    V: Codec + liquid_abi_codec::Encode + Clone,
+{
+    type Index = K;
+    type Output = V;
+
+    fn getter_impl(&self, index: Self::Index) -> Self::Output {
+        self.get(&index)
+            .expect(
+                "liquid_core::IterableMapping::getter] Error: expected `index` to be \
+                 existed",
+            )
+            .clone()
     }
 }
 

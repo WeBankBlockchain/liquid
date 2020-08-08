@@ -38,7 +38,21 @@ macro_rules! impl_primitive_tys {
         )*
     };
 }
-impl_primitive_tys!(bool, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, String);
+impl_primitive_tys!(
+    bool,
+    u8,
+    u16,
+    u32,
+    u64,
+    u128,
+    i8,
+    i16,
+    i32,
+    i64,
+    i128,
+    String,
+    ()
+);
 
 impl<T> HasComponents for Vec<T>
 where

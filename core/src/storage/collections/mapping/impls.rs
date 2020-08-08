@@ -11,7 +11,7 @@
 // limitations under the License.
 
 use crate::storage::{
-    Bind, CachedCell, CachedChunk, Flush,
+    Bind, CachedCell, CachedChunk, Flush, Getter,
     You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage,
 };
 use core::{borrow::Borrow, marker::PhantomData};
@@ -42,6 +42,23 @@ where
     fn flush(&mut self) {
         self.len.flush();
         self.chunk.flush();
+    }
+}
+
+impl<K, V> Getter for Mapping<K, V>
+where
+    K: Codec + liquid_abi_codec::Decode,
+    V: Codec + liquid_abi_codec::Encode + Clone,
+{
+    type Index = K;
+    type Output = V;
+
+    fn getter_impl(&self, index: Self::Index) -> Self::Output {
+        self.get(&index)
+            .expect(
+                "[liquid_core::Mapping::getter] Error: expected `index` to be existed",
+            )
+            .clone()
     }
 }
 

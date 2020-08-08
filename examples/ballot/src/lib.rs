@@ -6,12 +6,12 @@ use liquid_lang as liquid;
 /// Voting with delegation.
 #[liquid::contract(version = "0.1.0")]
 mod ballot {
-    use liquid_lang::State;
+    use liquid_lang::{InOut, State};
 
     /// This declares a new complex type which will
     /// be used for variables later.
     /// It will represent a single voter.
-    #[derive(State)]
+    #[derive(State, InOut, Clone)]
     #[cfg_attr(feature = "std", derive(Debug, PartialEq, Eq))]
     pub struct Voter {
         /// weight is accumulated by delegation
@@ -25,7 +25,7 @@ mod ballot {
     }
 
     /// This is a type for a single proposal.
-    #[derive(State)]
+    #[derive(State, InOut, Clone)]
     #[cfg_attr(feature = "std", derive(Debug, PartialEq, Eq))]
     pub struct Proposal {
         /// name of the proposal
@@ -38,12 +38,12 @@ mod ballot {
 
     #[liquid(storage)]
     struct Ballot {
-        chair_person: storage::Value<Address>,
+        pub chair_person: storage::Value<Address>,
         /// This declares a state variable that
         /// stores a `Voter` struct for each possible address.
-        voters: storage::Mapping<Address, Voter>,
+        pub voters: storage::Mapping<Address, Voter>,
         /// A dynamically-sized array of `Proposal` structs.
-        proposals: storage::Vec<Proposal>,
+        pub proposals: storage::Vec<Proposal>,
     }
 
     #[liquid(methods)]

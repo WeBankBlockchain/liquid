@@ -15,6 +15,7 @@ use core::convert::TryFrom;
 use either::Either;
 use itertools::Itertools;
 use proc_macro2::Ident;
+use quote::quote;
 use regex::Regex;
 use std::collections::HashSet;
 use syn::{
@@ -92,6 +93,12 @@ impl TryFrom<syn::Attribute> for ir::Marker {
     }
 }
 
+fn calculate_fn_id(ident: &Ident) -> usize {
+    u32::from_be_bytes(liquid_primitives::hash::keccak::keccak256(
+        ident.to_string().as_bytes(),
+    )) as usize
+}
+
 impl TryFrom<(ir::Params, syn::ItemMod)> for ir::Contract {
     type Error = Error;
 
@@ -122,6 +129,27 @@ impl TryFrom<(ir::Params, syn::ItemMod)> for ir::Contract {
             });
 
         let (storage, mut functions) = utils::split_items(liquid_items)?;
+        storage.public_fields.iter().for_each(|index| {
+            let field = &storage.fields.named[*index];
+            let ident = &field.ident.as_ref().unwrap();
+            let ty = &field.ty;
+
+            let getter = syn::parse2::<syn::ItemFn>(quote! {
+                #[deprecated(note = "Please visit the storage field directly instead of using its getter function")]
+                pub fn #ident(&self, index: <#ty as liquid_core::storage::Getter>::Index) -> <#ty as liquid_core::storage::Getter>::Output {
+                    <#ty as liquid_core::storage::Getter>::getter_impl(&self.#ident, index)
+                }
+            }).unwrap();
+
+            functions.push(ir::Function{
+                attrs: getter.attrs,
+                kind: ir::FunctionKind::External(calculate_fn_id(ident)),
+                sig: ir::Signature::try_from(&getter.sig).unwrap(),
+                body: *getter.block,
+                span: field.span(),
+            });
+        });
+
         let (mut constructor, mut external_func_count) = (None, 0);
         for (pos, func) in functions.iter().enumerate() {
             match func.kind {
@@ -395,9 +423,7 @@ impl TryFrom<syn::ImplItemMethod> for ir::Function {
                 ),
             }
         } else if let syn::Visibility::Public(_) = method.vis {
-            let fn_name_hash =
-                liquid_primitives::hash::keccak::keccak256(ident.to_string().as_bytes());
-            let fn_id = u32::from_be_bytes(fn_name_hash) as usize;
+            let fn_id = calculate_fn_id(ident);
             ir::FunctionKind::External(fn_id)
         } else {
             ir::FunctionKind::Normal
@@ -516,9 +542,28 @@ impl TryFrom<syn::ItemStruct> for ir::ItemStorage {
             )
         }
 
+        let mut public_fields = Vec::new();
         let span = item_struct.span();
         let fields = match item_struct.fields {
-            syn::Fields::Named(named_fields) => named_fields,
+            syn::Fields::Named(named_fields) => {
+                let fields = &named_fields.named;
+                for (i, field) in fields.iter().enumerate() {
+                    let visibility = &field.vis;
+                    match visibility {
+                        syn::Visibility::Public(_) => {
+                            public_fields.push(i);
+                        }
+                        syn::Visibility::Inherited => (),
+                        _ => bail!(
+                            field,
+                            "crate-level visibility or visibility level restricted to \
+                             some path is not allowed for fields in
+                             `#[liquid(storage)]` struct"
+                        ),
+                    }
+                }
+                named_fields
+            }
             syn::Fields::Unnamed(_) => bail!(
                 item_struct,
                 "tuple-struct is not allowed for `#[liquid(storage)]`"
@@ -534,6 +579,7 @@ impl TryFrom<syn::ItemStruct> for ir::ItemStorage {
             struct_token: item_struct.struct_token,
             ident: item_struct.ident,
             fields,
+            public_fields,
             span,
         })
     }

@@ -22,6 +22,13 @@ pub trait Bind {
     fn bind_with(key: &[u8]) -> Self;
 }
 
+pub trait Getter {
+    type Index;
+    type Output;
+
+    fn getter_impl(&self, index: Self::Index) -> Self::Output;
+}
+
 #[allow(non_camel_case_types)]
 pub trait You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage: Sized {
     type T = Self;

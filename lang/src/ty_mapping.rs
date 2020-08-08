@@ -75,6 +75,8 @@ impl SolTypeNameLen for () {
     const LEN: usize = 0;
 }
 
+impl The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type for () {}
+
 pub struct DynamicArraySuffix;
 
 impl SolTypeName for DynamicArraySuffix {

@@ -609,3 +609,15 @@ impl Decode for () {
         Ok(())
     }
 }
+
+impl Encode for ((),) {
+    fn encode(&self) -> Vec<u8> {
+        Vec::new()
+    }
+}
+
+impl Decode for ((),) {
+    fn decode<I: Input>(_: &mut I) -> Result<((),), Error> {
+        Ok(((),))
+    }
+}

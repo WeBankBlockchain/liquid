@@ -24,22 +24,12 @@ mod hello_world {
         pub fn set(&mut self, name: String) {
             *self.name = name;
         }
-
-        pub fn test_require(&self) {
-            require(false, "test");
-        }
     }
+}
 
     #[cfg(test)]
     mod tests {
         use super::*;
-
-        #[test]
-        #[should_panic]
-        fn require_works() {
-            let contract = HelloWorld::new();
-            contract.test_require();
-        }
 
         #[test]
         fn get_works() {

@@ -11,7 +11,8 @@
 // limitations under the License.
 
 use crate::storage::{
-    Bind, CachedCell, Flush, You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage,
+    Bind, CachedCell, Flush, Getter,
+    You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage,
 };
 use scale::Encode;
 
@@ -37,6 +38,18 @@ where
     }
 }
 
+impl<T> Getter for Value<T>
+where
+    T: scale::Codec + Clone,
+{
+    type Index = ();
+    type Output = T;
+
+    fn getter_impl(&self, _: Self::Index) -> Self::Output {
+        self.get().clone()
+    }
+}
+
 impl<T> Value<T>
 where
     T: scale::Codec,
@@ -51,19 +64,19 @@ where
         self.cell.set(new_val);
     }
 
+    pub fn mutate_with<F>(&mut self, f: F) -> &T
+    where
+        F: FnOnce(&mut T),
+    {
+        self.cell.mutate_with(f).unwrap()
+    }
+
     pub fn get(&self) -> &T {
         self.cell.get().unwrap()
     }
 
     pub fn get_mut(&mut self) -> &mut T {
         self.cell.get_mut().unwrap()
-    }
-
-    pub fn mutate_with<F>(&mut self, f: F) -> &T
-    where
-        F: FnOnce(&mut T),
-    {
-        self.cell.mutate_with(f).unwrap()
     }
 }
 

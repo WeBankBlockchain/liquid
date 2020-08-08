@@ -226,7 +226,11 @@ impl<'a> Dispatch<'a> {
         )
     }
 
-    fn generate_dispatch_fragment(&self, func: &Function) -> TokenStream2 {
+    fn generate_dispatch_fragment(
+        &self,
+        func: &Function,
+        is_getter: bool,
+    ) -> TokenStream2 {
         let fn_id = match &func.kind {
             FunctionKind::External(fn_id) => fn_id,
             _ => return quote! {},
@@ -256,19 +260,26 @@ impl<'a> Dispatch<'a> {
             quote! { on_external }
         };
 
+        let attr = if is_getter {
+            quote! { #[allow(deprecated)] }
+        } else {
+            quote! {}
+        };
+
         quote! {
             .#builder_name::<#namespace>(|storage, #pat_idents| {
+                #attr
                 storage.#fn_name(#(#input_idents,)*)
             })
         }
     }
 
     fn generate_dispatch(&self) -> TokenStream2 {
-        let fragments = self
-            .contract
-            .functions
-            .iter()
-            .map(|func| self.generate_dispatch_fragment(func));
+        let fragments = self.contract.functions.iter().enumerate().map(|(i, func)| {
+            let is_getter = self.contract.functions.len() - i
+                <= self.contract.storage.public_fields.len();
+            self.generate_dispatch_fragment(func, is_getter)
+        });
         let constr = &self.contract.constructor;
         let constr_sig = &constr.sig;
         let constr_ident = &constr_sig.ident;

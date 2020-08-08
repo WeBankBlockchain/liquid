@@ -62,6 +62,8 @@ pub struct ItemStorage {
     pub ident: Ident,
     /// Fields of the storage struct.
     pub fields: syn::FieldsNamed,
+    /// Public fields that need to generate a corresponding getter.
+    pub public_fields: Vec<usize>,
     /// Span of the storage struct.
     pub span: Span,
 }
