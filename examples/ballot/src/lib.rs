@@ -207,8 +207,8 @@ mod ballot {
         use liquid_core::env::test;
 
         fn deploy_contract() -> Ballot {
-            // The address of chairman is "0x000...000".
-            test::push_execution_context(Address::from_bytes(&[0u8; 20]));
+            let accounts = test::default_accounts();
+            test::push_execution_context(accounts.alice);
 
             let proposal_names = vec![
                 "play with cat".to_string(),
@@ -220,12 +220,13 @@ mod ballot {
 
         #[test]
         fn constructor_works() {
+            let accounts = test::default_accounts();
             let ballot = deploy_contract();
-            let chairperson = Address::from_bytes(&[0u8; 20]);
-            assert_eq!(*ballot.chairperson, chairperson);
+            let alice = accounts.alice;
+            assert_eq!(*ballot.chairperson, alice);
             assert_eq!(ballot.voters.len(), 1);
 
-            let voter = &ballot.voters[&chairperson];
+            let voter = &ballot.voters[&alice];
             assert_eq!(voter.weight, 1);
             assert_eq!(voter.voted, false);
             assert_eq!(voter.delegate, Address::empty());
@@ -243,18 +244,20 @@ mod ballot {
         #[test]
         #[should_panic(expected = "Only chairperson can give right to vote.")]
         fn no_right_to_give_vote_right() {
+            let accounts = test::default_accounts();
             let mut ballot = deploy_contract();
 
             // Another account who wants to distribute right to vote
-            test::push_execution_context(Address::from_bytes(&[1u8; 20]));
-            ballot.give_right_to_vote(Address::from_bytes(&[2u8; 20]));
+            test::push_execution_context(accounts.bob);
+            ballot.give_right_to_vote(accounts.charlie);
         }
 
         #[test]
         #[should_panic(expected = "The voter already voted.")]
         fn voted_voter() {
+            let accounts = test::default_accounts();
             let mut ballot = deploy_contract();
-            let voter = Address::from_bytes(&[1u8; 20]);
+            let voter = accounts.bob;
 
             ballot.give_right_to_vote(voter);
             test::push_execution_context(voter);
@@ -266,8 +269,9 @@ mod ballot {
         #[test]
         #[should_panic(expected = "The weight of voter is not zero.")]
         fn voter_has_weight() {
+            let accounts = test::default_accounts();
             let mut ballot = deploy_contract();
-            let voter = Address::from_bytes(&[1u8; 20]);
+            let voter = accounts.bob;
 
             ballot.give_right_to_vote(voter);
             test::push_execution_context(voter);
@@ -277,8 +281,9 @@ mod ballot {
 
         #[test]
         fn give_right_works() {
+            let accounts = test::default_accounts();
             let mut ballot = deploy_contract();
-            let voter = Address::from_bytes(&[1u8; 20]);
+            let voter = accounts.bob;
 
             ballot.give_right_to_vote(voter);
             assert_eq!(ballot.voters.len(), 2);
@@ -296,35 +301,37 @@ mod ballot {
 
         #[test]
         fn delegate_works_1() {
+            let accounts = test::default_accounts();
             let mut ballot = deploy_contract();
-            let alice = Address::from_bytes(&[1u8; 20]);
-            let bob = Address::from_bytes(&[2u8; 20]);
-            ballot.give_right_to_vote(alice);
+            let bob = accounts.bob;
+            let charlie = accounts.charlie;
             ballot.give_right_to_vote(bob);
+            ballot.give_right_to_vote(charlie);
 
-            test::push_execution_context(alice);
-            ballot.delegate(bob);
-            assert_eq!(ballot.voters[&alice].delegate, bob);
-            assert_eq!(ballot.voters[&alice].voted, true);
-            assert_eq!(ballot.voters[&bob].weight, 2);
+            test::push_execution_context(bob);
+            ballot.delegate(charlie);
+            assert_eq!(ballot.voters[&bob].delegate, charlie);
+            assert_eq!(ballot.voters[&bob].voted, true);
+            assert_eq!(ballot.voters[&charlie].weight, 2);
         }
 
         #[test]
         fn delegate_works_2() {
+            let accounts = test::default_accounts();
             let mut ballot = deploy_contract();
-            let alice = Address::from_bytes(&[1u8; 20]);
-            let bob = Address::from_bytes(&[2u8; 20]);
-            ballot.give_right_to_vote(alice);
+            let bob = accounts.bob;
+            let charlie = accounts.charlie;
             ballot.give_right_to_vote(bob);
-            test::push_execution_context(bob);
+            ballot.give_right_to_vote(charlie);
+            test::push_execution_context(charlie);
             ballot.vote(0);
             test::pop_execution_context();
             assert_eq!(ballot.proposals[0].vote_count, 1);
 
-            test::push_execution_context(alice);
-            ballot.delegate(bob);
-            assert_eq!(ballot.voters[&alice].delegate, bob);
-            assert_eq!(ballot.voters[&alice].voted, true);
+            test::push_execution_context(bob);
+            ballot.delegate(charlie);
+            assert_eq!(ballot.voters[&bob].delegate, charlie);
+            assert_eq!(ballot.voters[&bob].voted, true);
             assert_eq!(ballot.voters[&bob].weight, 1);
             assert_eq!(ballot.proposals[0].vote_count, 2);
         }
@@ -332,76 +339,81 @@ mod ballot {
         #[test]
         #[should_panic(expected = "Self-delegation is disallowed.")]
         fn delegate_to_self() {
+            let accounts = test::default_accounts();
             let mut ballot = deploy_contract();
-            let alice = Address::from_bytes(&[1u8; 20]);
-            ballot.give_right_to_vote(alice);
+            let bob = accounts.bob;
+            ballot.give_right_to_vote(bob);
 
-            test::push_execution_context(alice);
-            ballot.delegate(alice);
+            test::push_execution_context(bob);
+            ballot.delegate(bob);
         }
 
         #[test]
         #[should_panic(expected = "Can not delegate to an inexistent voter.")]
         fn delegate_to_inexistent_account() {
+            let accounts = test::default_accounts();
             let mut ballot = deploy_contract();
-            let alice = Address::from_bytes(&[1u8; 20]);
-            ballot.give_right_to_vote(alice);
+            let bob = accounts.bob;
+            ballot.give_right_to_vote(bob);
 
-            test::push_execution_context(alice);
-            let bob = Address::from_bytes(&[2u8; 20]);
-            ballot.delegate(bob);
+            test::push_execution_context(bob);
+            let charlie = accounts.charlie;
+            ballot.delegate(charlie);
         }
 
         #[test]
         #[should_panic(expected = "You already voted.")]
         fn delegate_after_voted() {
+            let accounts = test::default_accounts();
             let mut ballot = deploy_contract();
-            let alice = Address::from_bytes(&[1u8; 20]);
-            let bob = Address::from_bytes(&[2u8; 20]);
-            ballot.give_right_to_vote(alice);
+            let bob = accounts.bob;
+            let charlie = accounts.charlie;
             ballot.give_right_to_vote(bob);
+            ballot.give_right_to_vote(charlie);
 
-            test::push_execution_context(alice);
+            test::push_execution_context(bob);
             ballot.vote(0);
-            ballot.delegate(bob);
+            ballot.delegate(charlie);
         }
 
         #[test]
         #[should_panic(expected = "Found loop in delegation.")]
         fn delegate_loop() {
+            let accounts = test::default_accounts();
             let mut ballot = deploy_contract();
-            let alice = Address::from_bytes(&[1u8; 20]);
-            let bob = Address::from_bytes(&[2u8; 20]);
-            ballot.give_right_to_vote(alice);
+            let bob = accounts.bob;
+            let charlie = accounts.charlie;
             ballot.give_right_to_vote(bob);
+            ballot.give_right_to_vote(charlie);
 
-            test::push_execution_context(bob);
-            ballot.delegate(alice);
+            test::push_execution_context(charlie);
+            ballot.delegate(bob);
             test::pop_execution_context();
 
-            test::push_execution_context(alice);
-            ballot.delegate(bob);
+            test::push_execution_context(bob);
+            ballot.delegate(charlie);
         }
 
         #[test]
         fn vote_works() {
+            let accounts = test::default_accounts();
             let mut ballot = deploy_contract();
-            let alice = Address::from_bytes(&[1u8; 20]);
-            let bob = Address::from_bytes(&[2u8; 20]);
-            let charlie = Address::from_bytes(&[3u8; 20]);
-            ballot.give_right_to_vote(alice);
+            let bob = accounts.bob;
+            let charlie = accounts.charlie;
+            let david = accounts.david;
             ballot.give_right_to_vote(bob);
             ballot.give_right_to_vote(charlie);
-
-            test::push_execution_context(alice);
-            ballot.vote(0);
-            test::pop_execution_context();
+            ballot.give_right_to_vote(david);
 
             test::push_execution_context(bob);
             ballot.vote(0);
             test::pop_execution_context();
 
             test::push_execution_context(charlie);
+            ballot.vote(0);
+            test::pop_execution_context();
+
+            test::push_execution_context(david);
             ballot.vote(1);
             test::pop_execution_context();
 
