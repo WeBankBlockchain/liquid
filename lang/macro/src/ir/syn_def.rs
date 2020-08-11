@@ -102,6 +102,12 @@ pub struct Function {
     pub span: Span,
 }
 
+impl Function {
+    pub fn is_external_fn(&self) -> bool {
+        matches!(self.kind, FunctionKind::External(_))
+    }
+}
+
 impl Spanned for Function {
     fn span(&self) -> Span {
         self.span
