@@ -56,16 +56,7 @@ fn generate_components(ty: &syn::Type) -> TokenStream2 {
 
 fn generate_ty_name(ty: &syn::Type) -> TokenStream2 {
     quote! {
-        if <#ty as liquid_abi_gen::HasComponents>::HAS_COMPONENTS {
-            if <#ty as liquid_abi_gen::IsDynamicArray>::IS_DYNAMIC_ARRAY {
-                String::from("tuple[]")
-            }
-            else {
-                String::from("tuple")
-            }
-        } else {
-            String::from_utf8((<#ty as liquid_lang::ty_mapping::SolTypeName>::NAME).to_vec()).expect("the type name of a function argument must an valid utf-8 string")
-        }
+        <#ty as liquid_abi_gen::TyName>::ty_name()
     }
 }
 
@@ -86,34 +77,6 @@ fn generate_fn_inputs<'a>(sig: &'a Signature) -> impl Iterator<Item = TokenStrea
     })
 }
 
-fn generate_fn_outputs(sig: &Signature) -> Vec<TokenStream2> {
-    let output = &sig.output;
-
-    match output {
-        syn::ReturnType::Default => Vec::new(),
-        syn::ReturnType::Type(_, ty) => {
-            if let syn::Type::Tuple(tuple_ty) = &(**ty) {
-                tuple_ty
-                    .elems
-                    .iter()
-                    .map(|elem| {
-                        let ty_name = generate_ty_name(elem);
-                        let components = generate_components(elem);
-                        quote! {
-                            #components, #ty_name
-                        }
-                    })
-                    .collect::<Vec<_>>()
-            } else {
-                vec![quote! {
-                    Vec::new(),
-                    String::from_utf8((<#ty as liquid_lang::ty_mapping::SolTypeName>::NAME).to_vec()).expect("the type name of a function argument must an valid utf-8 string")
-                }]
-            }
-        }
-    }
-}
-
 impl<'a> ABIGen<'a> {
     fn generate_constructor_abi(&self) -> TokenStream2 {
         let constructor = &self.contract.constructor;
@@ -131,19 +94,26 @@ impl<'a> ABIGen<'a> {
         let fn_abis = external_fns.iter().map(|external_fn| {
             let ident = external_fn.sig.ident.to_string();
             let input_args = generate_fn_inputs(&external_fn.sig);
-            let output_args = generate_fn_outputs(&external_fn.sig);
-            let constant = !external_fn.sig.is_mut();
-            let state_mutability = if constant {
-                "view"
-            } else {
-                "nonpayable"
+            let output = &external_fn.sig.output;
+            let output_args = match output {
+                syn::ReturnType::Default => quote! {},
+                syn::ReturnType::Type(_, ty) => {
+                    quote! {
+                        <#ty as liquid_abi_gen::GenerateOutputs>::generate_outputs(&mut builder);
+                    }
+                }
             };
 
+            let constant = !external_fn.sig.is_mut();
+            let state_mutability = if constant { "view" } else { "nonpayable" };
+
             quote! {
-                liquid_abi_gen::ExternalFnABI::new_builder(String::from(#ident), String::from(#state_mutability), #constant)
-                #(.input(#input_args))*
-                #(.output(#output_args))*
-                .done()
+                {
+                    let mut builder = liquid_abi_gen::ExternalFnABI::new_builder(String::from(#ident), String::from(#state_mutability), #constant);
+                    #(builder.input(#input_args);)*
+                    #output_args
+                    builder.done()
+                }
             }
         });
 

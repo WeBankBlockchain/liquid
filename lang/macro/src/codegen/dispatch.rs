@@ -59,8 +59,10 @@ fn generate_input_tys<'a>(sig: &'a Signature) -> Vec<&'a syn::Type> {
 }
 
 fn generate_input_ty_checker(tys: &[&syn::Type]) -> TokenStream2 {
-    let guards = tys.iter().map(|ty| quote! {
-        <#ty as liquid_lang::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type>::T
+    let guards = tys.iter().map(|ty| {
+        quote! {
+            <#ty as liquid_lang::You_Should_Use_An_Valid_Input_Type>::T
+        }
     });
 
     quote! { (#(#guards,)*) }
@@ -128,20 +130,12 @@ impl<'a> Dispatch<'a> {
         let output = &sig.output;
         let output_ty_checker = match output {
             syn::ReturnType::Default => quote_spanned! { output.span() => ()},
-            syn::ReturnType::Type(_, ty) => match &(**ty) {
-                syn::Type::Tuple(tuple_ty) => {
-                    let elems = tuple_ty.elems.iter().map(|elem| {
-                        quote! {
-                            <#elem as liquid_lang::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type>::T
-                        }
-                    });
-
-                    quote! { (#(#elems,)*) }
+            syn::ReturnType::Type(_, ty) => {
+                let return_ty = &*ty;
+                quote_spanned! { output.span() =>
+                    <#return_ty as liquid_lang::You_Should_Use_An_Valid_Return_Type>::T
                 }
-                other_ty => quote! {
-                    <#other_ty as liquid_lang::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type>::T
-                },
-            },
+            }
         };
         let fn_output = quote_spanned! { output.span() =>
             impl liquid_lang::FnOutput for #external_marker {
@@ -150,11 +144,11 @@ impl<'a> Dispatch<'a> {
         };
 
         let mut selectors = quote_spanned! { span =>
-            impl liquid_lang::ty_mapping::SolTypeName for DispatchHelper<#external_marker, ()> {
-                const NAME: &'static [u8] = <() as liquid_lang::ty_mapping::SolTypeName>::NAME;
+            impl liquid_ty_mapping::SolTypeName for DispatchHelper<#external_marker, ()> {
+                const NAME: &'static [u8] = <() as liquid_ty_mapping::SolTypeName>::NAME;
             }
-            impl liquid_lang::ty_mapping::SolTypeNameLen for DispatchHelper<#external_marker, ()> {
-                const LEN: usize = <() as liquid_lang::ty_mapping::SolTypeNameLen>::LEN;
+            impl liquid_ty_mapping::SolTypeNameLen for DispatchHelper<#external_marker, ()> {
+                const LEN: usize = <() as liquid_ty_mapping::SolTypeNameLen>::LEN;
             }
         };
         for i in 1..=input_tys.len() {
@@ -163,20 +157,20 @@ impl<'a> Dispatch<'a> {
             let rest_ty = &tys[i - 1];
             if i > 1 {
                 selectors.extend(quote_spanned! { span =>
-                    impl liquid_lang::ty_mapping::SolTypeName for DispatchHelper<#external_marker, (#(#tys,)*)> {
+                    impl liquid_ty_mapping::SolTypeName for DispatchHelper<#external_marker, (#(#tys,)*)> {
                         const NAME: &'static [u8] = {
                             const LEN: usize =
-                                <(#(#first_tys,)*) as liquid_lang::ty_mapping::SolTypeNameLen<_>>::LEN
-                                + <#rest_ty as liquid_lang::ty_mapping::SolTypeNameLen<_>>::LEN
+                                <(#(#first_tys,)*) as liquid_ty_mapping::SolTypeNameLen<_>>::LEN
+                                + <#rest_ty as liquid_ty_mapping::SolTypeNameLen<_>>::LEN
                                 + 1;
-                            &liquid_lang::ty_mapping::concat::<DispatchHelper<#external_marker, (#(#first_tys,)*)>, #rest_ty, (), _, LEN>(true)
+                            &liquid_ty_mapping::concat::<DispatchHelper<#external_marker, (#(#first_tys,)*)>, #rest_ty, (), _, LEN>(true)
                         };
                     }
                 });
             } else {
                 selectors.extend(quote_spanned! { span =>
-                    impl liquid_lang::ty_mapping::SolTypeName for DispatchHelper<#external_marker, (#rest_ty,)> {
-                        const NAME: &'static [u8] = <#rest_ty as liquid_lang::ty_mapping::SolTypeName<_>>::NAME;
+                    impl liquid_ty_mapping::SolTypeName for DispatchHelper<#external_marker, (#rest_ty,)> {
+                        const NAME: &'static [u8] = <#rest_ty as liquid_ty_mapping::SolTypeName<_>>::NAME;
                     }
                 });
             }
@@ -187,12 +181,12 @@ impl<'a> Dispatch<'a> {
         let fn_name_len = fn_name_bytes.len();
         let composite_sig = quote! {
             const SIG_LEN: usize =
-                <(#(#input_tys,)*) as liquid_lang::ty_mapping::SolTypeNameLen<_>>::LEN + #fn_name_len
+                <(#(#input_tys,)*) as liquid_ty_mapping::SolTypeNameLen<_>>::LEN + #fn_name_len
                 + 2;
             const SIG: [u8; SIG_LEN] =
-                liquid_lang::ty_mapping::composite::<SIG_LEN>(
+                liquid_ty_mapping::composite::<SIG_LEN>(
                     &[#(#fn_name_bytes),*],
-                    <DispatchHelper<#external_marker, (#(#input_tys,)*)> as liquid_lang::ty_mapping::SolTypeName<_>>::NAME);
+                    <DispatchHelper<#external_marker, (#(#input_tys,)*)> as liquid_ty_mapping::SolTypeName<_>>::NAME);
         };
         selectors.extend(quote_spanned! { span =>
             impl liquid_lang::FnSelectors for #external_marker {

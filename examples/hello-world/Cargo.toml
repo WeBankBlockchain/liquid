@@ -14,6 +14,8 @@ liquid_lang = { version = "0.1.0", path = "../../lang", default-features = false
 liquid_primitives = { version = "0.1.0", path = "../../primitives", default-features = false }
 liquid_abi_codec = { version = "0.1.0", path = "../../abi-codec", default-features = false }
 liquid_abi_gen = { version = "0.1.0", path = "../../abi-gen", default-features = false, optional = true }
+liquid_ty_mapping = { version = "0.1.0", path = "../../ty_mapping", default-features = false }
+liquid_prelude = { version = "0.1.0", path = "../../prelude", default-features = false }
 
 [lib]
 name = "hello_world"

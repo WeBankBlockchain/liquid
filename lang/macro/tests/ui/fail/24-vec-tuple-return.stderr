@@ -1,0 +1,21 @@
+error[E0277]: the trait bound `(bool, i32): liquid_lang::You_Should_Use_An_Valid_Parameter_Type` is not satisfied
+  --> $DIR/24-vec-tuple-return.rs:14:30
+   |
+14 |         pub fn noop_1(&self) -> Vec<(bool, i32)> {}
+   |                              ^^^^^^^^^^^^^^^^^^^ the trait `liquid_lang::You_Should_Use_An_Valid_Parameter_Type` is not implemented for `(bool, i32)`
+   |
+   = note: required because of the requirements on the impl of `liquid_lang::You_Should_Use_An_Valid_Return_Type` for `std::vec::Vec<(bool, i32)>`
+
+error[E0277]: the trait bound `(bool, i32): liquid_abi_codec::codec::MediateEncode` is not satisfied
+  --> $DIR/24-vec-tuple-return.rs:14:30
+   |
+14 |         pub fn noop_1(&self) -> Vec<(bool, i32)> {}
+   |                              ^^^^^^^^^^^^^^^^^^^ the trait `liquid_abi_codec::codec::MediateEncode` is not implemented for `(bool, i32)`
+   |
+  ::: $WORKSPACE/lang/src/traits.rs:24:18
+   |
+24 |     type Output: Encode + 'static;
+   |                  ------ required by this bound in `liquid_lang::FnOutput`
+   |
+   = note: required because of the requirements on the impl of `liquid_abi_codec::codec::MediateEncode` for `std::vec::Vec<(bool, i32)>`
+   = note: required because of the requirements on the impl of `liquid_abi_codec::codec::Encode` for `std::vec::Vec<(bool, i32)>`

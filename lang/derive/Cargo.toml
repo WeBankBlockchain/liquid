@@ -22,6 +22,7 @@ liquid_abi_codec = { version = "0.1.0", path = "../../abi-codec" }
 liquid_core = { version = "0.1.0", path = "../../core" }
 liquid_primitives = { version = "0.1.0", path = "../../primitives" }
 liquid_abi_gen = { version = "0.1.0", path = "../../abi-gen" }
+liquid_ty_mapping = { version = "0.1.0", path = "../../ty_mapping" }
 
 [lib]
 proc-macro = true

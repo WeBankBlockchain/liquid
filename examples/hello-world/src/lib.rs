@@ -25,7 +25,6 @@ mod hello_world {
             *self.name = name;
         }
     }
-}
 
     #[cfg(test)]
     mod tests {

@@ -17,6 +17,7 @@ itertools = { version = "0.9.0", default-features = false }
 
 liquid_prelude = { version = "0.1.0", path = "../../prelude", default-features = false }
 liquid_primitives = { version = "0.1.0", path = "../../primitives", default-features = false }
+liquid_ty_mapping = { version = "0.1.0", path = "../../ty_mapping", default-features = false }
 
 [dev-dependencies]
 trybuild = "1.0.30"

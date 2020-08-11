@@ -1,5 +1,5 @@
 [package]
-name = "liquid_abi_gen"
+name = "liquid_ty_mapping"
 version = "0.1.0"
 authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
 edition = "2018"
@@ -7,16 +7,12 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "1.0.114", default-features = false, features = ["derive", "alloc"] }
-
-liquid_macro = { version = "0.1.0", path = "../macro", default-features = false }
 liquid_prelude = { version = "0.1.0", path = "../prelude", default-features = false }
-liquid_ty_mapping = { version = "0.1.0", path = "../ty_mapping", default-features = false }
+liquid_macro = { version = "0.1.0", path = "../macro", default-features = false }
 
 [features]
 default = ["std"]
 std = [
-    "serde/std",
     "liquid_prelude/std",
-    "liquid_prelude/std",
+    "liquid_macro/std",
 ]

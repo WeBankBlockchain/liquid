@@ -15,10 +15,11 @@ use liquid_abi_codec::{
     peek, DecodeResult, Error, IsDynamic, Mediate, MediateDecode, MediateEncode, Word,
     WORD_SIZE,
 };
-pub use liquid_prelude::{
+use liquid_prelude::{
     string::{String, ToString},
     vec::Vec,
 };
+use liquid_ty_mapping::{SolTypeName, SolTypeNameLen};
 
 pub const ADDRESS_LENGTH: usize = 20;
 
@@ -129,53 +130,46 @@ impl PartialEq<[u8; ADDRESS_LENGTH]> for Address {
     }
 }
 
-impl PartialEq<str> for Address {
-    fn eq(&self, rhs: &str) -> bool {
-        if !rhs.is_ascii() {
-            return false;
-        }
-
-        if rhs.len() != ADDRESS_LENGTH * 2 + 2 {
-            return false;
-        }
-
-        if !rhs.starts_with("0x") && !rhs.starts_with("0X") {
-            return false;
-        }
-
-        let bytes = rhs.as_bytes();
-        for i in 0..ADDRESS_LENGTH {
-            let digit = (self.0)[i];
-            let low = digit & 0x0fu8;
-            let high = digit >> 4;
-            if high != bytes[2 + i * 2] || low != bytes[3 + i * 2] {
-                return false;
-            }
-        }
-        true
-    }
-}
-
 impl PartialOrd<[u8; ADDRESS_LENGTH]> for Address {
     fn partial_cmp(&self, other: &[u8; ADDRESS_LENGTH]) -> Option<Ordering> {
         self.0.partial_cmp(other)
     }
 }
 
-#[cfg(feature = "liquid-abi-gen")]
-use liquid_abi_gen::{GenerateComponents, HasComponents, IsDynamicArray};
+const ADDRESS_MAPPED_TYPE: &str = "address";
+const ADDRESS_ARRAY_MAPPED_TYPE: &str = "address[]";
 
 #[cfg(feature = "liquid-abi-gen")]
-impl HasComponents for Address {}
+use liquid_abi_gen::{GenerateComponents, TyName};
 
 #[cfg(feature = "liquid-abi-gen")]
 impl GenerateComponents for Address {}
 
 #[cfg(feature = "liquid-abi-gen")]
-impl IsDynamicArray for Address {}
+impl TyName for Address {
+    fn ty_name() -> String {
+        String::from(ADDRESS_MAPPED_TYPE)
+    }
+}
 
 pub type Timestamp = u64;
 pub type BlockNumber = u64;
+
+impl SolTypeName for Address {
+    const NAME: &'static [u8] = ADDRESS_MAPPED_TYPE.as_bytes();
+}
+
+impl SolTypeNameLen for Address {
+    const LEN: usize = ADDRESS_MAPPED_TYPE.len();
+}
+
+impl SolTypeName<Address> for Vec<Address> {
+    const NAME: &'static [u8] = ADDRESS_ARRAY_MAPPED_TYPE.as_bytes();
+}
+
+impl SolTypeNameLen<Address> for Vec<Address> {
+    const LEN: usize = ADDRESS_MAPPED_TYPE.len() + 2;
+}
 
 #[cfg(test)]
 mod tests {

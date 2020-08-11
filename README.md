@@ -23,7 +23,7 @@ mod hello_world {
 
     #[liquid(methods)]
     impl HelloWorld {
-        pub fn constructor(&mut self) {
+        pub fn new(&mut self) {
             self.name.initialize(String::from("Hello, World!"));
         }
 

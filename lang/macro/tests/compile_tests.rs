@@ -20,6 +20,7 @@ fn compile_tests() {
     t.pass("tests/ui/pass/05-different-functions-same-inputs.rs");
     t.pass("tests/ui/pass/06-multiple-returns.rs");
     t.pass("tests/ui/pass/07-getter.rs");
+    t.pass("tests/ui/pass/08-unit-return.rs");
     t.compile_fail("tests/ui/fail/01-constructor-returns.rs");
     t.compile_fail("tests/ui/fail/02-missing-constructor.rs");
     t.compile_fail("tests/ui/fail/03-multiple-constructors.rs");
@@ -43,4 +44,7 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/21-generic-storage.rs");
     t.compile_fail("tests/ui/fail/22-missing-liquid-methods-tag.rs");
     t.compile_fail("tests/ui/fail/23-non-storage-fields.rs");
+    t.compile_fail("tests/ui/fail/24-vec-tuple-return.rs");
+    t.compile_fail("tests/ui/fail/25-vec-unit-return.rs");
+    t.compile_fail("tests/ui/fail/26-tuple-unit-return.rs");
 }

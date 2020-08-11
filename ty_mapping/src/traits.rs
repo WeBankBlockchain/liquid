@@ -10,9 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::traits::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type;
-use liquid_core::env::types::{Address, String, Vec};
 use liquid_macro::seq;
+use liquid_prelude::{string::String, vec::Vec};
 
 /// The generic type parameter `T` is just used for evade orphan rule in Rust.
 pub trait SolTypeName<T = ()> {
@@ -49,8 +48,6 @@ macro_rules! mapping_type_to_sol {
         impl SolTypeNameLen for Vec<$origin_ty> {
             const LEN: usize = stringify!($mapped_ty).len() + 2;
         }
-
-        impl The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type for $origin_ty {}
     };
 }
 
@@ -62,10 +59,10 @@ mapping_type_to_sol!(u128, uint128);
 mapping_type_to_sol!(i8, int8);
 mapping_type_to_sol!(i16, int8);
 mapping_type_to_sol!(i32, int32);
+mapping_type_to_sol!(i64, int64);
 mapping_type_to_sol!(i128, int128);
 mapping_type_to_sol!(bool, bool);
 mapping_type_to_sol!(String, string);
-mapping_type_to_sol!(Address, address);
 
 impl SolTypeName for () {
     const NAME: &'static [u8] = b"";
@@ -75,8 +72,6 @@ impl SolTypeNameLen for () {
     const LEN: usize = 0;
 }
 
-impl The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type for () {}
-
 pub struct DynamicArraySuffix;
 
 impl SolTypeName for DynamicArraySuffix {
@@ -85,11 +80,6 @@ impl SolTypeName for DynamicArraySuffix {
 
 impl SolTypeNameLen for DynamicArraySuffix {
     const LEN: usize = 2;
-}
-
-impl<T> The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type for Vec<T> where
-    T: The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type
-{
 }
 
 macro_rules! impl_len_for_tuple {

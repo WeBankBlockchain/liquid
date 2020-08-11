@@ -38,7 +38,7 @@ mod ballot {
 
     #[liquid(storage)]
     struct Ballot {
-        pub chair_person: storage::Value<Address>,
+        pub chairperson: storage::Value<Address>,
         /// This declares a state variable that
         /// stores a `Voter` struct for each possible address.
         pub voters: storage::Mapping<Address, Voter>,
@@ -49,13 +49,13 @@ mod ballot {
     #[liquid(methods)]
     impl Ballot {
         /// Create a new ballot to choose one of `proposalNames`.
-        pub fn new(&mut self, proposal_names: liquid_core::env::types::Vec<String>) {
-            let chair_person = self.env().get_caller();
-            self.chair_person.initialize(chair_person);
+        pub fn new(&mut self, proposal_names: Vec<String>) {
+            let chairperson = self.env().get_caller();
+            self.chairperson.initialize(chairperson);
 
             self.voters.initialize();
             self.voters.insert(
-                &chair_person,
+                &chairperson,
                 Voter {
                     weight: 1,
                     voted: false,
@@ -69,9 +69,9 @@ mod ballot {
             // to the end of the array.
             self.proposals.initialize();
             for name in proposal_names {
-                // `Proposal({...})` creates a temporary
-                // Proposal object and `proposals.push(...)`
-                // appends it to the end of `proposals`.
+                // `Proposal{...}` creates a temporary
+                // Proposal object and `self.proposals.push(...)`
+                // appends it to the end of `self.proposals`.
                 self.proposals.push(Proposal {
                     name,
                     vote_count: 0,
@@ -85,15 +85,12 @@ mod ballot {
             // If the first argument of `require` evaluates
             // to `false`, execution terminates and all
             // changes to the state and to Ether balances
-            // are reverted.
-            // This used to consume all gas in old EVM versions, but
-            // not anymore.
             // It is often a good idea to use `require` to check if
             // functions are called correctly.
             // As a second argument, you can also provide an
             // explanation about what went wrong.
             require(
-                self.env().get_caller() == *self.chair_person,
+                self.env().get_caller() == *self.chairperson,
                 "Only chairperson can give right to vote.",
             );
 
@@ -122,7 +119,7 @@ mod ballot {
             );
             require(
                 self.voters.contains_key(&to),
-                "Can not delegate to an inexistent voter",
+                "Can not delegate to an inexistent voter.",
             );
 
             // assigns reference
@@ -224,11 +221,11 @@ mod ballot {
         #[test]
         fn constructor_works() {
             let ballot = deploy_contract();
-            let chair_person = Address::from_bytes(&[0u8; 20]);
-            assert_eq!(*ballot.chair_person, chair_person);
+            let chairperson = Address::from_bytes(&[0u8; 20]);
+            assert_eq!(*ballot.chairperson, chairperson);
             assert_eq!(ballot.voters.len(), 1);
 
-            let voter = &ballot.voters[&chair_person];
+            let voter = &ballot.voters[&chairperson];
             assert_eq!(voter.weight, 1);
             assert_eq!(voter.voted, false);
             assert_eq!(voter.delegate, Address::empty());
@@ -244,7 +241,7 @@ mod ballot {
         }
 
         #[test]
-        #[should_panic]
+        #[should_panic(expected = "Only chairperson can give right to vote.")]
         fn no_right_to_give_vote_right() {
             let mut ballot = deploy_contract();
 
@@ -254,7 +251,7 @@ mod ballot {
         }
 
         #[test]
-        #[should_panic]
+        #[should_panic(expected = "The voter already voted.")]
         fn voted_voter() {
             let mut ballot = deploy_contract();
             let voter = Address::from_bytes(&[1u8; 20]);
@@ -267,7 +264,7 @@ mod ballot {
         }
 
         #[test]
-        #[should_panic]
+        #[should_panic(expected = "The weight of voter is not zero.")]
         fn voter_has_weight() {
             let mut ballot = deploy_contract();
             let voter = Address::from_bytes(&[1u8; 20]);
@@ -333,7 +330,7 @@ mod ballot {
         }
 
         #[test]
-        #[should_panic]
+        #[should_panic(expected = "Self-delegation is disallowed.")]
         fn delegate_to_self() {
             let mut ballot = deploy_contract();
             let alice = Address::from_bytes(&[1u8; 20]);
@@ -344,7 +341,7 @@ mod ballot {
         }
 
         #[test]
-        #[should_panic]
+        #[should_panic(expected = "Can not delegate to an inexistent voter.")]
         fn delegate_to_inexistent_account() {
             let mut ballot = deploy_contract();
             let alice = Address::from_bytes(&[1u8; 20]);
@@ -356,7 +353,7 @@ mod ballot {
         }
 
         #[test]
-        #[should_panic]
+        #[should_panic(expected = "You already voted.")]
         fn delegate_after_voted() {
             let mut ballot = deploy_contract();
             let alice = Address::from_bytes(&[1u8; 20]);
@@ -370,7 +367,7 @@ mod ballot {
         }
 
         #[test]
-        #[should_panic]
+        #[should_panic(expected = "Found loop in delegation.")]
         fn delegate_loop() {
             let mut ballot = deploy_contract();
             let alice = Address::from_bytes(&[1u8; 20]);

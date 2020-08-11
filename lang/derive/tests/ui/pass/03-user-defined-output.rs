@@ -18,8 +18,18 @@ mod noop {
     impl Noop {
         pub fn new(&mut self) {}
 
-        pub fn noop(&self) -> MyStruct {
+        pub fn noop_0(&self) -> MyStruct {
             MyStruct { b: true, i: 0 }
+        }
+
+        pub fn noop_1(&self) -> Vec<MyStruct> {
+            let mut ret = Vec::new();
+            ret.push(MyStruct { b: true, i: 0 });
+            ret
+        }
+
+        pub fn noop_2(&self) -> (MyStruct, bool) {
+            (MyStruct { b: true, i: 0 }, true)
         }
     }
 }

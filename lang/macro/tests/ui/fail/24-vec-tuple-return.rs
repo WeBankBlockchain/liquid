@@ -2,9 +2,6 @@ use liquid_lang as liquid;
 
 #[liquid::contract(version = "0.1.0")]
 mod noop {
-    type MyInt = i32;
-    type MyReturn = (bool, i32);
-
     #[liquid(storage)]
     struct Noop {}
 
@@ -12,11 +9,9 @@ mod noop {
     impl Noop {
         pub fn new(&mut self) {}
 
-        pub fn noop_1(&self, _i: MyInt) {}
+        pub fn noop_0(&self) -> (bool, i32) {}
 
-        pub fn noop_2(&self) -> MyReturn {
-            (false, 0i32)
-        }
+        pub fn noop_1(&self) -> Vec<(bool, i32)> {}
     }
 }
 

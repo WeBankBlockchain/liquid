@@ -10,16 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::ParamABI;
+use crate::{ExternalFnABIBuilder, ParamABI};
+use liquid_macro::seq;
 use liquid_prelude::{string::String, vec::Vec};
-
-pub trait HasComponents<T = ()> {
-    const HAS_COMPONENTS: bool = false;
-}
-
-pub trait IsDynamicArray<T = ()> {
-    const IS_DYNAMIC_ARRAY: bool = false;
-}
 
 pub trait GenerateComponents<T = ()> {
     fn generate_components() -> Vec<ParamABI> {
@@ -27,17 +20,28 @@ pub trait GenerateComponents<T = ()> {
     }
 }
 
+pub trait TyName {
+    fn ty_name() -> String;
+}
+
+pub trait GenerateOutputs {
+    fn generate_outputs(builder: &mut ExternalFnABIBuilder);
+}
+
 macro_rules! impl_primitive_tys {
     ($( $t:ty ),*) => {
         $(
             impl GenerateComponents for $t {}
 
-            impl HasComponents for $t {}
-
-            impl IsDynamicArray for $t {}
+            impl TyName for $t {
+                fn ty_name() -> String {
+                    String::from_utf8((<$t as liquid_ty_mapping::SolTypeName>::NAME).to_vec()).unwrap()
+                }
+            }
         )*
     };
 }
+
 impl_primitive_tys!(
     bool,
     u8,
@@ -54,11 +58,15 @@ impl_primitive_tys!(
     ()
 );
 
-impl<T> HasComponents for Vec<T>
+impl<T> TyName for Vec<T>
 where
-    T: HasComponents,
+    T: TyName,
 {
-    const HAS_COMPONENTS: bool = <T as HasComponents>::HAS_COMPONENTS;
+    fn ty_name() -> String {
+        let mut sub_ty = <T as TyName>::ty_name();
+        sub_ty.push_str("[]");
+        sub_ty
+    }
 }
 
 impl<T> GenerateComponents for Vec<T>
@@ -70,6 +78,49 @@ where
     }
 }
 
-impl<T> IsDynamicArray for Vec<T> {
-    const IS_DYNAMIC_ARRAY: bool = true;
+impl<T> GenerateOutputs for T
+where
+    T: TyName + GenerateComponents,
+{
+    fn generate_outputs(builder: &mut ExternalFnABIBuilder) {
+        builder.output(
+            <T as GenerateComponents>::generate_components(),
+            <T as TyName>::ty_name(),
+        );
+    }
 }
+
+macro_rules! impl_for_tuple {
+    ($first:tt,) => {
+        impl<$first> GenerateOutputs for ($first,)
+        where
+            $first: GenerateOutputs,
+        {
+            fn generate_outputs(
+                builder: &mut ExternalFnABIBuilder,
+            ) {
+                <$first as GenerateOutputs>::generate_outputs(builder);
+            }
+        }
+    };
+    ($first:tt, $($rest:tt,)+) => {
+        impl<$first, $($rest),+> GenerateOutputs for ($first, $($rest),+)
+        where
+            $first: GenerateOutputs,
+            $($rest: GenerateOutputs),*
+        {
+            fn generate_outputs(builder: &mut ExternalFnABIBuilder) {
+                <$first as GenerateOutputs>::generate_outputs(builder);
+                $(
+                    <$rest as GenerateOutputs>::generate_outputs(builder);
+                )*
+            }
+        }
+
+        impl_for_tuple!($($rest,)+);
+    }
+}
+
+seq!(N in 0..16 {
+    impl_for_tuple!(#(T#N,)*);
+});

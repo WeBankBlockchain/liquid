@@ -110,13 +110,10 @@ fn generate_abi_gen(
         }
 
         #[cfg(feature = "liquid-abi-gen")]
-        impl liquid_abi_gen::HasComponents for #ident {
-            const HAS_COMPONENTS: bool = true;
-        }
-
-        #[cfg(feature = "liquid-abi-gen")]
-        impl liquid_abi_gen::IsDynamicArray for #ident {
-            const IS_DYNAMIC_ARRAY: bool = true;
+        impl liquid_abi_gen::TyName for #ident {
+            fn ty_name() -> liquid_prelude::string::String {
+                String::from("tuple")
+            }
         }
     }
 }
@@ -209,13 +206,15 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
             };
         }
 
-        impl liquid_lang::The_Type_You_Used_Here_Must_Be_An_Valid_Liquid_Data_Type for #ident {}
+        impl liquid_lang::You_Should_Use_An_Valid_Parameter_Type for #ident {}
+        impl liquid_lang::You_Should_Use_An_Valid_Return_Type for #ident {}
+        impl liquid_lang::You_Should_Use_An_Valid_Input_Type for #ident {}
 
-        impl _ty_mapping::SolTypeNameLen<#ident> for liquid_core::env::types::Vec<#ident> {
+        impl _ty_mapping::SolTypeNameLen<#ident> for liquid_prelude::vec::Vec<#ident> {
             const LEN: usize = <#ident as _ty_mapping::SolTypeNameLen>::LEN + 2;
         }
 
-        impl _ty_mapping::SolTypeName<#ident> for liquid_core::env::types::Vec<#ident> {
+        impl _ty_mapping::SolTypeName<#ident> for liquid_prelude::vec::Vec<#ident> {
             const NAME: &'static [u8] = {
                 const LEN: usize = <#ident as _ty_mapping::SolTypeNameLen>::LEN + 2;
 

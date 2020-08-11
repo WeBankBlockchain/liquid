@@ -123,19 +123,20 @@ pub struct ExternalFnABIBuilder {
 }
 
 impl ExternalFnABIBuilder {
-    pub fn input(mut self, components: Vec<ParamABI>, name: String, ty: String) -> Self {
+    pub fn input(&mut self, components: Vec<ParamABI>, name: String, ty: String) {
         // If type of the input is `()`, just skip it.
         if !ty.is_empty() {
             self.abi.inputs.push(ParamABI::new(components, name, ty));
         }
-        self
     }
 
-    pub fn output(mut self, components: Vec<ParamABI>, ty: String) -> Self {
-        self.abi
-            .outputs
-            .push(ParamABI::new(components, "".to_owned(), ty));
-        self
+    pub fn output(&mut self, components: Vec<ParamABI>, ty: String) {
+        // If type of the input is `()`, just skip it.
+        if !ty.is_empty() {
+            self.abi
+                .outputs
+                .push(ParamABI::new(components, "".to_owned(), ty));
+        }
     }
 
     pub fn done(self) -> ExternalFnABI {

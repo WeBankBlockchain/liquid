@@ -25,8 +25,11 @@ impl<'a> GenerateCode for EnvTypes<'a> {
     fn generate_code(&self) -> TokenStream2 {
         quote! {
             type Address = liquid_core::env::types::Address;
-            type String = liquid_core::env::types::String;
-            type Vec<T> = liquid_core::env::types::Vec<T>;
+            type Timestamp = liquid_core::env::types::Timestamp;
+            type BlockNumber = liquid_core::env::types::BlockNumber;
+
+            type Vec<T> = liquid_prelude::vec::Vec<T>;
+            type String = liquid_prelude::string::String;
         }
     }
 }

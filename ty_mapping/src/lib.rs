@@ -12,23 +12,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![feature(const_fn)]
-#![feature(associated_type_defaults)]
-#![feature(const_panic)]
+#![allow(incomplete_features)]
+#![feature(const_generics)]
 
-mod contract;
-mod dispatch_error;
-mod dispatcher;
-mod env_access;
-pub mod intrinsics;
-pub mod selector_conflict_detect;
 mod traits;
 
-#[cfg(test)]
-mod tests;
-
-pub use contract::Contract;
-pub use dispatch_error::{DispatchError, DispatchResult, DispatchRetInfo};
-pub use env_access::EnvAccess;
-pub use liquid_lang_derive::{InOut, State};
-pub use liquid_lang_macro::contract;
 pub use traits::*;
