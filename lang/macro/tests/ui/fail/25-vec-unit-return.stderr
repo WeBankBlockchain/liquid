@@ -6,16 +6,16 @@ error[E0277]: the trait bound `(): liquid_lang::You_Should_Use_An_Valid_Paramete
    |
    = note: required because of the requirements on the impl of `liquid_lang::You_Should_Use_An_Valid_Return_Type` for `std::vec::Vec<()>`
 
-error[E0277]: the trait bound `(): liquid_abi_codec::codec::MediateEncode` is not satisfied
+error[E0277]: the trait bound `(): liquid_abi_codec::MediateEncode` is not satisfied
   --> $DIR/25-vec-unit-return.rs:12:28
    |
 12 |         pub fn noop(&self) -> Vec<()> {}
-   |                            ^^^^^^^^^^ the trait `liquid_abi_codec::codec::MediateEncode` is not implemented for `()`
+   |                            ^^^^^^^^^^ the trait `liquid_abi_codec::MediateEncode` is not implemented for `()`
    |
   ::: $WORKSPACE/lang/src/traits.rs:24:18
    |
 24 |     type Output: Encode + 'static;
    |                  ------ required by this bound in `liquid_lang::FnOutput`
    |
-   = note: required because of the requirements on the impl of `liquid_abi_codec::codec::MediateEncode` for `std::vec::Vec<()>`
-   = note: required because of the requirements on the impl of `liquid_abi_codec::codec::Encode` for `std::vec::Vec<()>`
+   = note: required because of the requirements on the impl of `liquid_abi_codec::MediateEncode` for `std::vec::Vec<()>`
+   = note: required because of the requirements on the impl of `liquid_abi_codec::Encode` for `std::vec::Vec<()>`

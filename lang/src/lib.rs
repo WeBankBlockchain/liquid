@@ -15,9 +15,7 @@
 #![feature(associated_type_defaults)]
 #![feature(const_panic)]
 
-mod contract;
 mod dispatch_error;
-mod dispatcher;
 mod env_access;
 pub mod intrinsics;
 pub mod selector_conflict_detect;
@@ -26,7 +24,6 @@ mod traits;
 #[cfg(test)]
 mod tests;
 
-pub use contract::Contract;
 pub use dispatch_error::{DispatchError, DispatchResult, DispatchRetInfo};
 pub use env_access::EnvAccess;
 pub use liquid_lang_derive::{InOut, State};

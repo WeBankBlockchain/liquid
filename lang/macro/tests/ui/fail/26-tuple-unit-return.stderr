@@ -1,8 +1,8 @@
-error[E0277]: the trait bound `((), ()): liquid_abi_codec::codec::Encode` is not satisfied
+error[E0277]: the trait bound `((), ()): liquid_abi_codec::Encode` is not satisfied
   --> $DIR/26-tuple-unit-return.rs:12:28
    |
 12 |         pub fn noop(&self) -> ((), ()) {
-   |                            ^^^^^^^^^^^ the trait `liquid_abi_codec::codec::Encode` is not implemented for `((), ())`
+   |                            ^^^^^^^^^^^ the trait `liquid_abi_codec::Encode` is not implemented for `((), ())`
    |
   ::: $WORKSPACE/lang/src/traits.rs:24:18
    |
@@ -10,7 +10,7 @@ error[E0277]: the trait bound `((), ()): liquid_abi_codec::codec::Encode` is not
    |                  ------ required by this bound in `liquid_lang::FnOutput`
    |
    = help: the following implementations were found:
-             <(T14, T15) as liquid_abi_codec::codec::Encode>
+             <(T14, T15) as liquid_abi_codec::Encode>
 
 error[E0277]: the trait bound `(): liquid_lang::You_Should_Use_An_Valid_Parameter_Type` is not satisfied
   --> $DIR/26-tuple-unit-return.rs:12:28

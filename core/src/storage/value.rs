@@ -264,18 +264,17 @@ where
 }
 
 #[cfg(test)]
-impl<T> core::fmt::Display for Value<T>
-where
-    T: core::fmt::Display + scale::Codec,
-{
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        self.get().fmt(f)
-    }
-}
-
-#[cfg(test)]
 mod tests {
     use super::*;
+
+    impl<T> core::fmt::Display for Value<T>
+    where
+        T: core::fmt::Display + scale::Codec,
+    {
+        fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+            self.get().fmt(f)
+        }
+    }
 
     macro_rules! test_ops {
         ($test_name:ident, $tok:tt, $tok_eq:tt) => {

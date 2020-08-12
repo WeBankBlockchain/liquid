@@ -11,8 +11,8 @@ mod incrementer {
 
     #[liquid(methods)]
     impl Incrementer {
-        pub fn new(&mut self) {
-            self.value.initialize(0);
+        pub fn new(&mut self, init: u128) {
+            self.value.initialize(init);
         }
 
         pub fn inc_by(&mut self, delta: u128) {

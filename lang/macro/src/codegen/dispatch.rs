@@ -248,12 +248,6 @@ impl<'a> Dispatch<'a> {
             quote! { (#(#input_idents,)*) }
         };
 
-        let builder_name = if sig.is_mut() {
-            quote! { on_external_mut }
-        } else {
-            quote! { on_external }
-        };
-
         let attr = if is_getter {
             quote! { #[allow(deprecated)] }
         } else {
@@ -261,10 +255,23 @@ impl<'a> Dispatch<'a> {
         };
 
         quote! {
-            .#builder_name::<#namespace>(|storage, #pat_idents| {
+            if selector == <#namespace as liquid_lang::FnSelectors>::KECCAK256_SELECTOR ||
+                selector == <#namespace as liquid_lang::FnSelectors>::SM3_SELECTOR {
+                let #pat_idents = <<#namespace as liquid_lang::FnInput>::Input as liquid_abi_codec::Decode>::decode(&mut data.as_slice())
+                    .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
                 #attr
-                storage.#fn_name(#(#input_idents,)*)
-            })
+                let result = storage.#fn_name(#(#input_idents,)*);
+
+                if <#namespace as liquid_lang::FnMutability>::IS_MUT {
+                    <Storage as liquid_core::storage::Flush>::flush(&mut storage);
+                }
+
+                if core::any::TypeId::of::<<#namespace as liquid_lang::FnOutput>::Output>() != core::any::TypeId::of::<()>() {
+                    liquid_core::env::finish(&result);
+                }
+
+                return Ok(());
+            }
         }
     }
 
@@ -283,9 +290,9 @@ impl<'a> Dispatch<'a> {
             .inputs
             .iter()
             .skip(1)
-            .map(|arg| match arg {
-                FnArg::Typed(ident_type) => &ident_type.ident,
-                _ => unreachable!(),
+            .filter_map(|arg| match arg {
+                FnArg::Typed(ident_type) => Some(&ident_type.ident),
+                _ => None,
             })
             .collect::<Vec<_>>();
         let constr_pat_idents = if constr_input_idents.is_empty() {
@@ -309,14 +316,26 @@ impl<'a> Dispatch<'a> {
 
             impl Storage {
                 pub fn dispatch() -> liquid_lang::DispatchResult {
-                    liquid_lang::Contract::new_builder::<Storage, (#(#constr_input_tys,)*)>(|storage, #constr_pat_idents| {
-                        storage.#constr_ident(#(#constr_input_idents,)*);
-                    })
+                    let mut storage = <Storage as liquid_core::storage::New>::new();
+                    let call_data = liquid_core::env::get_call_data()
+                        .map_err(|_| liquid_lang::DispatchError::CouldNotReadInput)?;
+                    let selector = call_data.selector;
+                    let data = call_data.data;
+
                     #(
                         #fragments
                     )*
-                    .done()
-                    .dispatch()
+
+                    if selector == [0x00; 4] {
+                        let #constr_pat_idents = <(#(#constr_input_tys,)*) as liquid_abi_codec::Decode>::decode(&mut data.as_slice())
+                            .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+                        storage.#constr_ident(#(#constr_input_idents,)*);
+                        <Storage as liquid_core::storage::Flush>::flush(&mut storage);
+
+                        return Ok(());
+                    }
+
+                    Err(liquid_lang::DispatchError::UnknownSelector)
                 }
             }
         }
