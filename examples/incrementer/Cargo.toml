@@ -30,9 +30,8 @@ crate-type = [
 default = ["std"]
 std = [
     "liquid_core/std",
-    "liquid_lang/std",
     "liquid_primitives/std",
-    "liquid_abi_gen/std",
+    "scale/std",
 ]
 liquid-abi-gen = [
     "std",
