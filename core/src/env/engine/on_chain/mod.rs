@@ -17,7 +17,7 @@ use self::buffer::StaticBuffer;
 use super::OnInstance;
 use crate::env::{
     types::{Address, BlockNumber, Timestamp, ADDRESS_LENGTH},
-    CallData, Env, EnvError, Result,
+    CallData, CallMode, Env, EnvError, Result,
 };
 use liquid_abi_codec::Decode;
 
@@ -91,16 +91,27 @@ impl Env for EnvInstance {
         ext::set_storage(key, &[]);
     }
 
-    fn get_call_data(&mut self) -> Result<CallData> {
+    fn get_call_data(&mut self, mode: CallMode) -> Result<CallData> {
         let call_data_size = ext::get_call_data_size();
-        if call_data_size < 4 {
-            return Err(EnvError::UnableToReadCallData);
+        if mode == CallMode::Call {
+            // The call data of external methods must have a selector.
+            if call_data_size < 4 {
+                return Err(EnvError::UnableToReadCallData);
+            }
         }
 
         let mut call_data_buf =
             liquid_prelude::vec::from_elem(0u8, call_data_size as usize);
         ext::get_call_data(&mut call_data_buf[..]);
-        CallData::decode(&mut call_data_buf.as_slice()).map_err(Into::into)
+
+        if mode == CallMode::Call {
+            CallData::decode(&mut call_data_buf.as_slice()).map_err(Into::into)
+        } else {
+            Ok(CallData {
+                selector: [0x00; 4],
+                data: call_data_buf,
+            })
+        }
     }
 
     fn finish<V>(&mut self, return_value: &V)

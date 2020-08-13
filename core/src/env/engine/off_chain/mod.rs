@@ -17,7 +17,7 @@ use self::db::{Block, ContractStorage, ExecContext};
 use crate::env::{
     engine::OnInstance,
     types::{Address, BlockNumber, Timestamp},
-    CallData, Env, Result,
+    CallData, CallMode, Env, Result,
 };
 use core::cell::RefCell;
 
@@ -71,7 +71,7 @@ impl Env for EnvInstance {
         self.contract_storage.remove_storage(key);
     }
 
-    fn get_call_data(&mut self) -> Result<CallData> {
+    fn get_call_data(&mut self, _: CallMode) -> Result<CallData> {
         unimplemented!();
     }
 

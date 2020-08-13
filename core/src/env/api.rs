@@ -13,7 +13,7 @@
 use crate::env::{
     engine::{EnvInstance, OnInstance},
     types::Address,
-    CallData, Env, Result,
+    CallData, CallMode, Env, Result,
 };
 
 pub fn set_storage<V>(key: &[u8], value: &V)
@@ -40,8 +40,10 @@ pub fn remove_storage(key: &[u8]) {
     })
 }
 
-pub fn get_call_data() -> Result<CallData> {
-    <EnvInstance as OnInstance>::on_instance(|instance| Env::get_call_data(instance))
+pub fn get_call_data(mode: CallMode) -> Result<CallData> {
+    <EnvInstance as OnInstance>::on_instance(|instance| {
+        Env::get_call_data(instance, mode)
+    })
 }
 
 pub fn finish<V>(return_value: &V)

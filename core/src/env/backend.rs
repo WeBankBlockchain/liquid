@@ -15,6 +15,12 @@ use crate::env::{
     CallData, Result,
 };
 
+#[derive(PartialEq)]
+pub enum CallMode {
+    Deploy,
+    Call,
+}
+
 pub trait Env {
     fn set_storage<V>(&mut self, key: &[u8], value: &V)
     where
@@ -26,7 +32,7 @@ pub trait Env {
 
     fn remove_storage(&mut self, key: &[u8]);
 
-    fn get_call_data(&mut self) -> Result<CallData>;
+    fn get_call_data(&mut self, mode: CallMode) -> Result<CallData>;
 
     fn finish<V>(&mut self, return_value: &V)
     where

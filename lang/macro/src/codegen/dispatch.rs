@@ -16,7 +16,7 @@ use crate::{
 };
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, quote_spanned};
-use syn::spanned::Spanned;
+use syn::{punctuated::Punctuated, spanned::Spanned, Token};
 
 pub struct Dispatch<'a> {
     contract: &'a Contract,
@@ -56,6 +56,27 @@ fn generate_input_tys<'a>(sig: &'a Signature) -> Vec<&'a syn::Type> {
             _ => unreachable!(),
         })
         .collect::<Vec<_>>()
+}
+
+fn generate_input_idents<'a>(
+    args: &'a Punctuated<FnArg, Token![,]>,
+) -> (Vec<&'a proc_macro2::Ident>, TokenStream2) {
+    let input_idents = args
+        .iter()
+        .skip(1)
+        .filter_map(|arg| match arg {
+            FnArg::Typed(ident_type) => Some(&ident_type.ident),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+
+    let pat_idents = if input_idents.is_empty() {
+        quote! { _ }
+    } else {
+        quote! { (#(#input_idents,)*) }
+    };
+
+    (input_idents, pat_idents)
 }
 
 fn generate_input_ty_checker(tys: &[&syn::Type]) -> TokenStream2 {
@@ -233,21 +254,7 @@ impl<'a> Dispatch<'a> {
 
         let sig = &func.sig;
         let fn_name = &sig.ident;
-        let inputs = &sig.inputs;
-        let input_idents = inputs
-            .iter()
-            .skip(1)
-            .map(|arg| match arg {
-                FnArg::Typed(ident_type) => &ident_type.ident,
-                _ => unreachable!(),
-            })
-            .collect::<Vec<_>>();
-        let pat_idents = if input_idents.is_empty() {
-            quote! { _ }
-        } else {
-            quote! { (#(#input_idents,)*) }
-        };
-
+        let (input_idents, pat_idents) = generate_input_idents(&sig.inputs);
         let attr = if is_getter {
             quote! { #[allow(deprecated)] }
         } else {
@@ -275,41 +282,28 @@ impl<'a> Dispatch<'a> {
         }
     }
 
+    fn generate_constr_input_ty_checker(&self) -> TokenStream2 {
+        let constr = &self.contract.constructor;
+        let sig = &constr.sig;
+        let inputs = &sig.inputs;
+        let input_tys = generate_input_tys(sig);
+        let marker = quote! { ExternalMarker<[(); 0]> };
+        let input_ty_checker = generate_input_ty_checker(input_tys.as_slice());
+        quote_spanned! { inputs.span() =>
+            impl liquid_lang::FnInput for #marker  {
+                type Input = #input_ty_checker;
+            }
+        }
+    }
+
     fn generate_dispatch(&self) -> TokenStream2 {
         let fragments = self.contract.functions.iter().enumerate().map(|(i, func)| {
             let is_getter = self.contract.functions.len() - i
                 <= self.contract.storage.public_fields.len();
             self.generate_dispatch_fragment(func, is_getter)
         });
-        let constr = &self.contract.constructor;
-        let constr_sig = &constr.sig;
-        let constr_ident = &constr_sig.ident;
-        let constr_inputs = &constr_sig.inputs;
 
-        let constr_input_idents = constr_sig
-            .inputs
-            .iter()
-            .skip(1)
-            .filter_map(|arg| match arg {
-                FnArg::Typed(ident_type) => Some(&ident_type.ident),
-                _ => None,
-            })
-            .collect::<Vec<_>>();
-        let constr_pat_idents = if constr_input_idents.is_empty() {
-            quote! { _ }
-        } else {
-            quote! { (#(#constr_input_idents,)*) }
-        };
-
-        let constr_input_tys = generate_input_tys(constr_sig);
-        let constr_marker = quote! { ExternalMarker<[(); 0]> };
-        let constr_input_ty_checker =
-            generate_input_ty_checker(constr_input_tys.as_slice());
-        let constr_input_ty_checker = quote_spanned! { constr_inputs.span() =>
-            impl liquid_lang::FnInput for #constr_marker  {
-                type Input = #constr_input_ty_checker;
-            }
-        };
+        let constr_input_ty_checker = self.generate_constr_input_ty_checker();
 
         quote! {
             #constr_input_ty_checker
@@ -317,7 +311,7 @@ impl<'a> Dispatch<'a> {
             impl Storage {
                 pub fn dispatch() -> liquid_lang::DispatchResult {
                     let mut storage = <Storage as liquid_core::storage::New>::new();
-                    let call_data = liquid_core::env::get_call_data()
+                    let call_data = liquid_core::env::get_call_data(liquid_core::env::CallMode::Call)
                         .map_err(|_| liquid_lang::DispatchError::CouldNotReadInput)?;
                     let selector = call_data.selector;
                     let data = call_data.data;
@@ -325,15 +319,6 @@ impl<'a> Dispatch<'a> {
                     #(
                         #fragments
                     )*
-
-                    if selector == [0x00; 4] {
-                        let #constr_pat_idents = <(#(#constr_input_tys,)*) as liquid_abi_codec::Decode>::decode(&mut data.as_slice())
-                            .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
-                        storage.#constr_ident(#(#constr_input_idents,)*);
-                        <Storage as liquid_core::storage::Flush>::flush(&mut storage);
-
-                        return Ok(());
-                    }
 
                     Err(liquid_lang::DispatchError::UnknownSelector)
                 }
@@ -348,7 +333,26 @@ impl<'a> Dispatch<'a> {
 
     #[cfg(not(feature = "std"))]
     fn generate_entry_point(&self) -> TokenStream2 {
+        let constr = &self.contract.constructor;
+        let sig = &constr.sig;
+        let input_tys = generate_input_tys(sig);
+        let ident = &sig.ident;
+        let (input_idents, pat_idents) = generate_input_idents(&sig.inputs);
+
         quote! {
+            #[no_mangle]
+            fn deploy() {
+                let mut storage = <Storage as liquid_core::storage::New>::new();
+                let call_data = liquid_core::env::get_call_data(liquid_core::env::CallMode::Deploy)
+                    .map_err(|_| liquid_lang::DispatchError::CouldNotReadInput)?;
+                let data = call_data.data;
+                let #pat_idents = <(#(#input_tys,)*) as liquid_abi_codec::Decode>::decode(&mut data.as_slice())
+                    .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+                storage.#ident(#(#input_idents,)*);
+                <Storage as liquid_core::storage::Flush>::flush(&mut storage);
+                return Ok(());
+            }
+
             #[no_mangle]
             fn main() {
                 let ret_info = liquid_lang::DispatchRetInfo::from(Storage::dispatch());

@@ -19,7 +19,7 @@ pub mod types;
 
 pub use self::{
     api::*,
-    backend::Env,
+    backend::{CallMode, Env},
     calldata::CallData,
     error::{EnvError, Result},
 };
