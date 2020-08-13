@@ -13,7 +13,7 @@
 use crate::storage::{CacheEntry, Flush, TypedCell};
 use core::cell::RefCell;
 
-#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Debug))]
 enum Cache<T> {
     /// The cache is desynchronized with the contract storage.
     Desync,
@@ -75,7 +75,7 @@ impl<T> Cache<T> {
     }
 }
 
-#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct CachedCell<T> {
     cell: TypedCell<T>,
     cache: RefCell<Cache<T>>,

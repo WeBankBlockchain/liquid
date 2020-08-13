@@ -23,9 +23,8 @@ use liquid_ty_mapping::{SolTypeName, SolTypeNameLen};
 
 pub const ADDRESS_LENGTH: usize = 20;
 
-#[derive(
-    Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, scale::Decode, scale::Encode,
-)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, scale::Decode, scale::Encode)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct Address([u8; ADDRESS_LENGTH]);
 
 impl Address {

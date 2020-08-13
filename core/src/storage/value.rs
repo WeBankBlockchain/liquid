@@ -16,7 +16,7 @@ use crate::storage::{
 };
 use scale::Encode;
 
-#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct Value<T> {
     cell: CachedCell<T>,
 }

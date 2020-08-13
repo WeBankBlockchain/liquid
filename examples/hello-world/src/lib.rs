@@ -13,8 +13,8 @@ mod hello_world {
 
     #[liquid(methods)]
     impl HelloWorld {
-        pub fn new(&mut self) {
-            self.name.initialize(String::from("Hello, World!"));
+        pub fn new(&mut self, name: String) {
+            self.name.initialize(name);
         }
 
         pub fn get(&self) -> String {
@@ -32,14 +32,17 @@ mod hello_world {
 
         #[test]
         fn get_works() {
-            let contract = HelloWorld::new();
-            assert_eq!(contract.get(), "Hello, World!".to_owned());
+            let new_name = "Hello, world!".to_owned();
+            let contract = HelloWorld::new(new_name.clone());
+            assert_eq!(contract.get(), new_name);
         }
 
         #[test]
         fn set_works() {
+            let old_name = "Hello, world!".to_owned();
+            let mut contract = HelloWorld::new(old_name);
+
             let new_name = "Bye, world!".to_owned();
-            let mut contract = HelloWorld::new();
             contract.set(new_name.clone());
             assert_eq!(contract.get(), new_name);
         }

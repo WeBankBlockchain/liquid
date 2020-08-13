@@ -12,6 +12,7 @@
 
 use liquid_prelude::string::String;
 
+#[cfg_attr(feature = "std", derive(Debug))]
 pub enum DispatchError {
     UnknownSelector,
     InvalidParams,

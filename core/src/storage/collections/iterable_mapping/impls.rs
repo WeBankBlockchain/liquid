@@ -17,25 +17,27 @@ use crate::storage::{
 use core::borrow::Borrow;
 use scale::{Codec, Decode, Encode};
 
-#[derive(Debug, Decode, Encode)]
+#[derive(Decode, Encode)]
+#[cfg_attr(feature = "std", derive(Debug))]
 struct KeyEntry<K: Codec> {
     key: K,
     deleted: bool,
 }
 
-#[derive(Debug, Decode, Encode)]
+#[derive(Decode, Encode)]
+#[cfg_attr(feature = "std", derive(Debug))]
 struct ValueEntry<V: Codec> {
     key_index: u32,
     val: V,
 }
 
-#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct IterableMapping<K: Codec, V: Codec> {
     keys: Vec<KeyEntry<K>>,
     mapping: Mapping<K, ValueEntry<V>>,
 }
 
-#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct Iter<'a, K: Codec, V: Codec> {
     iterable_mapping: &'a IterableMapping<K, V>,
     begin: u32,

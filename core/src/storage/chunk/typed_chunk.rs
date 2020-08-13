@@ -17,7 +17,7 @@ use scale::{Decode, Encode};
 
 const SEP: u8 = 0x24; // '$'
 
-#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct TypedChunk<T> {
     key_buf: RefCell<Vec<u8>>,
     prefix_len: usize,

@@ -15,7 +15,7 @@ use core::{borrow::Borrow, cell::RefCell};
 use liquid_prelude::{collections::BTreeMap, vec::Vec};
 use scale::{Codec, Decode, Encode};
 
-#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct CachedChunk<T> {
     chunk: TypedChunk<T>,
     cache: RefCell<BTreeMap<Vec<u8>, CacheEntry<T>>>,

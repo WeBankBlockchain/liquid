@@ -17,7 +17,7 @@ use liquid_prelude::vec::Vec;
 /// A typed cell.
 ///
 /// Provides interpreted access to the associated contract storage slot.
-#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct TypedCell<T> {
     key: Vec<u8>,
     marker: PhantomData<fn() -> T>,

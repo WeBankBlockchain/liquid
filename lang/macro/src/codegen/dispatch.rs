@@ -343,14 +343,20 @@ impl<'a> Dispatch<'a> {
             #[no_mangle]
             fn deploy() {
                 let mut storage = <Storage as liquid_core::storage::New>::new();
-                let call_data = liquid_core::env::get_call_data(liquid_core::env::CallMode::Deploy)
-                    .map_err(|_| liquid_lang::DispatchError::CouldNotReadInput)?;
-                let data = call_data.data;
-                let #pat_idents = <(#(#input_tys,)*) as liquid_abi_codec::Decode>::decode(&mut data.as_slice())
-                    .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
-                storage.#ident(#(#input_idents,)*);
-                <Storage as liquid_core::storage::Flush>::flush(&mut storage);
-                return Ok(());
+                let result = liquid_core::env::get_call_data(liquid_core::env::CallMode::Deploy);
+                if let Ok(call_data) = result {
+                    let data = call_data.data;
+                    let result = <(#(#input_tys,)*) as liquid_abi_codec::Decode>::decode(&mut data.as_slice());
+                    if let Ok(data) = result {
+                        let #pat_idents = data;
+                        storage.#ident(#(#input_idents,)*);
+                        <Storage as liquid_core::storage::Flush>::flush(&mut storage);
+                    } else {
+                        liquid_core::env::revert(&String::from("invalid params"));
+                    }
+                } else {
+                    liquid_core::env::revert(&String::from("could not read input"));
+                }
             }
 
             #[no_mangle]

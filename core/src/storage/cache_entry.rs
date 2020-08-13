@@ -12,7 +12,7 @@
 
 use liquid_prelude::boxed::Box;
 
-#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct CacheEntry<T> {
     /// If the entry needs to be written back upon a flush.
     dirty: bool,

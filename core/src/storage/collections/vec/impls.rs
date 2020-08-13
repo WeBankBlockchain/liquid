@@ -16,7 +16,7 @@ use crate::storage::{
 };
 use scale::{Codec, Encode};
 
-#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct Vec<T> {
     len: CachedCell<u32>,
     chunk: CachedChunk<T>,

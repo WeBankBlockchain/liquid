@@ -17,7 +17,7 @@ use crate::storage::{
 use core::{borrow::Borrow, marker::PhantomData};
 use scale::{Codec, Encode};
 
-#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct Mapping<K, V> {
     len: CachedCell<u32>,
     chunk: CachedChunk<V>,
