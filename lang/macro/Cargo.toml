@@ -36,4 +36,5 @@ default = ["std"]
 std = [
     "liquid_prelude/std",
     "liquid_primitives/std",
+    "liquid_ty_mapping/std",
 ]

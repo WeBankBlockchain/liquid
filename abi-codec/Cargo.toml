@@ -19,4 +19,5 @@ hex-literal = "0.2.1"
 default = ["std"]
 std = [
     "liquid_prelude/std",
+    "liquid_macro/std",
 ]

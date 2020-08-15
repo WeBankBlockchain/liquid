@@ -29,4 +29,6 @@ proc-macro = true
 
 [features]
 default = ["std"]
-std = []
+std = [
+    "liquid_prelude/std"
+]
