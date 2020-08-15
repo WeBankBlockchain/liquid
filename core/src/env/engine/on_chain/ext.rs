@@ -15,6 +15,7 @@
 use crate::env::{EnvError, Result};
 
 mod sys {
+    #[link(wasm_import_module = "bcos")]
     extern "C" {
         pub fn setStorage(
             key_offset: u32,
@@ -38,6 +39,11 @@ mod sys {
         pub fn getBlockTimestamp() -> u64;
 
         pub fn getBlockNumber() -> u64;
+    }
+
+    #[link(wasm_import_module = "debug")]
+    extern "C" {
+        pub fn print32(i: i32);
     }
 }
 
@@ -100,4 +106,10 @@ pub fn get_block_timestamp() -> u64 {
 
 pub fn get_block_number() -> u64 {
     unsafe { sys::getBlockNumber() }
+}
+
+pub fn print32(i: i32) {
+    unsafe {
+        sys::print32(i);
+    }
 }

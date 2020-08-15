@@ -104,6 +104,8 @@ impl Env for EnvInstance {
     fn get_block_number(&mut self) -> BlockNumber {
         self.current_block().block_number()
     }
+
+    fn print32(&mut self, _: i32) {}
 }
 
 impl OnInstance for EnvInstance {
