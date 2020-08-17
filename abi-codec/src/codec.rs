@@ -384,13 +384,10 @@ impl MediateDecode for String {
         let len = as_u32(len_slice)? as usize;
 
         let taken = take(slices, len_offset + 1, len)?;
-        match String::from_utf8(taken.bytes) {
-            Ok(value) => Ok(DecodeResult {
-                value,
-                new_offset: offset + 1,
-            }),
-            Err(_) => Err("Invalid String representation".into()),
-        }
+        Ok(DecodeResult {
+            value: String::from_utf8_lossy(taken.bytes.as_slice()).into_owned(),
+            new_offset: offset + 1,
+        })
     }
 }
 
