@@ -27,8 +27,8 @@ pub struct EnvInstance {
     exec_contexts: Vec<ExecContext>,
 }
 
-impl EnvInstance {
-    pub fn new() -> Self {
+impl Default for EnvInstance {
+    fn default() -> Self {
         let mut blocks = Vec::new();
         blocks.push(Block::new(0));
 
@@ -38,7 +38,9 @@ impl EnvInstance {
             exec_contexts: Vec::new(),
         }
     }
+}
 
+impl EnvInstance {
     pub fn current_exec_context(&self) -> &ExecContext {
         self.exec_contexts
             .last()
@@ -104,8 +106,6 @@ impl Env for EnvInstance {
     fn get_block_number(&mut self) -> BlockNumber {
         self.current_block().block_number()
     }
-
-    fn print32(&mut self, _: i32) {}
 }
 
 impl OnInstance for EnvInstance {
@@ -115,7 +115,7 @@ impl OnInstance for EnvInstance {
     {
         thread_local!(
             static INSTANCE: RefCell<EnvInstance> = RefCell::new(
-                EnvInstance::new()
+                Default::default(),
             )
         );
 

@@ -22,10 +22,12 @@ pub struct CachedChunk<T> {
 }
 
 impl<T> CachedChunk<T> {
-    pub fn insert_cache(&self, key: &[u8], val: Option<T>) {
-        self.cache
-            .borrow_mut()
-            .insert(key.to_vec(), CacheEntry::<T>::new(val));
+    pub fn insert_cache(&self, key: &[u8], val: Option<T>, is_dirty: bool) {
+        let mut entry = CacheEntry::<T>::new(val);
+        if is_dirty {
+            entry.mark_dirty();
+        }
+        self.cache.borrow_mut().insert(key.to_vec(), entry);
     }
 }
 
@@ -56,7 +58,7 @@ where
 
     fn sync_from_storage(&self, index: &[u8]) {
         let loaded = self.chunk.load(index);
-        self.insert_cache(index, loaded);
+        self.insert_cache(index, loaded, false);
     }
 
     pub fn get(&self, index: &[u8]) -> Option<&T> {
@@ -68,6 +70,7 @@ where
             self.get_cache_entry(index).and_then(|entry| entry.get())
         }
     }
+
     pub fn get_mut(&mut self, index: &[u8]) -> Option<&mut T> {
         let cache_entry = self.get_cache_entry_mut(index);
         if let Some(entry) = cache_entry {
@@ -78,6 +81,7 @@ where
                 .and_then(|entry| entry.get_mut())
         }
     }
+
     pub fn take(&mut self, index: &[u8]) -> Option<T> {
         let cache_entry = self.get_cache_entry_mut(index);
         if let Some(entry) = cache_entry {
@@ -100,7 +104,7 @@ where
             entry.update(Some(new_val));
             entry.mark_dirty();
         } else {
-            self.insert_cache(index, Some(new_val))
+            self.insert_cache(index, Some(new_val), true);
         }
     }
 

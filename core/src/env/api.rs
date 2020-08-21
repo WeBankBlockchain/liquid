@@ -67,7 +67,3 @@ where
 pub fn get_caller() -> Address {
     <EnvInstance as OnInstance>::on_instance(|instance| Env::get_caller(instance))
 }
-
-pub fn print32(i: i32) {
-    <EnvInstance as OnInstance>::on_instance(|instance| Env::print32(instance, i))
-}

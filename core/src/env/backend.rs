@@ -47,6 +47,4 @@ pub trait Env {
     fn now(&mut self) -> Timestamp;
 
     fn get_block_number(&mut self) -> BlockNumber;
-
-    fn print32(&mut self, i: i32);
 }

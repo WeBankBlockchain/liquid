@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! External C API to communicate with FISCO BCOS WASM Runtime
+//! External C API to communicate with FISCO BCOS Wasm runtime
 
 use crate::env::{EnvError, Result};
 
@@ -42,8 +42,11 @@ mod sys {
     }
 
     #[link(wasm_import_module = "debug")]
+    /// For debug using, unnecessary to implement them in environment API.
     extern "C" {
         pub fn print32(i: i32);
+
+        pub fn printMem(data_offset: u32, data_length: u32);
     }
 }
 
@@ -111,5 +114,11 @@ pub fn get_block_number() -> u64 {
 pub fn print32(i: i32) {
     unsafe {
         sys::print32(i);
+    }
+}
+
+pub fn print_mem(data_offset: u32, data_length: u32) {
+    unsafe {
+        sys::printMem(data_offset, data_length);
     }
 }

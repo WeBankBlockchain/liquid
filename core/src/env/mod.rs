@@ -13,7 +13,7 @@
 mod api;
 mod backend;
 mod calldata;
-mod engine;
+pub mod engine;
 mod error;
 pub mod types;
 

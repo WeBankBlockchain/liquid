@@ -11,7 +11,7 @@
 // limitations under the License.
 
 mod buffer;
-mod ext;
+pub mod ext;
 
 use self::buffer::StaticBuffer;
 use super::OnInstance;
@@ -118,7 +118,6 @@ impl Env for EnvInstance {
     where
         V: liquid_abi_codec::Encode,
     {
-        self.reset_buffer();
         self.encode_into_buffer_abi(return_value);
         ext::finish(&self.buffer[..self.buffer.len()]);
     }
@@ -127,12 +126,12 @@ impl Env for EnvInstance {
     where
         V: liquid_abi_codec::Encode,
     {
-        self.reset_buffer();
         self.encode_into_buffer_abi(revert_info);
         ext::revert(&self.buffer[..self.buffer.len()]);
     }
 
     fn get_caller(&mut self) -> Address {
+        self.buffer.resize(ADDRESS_LENGTH);
         ext::get_caller(&mut self.buffer[..ADDRESS_LENGTH]);
         let mut address = [0u8; ADDRESS_LENGTH];
         address.copy_from_slice(&self.buffer[..ADDRESS_LENGTH]);
@@ -145,9 +144,5 @@ impl Env for EnvInstance {
 
     fn get_block_number(&mut self) -> BlockNumber {
         ext::get_block_number() as BlockNumber
-    }
-
-    fn print32(&mut self, i: i32) {
-        ext::print32(i);
     }
 }
