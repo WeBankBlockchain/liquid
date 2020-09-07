@@ -21,6 +21,7 @@ fn compile_tests() {
     t.pass("tests/ui/pass/06-multiple-returns.rs");
     t.pass("tests/ui/pass/07-getter.rs");
     t.pass("tests/ui/pass/08-unit-return.rs");
+    t.pass("tests/ui/pass/09-event.rs");
     t.compile_fail("tests/ui/fail/01-constructor-returns.rs");
     t.compile_fail("tests/ui/fail/02-missing-constructor.rs");
     t.compile_fail("tests/ui/fail/03-multiple-constructors.rs");
@@ -47,4 +48,6 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/24-vec-tuple-return.rs");
     t.compile_fail("tests/ui/fail/25-vec-unit-return.rs");
     t.compile_fail("tests/ui/fail/26-tuple-unit-return.rs");
+    t.compile_fail("tests/ui/fail/27-too-many-topics.rs");
+    t.compile_fail("tests/ui/fail/28-invalid-event-type.rs");
 }

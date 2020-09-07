@@ -10,5 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod keccak;
-pub mod sm3;
+mod keccak;
+mod sm3;
+
+pub use keccak::keccak256;
+pub use sm3::sm3;

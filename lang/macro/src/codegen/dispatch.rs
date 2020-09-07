@@ -12,7 +12,7 @@
 
 use crate::{
     codegen::GenerateCode,
-    ir::{Contract, FnArg, Function, FunctionKind, Signature},
+    ir::{Contract, FnArg, Function, FunctionKind, HashType, Signature},
 };
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, quote_spanned};
@@ -104,33 +104,19 @@ impl<'a> Dispatch<'a> {
     }
 
     fn generate_external_fn_traits(&self) -> TokenStream2 {
-        let (traits, external_markers): (Vec<_>, Vec<_>) = self
+        let traits = self
             .contract
             .functions
             .iter()
             .filter(|func| matches!(&func.kind, FunctionKind::External(_)))
-            .map(|func| self.generate_external_fn_trait(func))
-            .unzip();
-        let selectors = external_markers.iter().map(|marker| {
-            quote!(
-                <#marker as liquid_lang::FnSelectors>::KECCAK256_SELECTOR,
-                <#marker as liquid_lang::FnSelectors>::SM3_SELECTOR)
-        });
-        let selector_conflict_detector = quote! {
-            const _: () = liquid_lang::selector_conflict_detect::detect(&[#(#selectors,)*]);
-        };
+            .map(|func| self.generate_external_fn_trait(func));
 
         quote! {
             #(#traits)*
-
-            #selector_conflict_detector
         }
     }
 
-    fn generate_external_fn_trait(
-        &self,
-        func: &Function,
-    ) -> (TokenStream2, TokenStream2) {
+    fn generate_external_fn_trait(&self, func: &Function) -> TokenStream2 {
         let fn_id = match &func.kind {
             FunctionKind::External(fn_id) => fn_id,
             _ => unreachable!(),
@@ -209,18 +195,31 @@ impl<'a> Dispatch<'a> {
                     &[#(#fn_name_bytes),*],
                     <DispatchHelper<#external_marker, (#(#input_tys,)*)> as liquid_ty_mapping::SolTypeName<_>>::NAME);
         };
-        selectors.extend(quote_spanned! { span =>
-            impl liquid_lang::FnSelectors for #external_marker {
-                const KECCAK256_SELECTOR: liquid_primitives::Selector = {
-                    #composite_sig
-                    liquid_primitives::hash::keccak::keccak256(&SIG)
-                };
-                const SM3_SELECTOR: liquid_primitives::Selector = {
-                    #composite_sig
-                    liquid_primitives::hash::sm3::sm3(&SIG)
-                };
+
+        match self.contract.meta_info.hash_type {
+            HashType::Keccak256 => {
+                selectors.extend(quote_spanned! { span =>
+                    impl liquid_lang::FnSelector for #external_marker {
+                        const SELECTOR: liquid_primitives::Selector = {
+                            #composite_sig
+                            let hash = liquid_primitives::hash::keccak256(&SIG);
+                            [hash[0], hash[1], hash[2], hash[3]]
+                        };
+                    }
+                });
             }
-        });
+            HashType::SM3 => {
+                selectors.extend(quote_spanned! { span =>
+                    impl liquid_lang::FnSelector for #external_marker {
+                        const SELECTOR: liquid_primitives::Selector = {
+                            #composite_sig
+                            let hash = liquid_primitives::hash::sm3(&SIG);
+                            [hash[0], hash[1], hash[2], hash[3]]
+                        };
+                    }
+                });
+            }
+        }
 
         let is_mut = sig.is_mut();
         let mutability = quote_spanned! { span =>
@@ -229,16 +228,13 @@ impl<'a> Dispatch<'a> {
             }
         };
 
-        (
-            quote_spanned! { span =>
-                #fn_input
-                #fn_output
-                #selectors
-                #mutability
-                impl liquid_lang::ExternalFn for #external_marker {}
-            },
-            external_marker,
-        )
+        quote_spanned! { span =>
+            #fn_input
+            #fn_output
+            #selectors
+            #mutability
+            impl liquid_lang::ExternalFn for #external_marker {}
+        }
     }
 
     fn generate_dispatch_fragment(
@@ -262,8 +258,7 @@ impl<'a> Dispatch<'a> {
         };
 
         quote! {
-            if selector == <#namespace as liquid_lang::FnSelectors>::KECCAK256_SELECTOR ||
-                selector == <#namespace as liquid_lang::FnSelectors>::SM3_SELECTOR {
+            if selector == <#namespace as liquid_lang::FnSelector>::SELECTOR {
                 let #pat_idents = <<#namespace as liquid_lang::FnInput>::Input as liquid_abi_codec::Decode>::decode(&mut data.as_slice())
                     .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
                 #attr
@@ -338,8 +333,17 @@ impl<'a> Dispatch<'a> {
         let input_tys = generate_input_tys(sig);
         let ident = &sig.ident;
         let (input_idents, pat_idents) = generate_input_idents(&sig.inputs);
+        let hash_type = match self.contract.meta_info.hash_type {
+            HashType::Keccak256 => 0,
+            HashType::SM3 => 1,
+        };
 
         quote! {
+            #[no_mangle]
+            fn hash_type() -> u32 {
+                #hash_type as u32
+            }
+
             #[no_mangle]
             fn deploy() {
                 let mut storage = <Storage as liquid_core::storage::New>::new();

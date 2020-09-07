@@ -199,8 +199,8 @@ const fn convert_bytes_to_words(b: &[u8; BYTE]) -> [u64; WORD] {
     ret
 }
 
-pub const fn keccak256(input: &[u8]) -> [u8; 4] {
-    let mut output = [0u8; 4];
+pub const fn keccak256(input: &[u8]) -> [u8; 32] {
+    let mut output = [0u8; 32];
     let mut buffer = [0u64; WORD];
 
     let offset = fold(&mut buffer, input);
@@ -214,7 +214,7 @@ pub const fn keccak256(input: &[u8]) -> [u8; 4] {
     buffer_temp = convert_words_to_bytes(&buffer);
 
     let mut i = 0;
-    while i < 4 {
+    while i < 32 {
         output[i] = buffer_temp[i];
         i += 1;
     }

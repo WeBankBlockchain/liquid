@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use super::{Function, ItemStorage, LiquidItem, Marker};
+use super::{Function, ItemEvent, ItemStorage, LiquidItem, Marker};
 use proc_macro2::Span;
 use syn::{spanned::Spanned, Result};
 
@@ -38,16 +38,17 @@ where
         .filter_map(|attr| Marker::try_from(attr).ok())
 }
 
-pub fn split_items(items: Vec<LiquidItem>) -> Result<(ItemStorage, Vec<Function>)> {
+pub fn split_items(
+    items: Vec<LiquidItem>,
+) -> Result<(ItemStorage, Vec<ItemEvent>, Vec<Function>)> {
     use either::Either;
     use itertools::Itertools;
 
-    let (mut storages, impl_blocks): (Vec<_>, Vec<_>) =
+    let (mut storages, others): (Vec<_>, Vec<_>) =
         items.into_iter().partition_map(|item| match item {
             LiquidItem::Storage(storage) => Either::Left(storage),
-            LiquidItem::Impl(impl_block) => Either::Right(impl_block),
+            other => Either::Right(other),
         });
-
     let storage = match storages.len() {
         0 => {
             return Err(format_err_span!(
@@ -63,6 +64,13 @@ pub fn split_items(items: Vec<LiquidItem>) -> Result<(ItemStorage, Vec<Function>
             ))
         }
     };
+
+    let (events, impl_blocks): (Vec<_>, Vec<_>) =
+        others.into_iter().partition_map(|item| match item {
+            LiquidItem::Event(event) => Either::Left(event),
+            LiquidItem::Impl(impl_block) => Either::Right(impl_block),
+            _ => unreachable!(),
+        });
 
     for item_impl in &impl_blocks {
         if item_impl.ty != storage.ident {
@@ -80,5 +88,5 @@ pub fn split_items(items: Vec<LiquidItem>) -> Result<(ItemStorage, Vec<Function>
         .flatten()
         .collect::<Vec<_>>();
 
-    Ok((storage, functions))
+    Ok((storage, events, functions))
 }

@@ -23,9 +23,16 @@ pub struct MetaVersion {
     pub patch: usize,
 }
 
+#[derive(Copy, Clone)]
+pub enum HashType {
+    SM3,
+    Keccak256,
+}
+
 /// The meta info for a contract.
 pub struct MetaInfo {
     pub liquid_version: MetaVersion,
+    pub hash_type: HashType,
 }
 
 /// Contract item.
@@ -38,6 +45,7 @@ pub enum Item {
 #[derive(From)]
 pub enum LiquidItem {
     Storage(ItemStorage),
+    Event(ItemEvent),
     Impl(ItemImpl),
 }
 
@@ -69,6 +77,31 @@ pub struct ItemStorage {
 }
 
 impl Spanned for ItemStorage {
+    /// Returns the span of the original `struct` definition.
+    fn span(&self) -> Span {
+        self.span
+    }
+}
+
+/// An event struct.
+pub struct ItemEvent {
+    /// Outer attributes of the event,
+    pub attrs: Vec<syn::Attribute>,
+    /// The `struct` token.
+    pub struct_token: Token![struct],
+    /// The name of the event.
+    pub ident: Ident,
+    /// fields of the event.
+    pub fields: Vec<syn::Field>,
+    /// indexed fields of the event.
+    pub indexed_fields: Vec<usize>,
+    /// unindexed fields of the event.
+    pub unindexed_fields: Vec<usize>,
+    /// Span of the event.
+    pub span: Span,
+}
+
+impl Spanned for ItemEvent {
     /// Returns the span of the original `struct` definition.
     fn span(&self) -> Span {
         self.span
@@ -232,6 +265,8 @@ pub struct Contract {
     pub meta_info: MetaInfo,
     /// The contract storage.
     pub storage: ItemStorage,
+    /// The contract events.
+    pub events: Vec<ItemEvent>,
     /// Constructor function.
     pub constructor: Function,
     /// External and normal functions of the contract.

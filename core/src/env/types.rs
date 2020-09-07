@@ -151,9 +151,6 @@ impl TyName for Address {
     }
 }
 
-pub type Timestamp = u64;
-pub type BlockNumber = u64;
-
 impl SolTypeName for Address {
     const NAME: &'static [u8] = ADDRESS_MAPPED_TYPE.as_bytes();
 }
@@ -168,6 +165,14 @@ impl SolTypeName<Address> for Vec<Address> {
 
 impl SolTypeNameLen<Address> for Vec<Address> {
     const LEN: usize = ADDRESS_MAPPED_TYPE.len() + 2;
+}
+
+pub type Timestamp = u64;
+pub type BlockNumber = u64;
+pub type Hash = [u8; 32];
+
+pub trait Topics {
+    fn topics(&self) -> liquid_prelude::vec::Vec<Hash>;
 }
 
 #[cfg(test)]

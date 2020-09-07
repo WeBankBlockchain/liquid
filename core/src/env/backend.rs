@@ -11,7 +11,7 @@
 // limitations under the License.
 
 use crate::env::{
-    types::{Address, BlockNumber, Timestamp},
+    types::{Address, BlockNumber, Timestamp, Topics},
     CallData, Result,
 };
 
@@ -41,6 +41,10 @@ pub trait Env {
     fn revert<V>(&mut self, revert_into: &V)
     where
         V: liquid_abi_codec::Encode;
+
+    fn emit<Event>(&mut self, event: Event)
+    where
+        Event: Topics + liquid_abi_codec::Encode;
 
     fn get_caller(&mut self) -> Address;
 

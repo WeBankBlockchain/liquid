@@ -24,16 +24,15 @@ pub trait FnOutput {
     type Output: Encode + 'static;
 }
 
-pub trait FnSelectors {
-    const KECCAK256_SELECTOR: Selector;
-    const SM3_SELECTOR: Selector;
+pub trait FnSelector {
+    const SELECTOR: Selector;
 }
 
 pub trait FnMutability {
     const IS_MUT: bool;
 }
 
-pub trait ExternalFn: FnInput + FnOutput + FnSelectors + FnMutability {}
+pub trait ExternalFn: FnInput + FnOutput + FnSelector + FnMutability {}
 
 #[allow(non_camel_case_types)]
 pub trait You_Should_Use_An_Valid_Parameter_Type: Sized {

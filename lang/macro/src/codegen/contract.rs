@@ -12,8 +12,13 @@
 
 use crate::{
     codegen::{
-        abi_gen::ABIGen, dispatch::Dispatch, env_types::EnvTypes, storage::Storage,
-        testable::Testable, GenerateCode,
+        abi_gen::ABIGen,
+        dispatch::Dispatch,
+        env_types::EnvTypes,
+        events::{EventStructs, Events},
+        storage::Storage,
+        testable::Testable,
+        GenerateCode,
     },
     ir,
 };
@@ -26,6 +31,8 @@ impl GenerateCode for ir::Contract {
         let storage_ident = &self.storage.ident;
         let env_types = EnvTypes::from(self).generate_code();
         let storage = Storage::from(self).generate_code();
+        let events = Events::from(self).generate_code();
+        let event_struct = EventStructs::from(self).generate_code();
         let dispatch = Dispatch::from(self).generate_code();
         let testable = Testable::from(self).generate_code();
         let abi = ABIGen::from(self).generate_code();
@@ -40,6 +47,7 @@ impl GenerateCode for ir::Contract {
                     use super::*;
 
                     #storage
+                    #events
                     #dispatch
                     #testable
                     #abi
@@ -52,6 +60,8 @@ impl GenerateCode for ir::Contract {
 
                 #[cfg(not(test))]
                 pub type #storage_ident = __liquid_private::Storage;
+
+                #event_struct
 
                 #(
                     #rust_items

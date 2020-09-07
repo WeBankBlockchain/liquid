@@ -18,7 +18,6 @@
 mod dispatch_error;
 mod env_access;
 pub mod intrinsics;
-pub mod selector_conflict_detect;
 mod traits;
 
 #[cfg(test)]

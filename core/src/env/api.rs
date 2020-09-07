@@ -12,7 +12,7 @@
 
 use crate::env::{
     engine::{EnvInstance, OnInstance},
-    types::Address,
+    types::{Address, Topics},
     CallData, CallMode, Env, Result,
 };
 
@@ -66,4 +66,11 @@ where
 
 pub fn get_caller() -> Address {
     <EnvInstance as OnInstance>::on_instance(|instance| Env::get_caller(instance))
+}
+
+pub fn emit<Event>(event: Event)
+where
+    Event: Topics + liquid_abi_codec::Encode,
+{
+    <EnvInstance as OnInstance>::on_instance(|instance| Env::emit(instance, event));
 }

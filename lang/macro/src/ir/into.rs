@@ -25,6 +25,20 @@ use syn::{
     Error, Result, Token,
 };
 
+impl TryFrom<&String> for ir::HashType {
+    type Error = ();
+
+    fn try_from(content: &String) -> core::result::Result<Self, Self::Error> {
+        if content == "sm3" {
+            Ok(ir::HashType::SM3)
+        } else if content == "keccak256" {
+            Ok(ir::HashType::Keccak256)
+        } else {
+            Err(())
+        }
+    }
+}
+
 impl TryFrom<&String> for ir::MetaVersion {
     type Error = regex::Error;
 
@@ -94,9 +108,9 @@ impl TryFrom<syn::Attribute> for ir::Marker {
 }
 
 fn calculate_fn_id(ident: &Ident) -> usize {
-    u32::from_be_bytes(liquid_primitives::hash::keccak::keccak256(
-        ident.to_string().as_bytes(),
-    )) as usize
+    let ident_hash = liquid_primitives::hash::keccak256(ident.to_string().as_bytes());
+    u32::from_be_bytes([ident_hash[0], ident_hash[1], ident_hash[2], ident_hash[3]])
+        as usize
 }
 
 impl TryFrom<(ir::Params, syn::ItemMod)> for ir::Contract {
@@ -128,7 +142,7 @@ impl TryFrom<(ir::Params, syn::ItemMod)> for ir::Contract {
                 ir::Item::Rust(rust_item) => Either::Right(*rust_item),
             });
 
-        let (storage, mut functions) = utils::split_items(liquid_items)?;
+        let (storage, events, mut functions) = utils::split_items(liquid_items)?;
         storage.public_fields.iter().for_each(|index| {
             let field = &storage.fields.named[*index];
             let ident = &field.ident.as_ref().unwrap();
@@ -187,6 +201,7 @@ impl TryFrom<(ir::Params, syn::ItemMod)> for ir::Contract {
             ident: item_mod.ident,
             meta_info,
             storage,
+            events,
             constructor,
             functions,
             rust_items,
@@ -200,6 +215,7 @@ impl TryFrom<ir::Params> for ir::MetaInfo {
     fn try_from(params: ir::Params) -> Result<Self> {
         let mut unique_param_names = HashSet::new();
         let mut liquid_version = None;
+        let mut hash_type = None;
         for param in params.params.iter() {
             let name = param.ident().to_string();
             if !unique_param_names.insert(name.clone()) {
@@ -210,6 +226,7 @@ impl TryFrom<ir::Params> for ir::MetaInfo {
                 ir::MetaParam::Version(param) => {
                     liquid_version = Some(param.version.clone())
                 }
+                ir::MetaParam::HashType(param) => hash_type = Some(param.hash_type),
             }
         }
 
@@ -221,7 +238,16 @@ impl TryFrom<ir::Params> for ir::MetaInfo {
             Some(liquid_version) => liquid_version,
         };
 
-        Ok(Self { liquid_version })
+        let hash_type = if hash_type.is_none() {
+            ir::HashType::Keccak256
+        } else {
+            hash_type.expect("")
+        };
+
+        Ok(Self {
+            liquid_version,
+            hash_type,
+        })
     }
 }
 
@@ -585,6 +611,89 @@ impl TryFrom<syn::ItemStruct> for ir::ItemStorage {
     }
 }
 
+impl TryFrom<syn::ItemStruct> for ir::ItemEvent {
+    type Error = Error;
+    fn try_from(item_struct: syn::ItemStruct) -> Result<Self> {
+        if item_struct.vis != syn::Visibility::Inherited {
+            bail!(
+                item_struct.vis,
+                "visibility modifiers are not allowed for `#[liquid(event)]` struct",
+            )
+        }
+
+        if item_struct.generics.type_params().count() > 0 {
+            bail!(
+                item_struct.generics,
+                "generics are not allowed for `#[liquid(event)]` struct"
+            )
+        }
+
+        let span = item_struct.span();
+        let mut topic_count = 0;
+        let (fields, indexed_fields, unindexed_fields) = match item_struct.fields {
+            syn::Fields::Named(named_fields) => {
+                let mut fields = Vec::new();
+                let mut indexed_fields = Vec::new();
+                let mut unindexed_fields = Vec::new();
+
+                for field in &named_fields.named {
+                    let visibility = &field.vis;
+                    match visibility {
+                        syn::Visibility::Inherited => (),
+                        _ => bail!(
+                            field,
+                            "visibility modifiers are not allowed for field in \
+                             `liquid(event)` struct"
+                        ),
+                    }
+
+                    fields.push(field.clone());
+                    let index = fields.len() - 1;
+
+                    let is_topic = field
+                        .attrs
+                        .iter()
+                        .filter_map(|attr| ir::Marker::try_from(attr.clone()).ok())
+                        .any(|marker| marker.ident == "indexed");
+                    if is_topic {
+                        topic_count += 1;
+                        if topic_count > 3 {
+                            bail!(
+                                field,
+                                "the number of topics should not exceed 3 in \
+                                 `liquid(event)` struct"
+                            )
+                        }
+
+                        indexed_fields.push(index);
+                    } else {
+                        unindexed_fields.push(index);
+                    }
+                }
+                (fields, indexed_fields, unindexed_fields)
+            }
+            syn::Fields::Unnamed(_) => bail!(
+                item_struct,
+                "tuple-struct is not allowed for `#[liquid(event)]`"
+            ),
+            syn::Fields::Unit => bail!(
+                item_struct,
+                "unit-struct is not allowed for `#[liquid(event)]`"
+            ),
+        };
+
+        Ok(ir::ItemEvent {
+            attrs: item_struct.attrs,
+            struct_token: item_struct.struct_token,
+            ident: item_struct.ident,
+            fields,
+            indexed_fields,
+            unindexed_fields,
+            span,
+        })
+    }
+}
+
 impl TryFrom<syn::Item> for ir::Item {
     type Error = Error;
 
@@ -592,19 +701,30 @@ impl TryFrom<syn::Item> for ir::Item {
         match item.clone() {
             syn::Item::Struct(item_struct) => {
                 let is_contract_storage;
+                let is_event;
                 {
-                    let mut markers =
-                        utils::filter_map_liquid_attributes(&item_struct.attrs);
-                    is_contract_storage = markers.any(|marker| marker.ident == "storage");
+                    let markers = utils::filter_map_liquid_attributes(&item_struct.attrs)
+                        .collect::<Vec<_>>();
+                    is_contract_storage =
+                        markers.iter().any(|marker| marker.ident == "storage");
+                    is_event = markers.iter().any(|marker| marker.ident == "event");
                 }
 
-                if is_contract_storage {
-                    ir::ItemStorage::try_from(item_struct)
+                match (is_contract_storage, is_event) {
+                    (true, true) => bail!(
+                        item_struct,
+                        "a struct can not be marked as `liquid(event)` and \
+                         `liquid(storage)` simultaneously"
+                    ),
+                    (true, false) => ir::ItemStorage::try_from(item_struct)
                         .map(Into::into)
                         .map(Box::new)
-                        .map(ir::Item::Liquid)
-                } else {
-                    Ok(ir::Item::Rust(Box::new(item.into())))
+                        .map(ir::Item::Liquid),
+                    (false, true) => ir::ItemEvent::try_from(item_struct)
+                        .map(Into::into)
+                        .map(Box::new)
+                        .map(ir::Item::Liquid),
+                    _ => Ok(ir::Item::Rust(Box::new(item.into()))),
                 }
             }
             syn::Item::Impl(item_impl) => {

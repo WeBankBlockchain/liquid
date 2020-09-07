@@ -1,0 +1,6 @@
+error: the number of topics should not exceed 3 in `liquid(event)` struct
+  --> $DIR/27-too-many-topics.rs:18:9
+   |
+18 | /         #[liquid(indexed)]
+19 | |         s: String,
+   | |_________________^

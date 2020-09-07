@@ -16,7 +16,7 @@ pub mod ext;
 use self::buffer::StaticBuffer;
 use super::OnInstance;
 use crate::env::{
-    types::{Address, BlockNumber, Timestamp, ADDRESS_LENGTH},
+    types::{Address, BlockNumber, Timestamp, Topics, ADDRESS_LENGTH},
     CallData, CallMode, Env, EnvError, Result,
 };
 use liquid_abi_codec::Decode;
@@ -128,6 +128,15 @@ impl Env for EnvInstance {
     {
         self.encode_into_buffer_abi(revert_info);
         ext::revert(&self.buffer[..self.buffer.len()]);
+    }
+
+    fn emit<Event>(&mut self, event: Event)
+    where
+        Event: Topics + liquid_abi_codec::Encode,
+    {
+        self.encode_into_buffer_abi(&event);
+        let topics = event.topics();
+        ext::log(&self.buffer[..self.buffer.len()], &topics);
     }
 
     fn get_caller(&mut self) -> Address {

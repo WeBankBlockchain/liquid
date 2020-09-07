@@ -16,7 +16,7 @@ pub mod test_api;
 use self::db::{Block, ContractStorage, ExecContext};
 use crate::env::{
     engine::OnInstance,
-    types::{Address, BlockNumber, Timestamp},
+    types::{Address, BlockNumber, Timestamp, Topics},
     CallData, CallMode, Env, Result,
 };
 use core::cell::RefCell;
@@ -93,6 +93,13 @@ impl Env for EnvInstance {
             &mut msg.encode().as_slice()
         )
         .unwrap());
+    }
+
+    fn emit<Event>(&mut self, _: Event)
+    where
+        Event: Topics + liquid_abi_codec::Encode,
+    {
+        unimplemented!();
     }
 
     fn get_caller(&mut self) -> Address {

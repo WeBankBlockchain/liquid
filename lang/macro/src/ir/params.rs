@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::ir::MetaVersion;
+use crate::ir::{HashType, MetaVersion};
 use core::convert::TryFrom;
 use derive_more::From;
 use proc_macro2::{Ident, Span};
@@ -57,6 +57,7 @@ impl Spanned for Params {
 #[derive(From)]
 pub enum MetaParam {
     Version(ParamVersion),
+    HashType(ParamHashType),
 }
 
 impl Parse for MetaParam {
@@ -64,6 +65,7 @@ impl Parse for MetaParam {
         let ident = input.fork().parse::<Ident>()?;
         match ident.to_string().as_str() {
             "version" => input.parse::<ParamVersion>().map(Into::into),
+            "hash_type" => input.parse::<ParamHashType>().map(Into::into),
             unknown => Err(format_err_span!(
                 ident.span(),
                 "unknown parameter: {}",
@@ -77,6 +79,7 @@ impl Spanned for MetaParam {
     fn span(&self) -> Span {
         match self {
             MetaParam::Version(param) => param.span(),
+            MetaParam::HashType(param) => param.span(),
         }
     }
 }
@@ -85,6 +88,7 @@ impl MetaParam {
     pub fn ident(&self) -> &Ident {
         match &self {
             MetaParam::Version(param) => &param.ident,
+            MetaParam::HashType(param) => &param.ident,
         }
     }
 }
@@ -98,6 +102,17 @@ pub struct ParamVersion {
     pub value: LitStr,
     /// The decoded semantic version
     pub version: MetaVersion,
+}
+
+pub struct ParamHashType {
+    /// The `hash_type` identifier
+    pub ident: Ident,
+    /// The `=` token
+    pub eq_token: Token![=],
+    /// The input hash type string
+    pub value: LitStr,
+    /// The decoded hash type
+    pub hash_type: HashType,
 }
 
 impl Parse for ParamVersion {
@@ -126,6 +141,36 @@ impl Parse for ParamVersion {
 }
 
 impl Spanned for ParamVersion {
+    fn span(&self) -> Span {
+        self.ident
+            .span()
+            .join(self.value.span())
+            .expect("both spans are in the same file AND we are using nightly Rust")
+    }
+}
+
+impl Parse for ParamHashType {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let ident = input.parse()?;
+        if ident != "hash_type" {
+            bail!(ident, "invalid identifier for hash type info");
+        }
+        let eq_token = input.parse()?;
+        let value: LitStr = input.parse()?;
+        let content = value.value();
+        let hash_type = HashType::try_from(&content).map_err(|_| {
+            format_err_span!(value.span(), "invalid hash type: {}", content,)
+        })?;
+        Ok(Self {
+            ident,
+            eq_token,
+            value,
+            hash_type,
+        })
+    }
+}
+
+impl Spanned for ParamHashType {
     fn span(&self) -> Span {
         self.ident
             .span()

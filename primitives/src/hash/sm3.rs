@@ -170,7 +170,7 @@ const fn pad(bytes: &[u8], padded: &mut [u8]) -> usize {
     index + 8
 }
 
-pub const fn sm3(bytes: &[u8]) -> [u8; 4] {
+pub const fn sm3(bytes: &[u8]) -> [u8; 32] {
     let mut digest: [u32; 8] = [
         0x7380_166f,
         0x4914_b2b9,
@@ -181,7 +181,7 @@ pub const fn sm3(bytes: &[u8]) -> [u8; 4] {
         0xe38d_ee4d,
         0xb0fb_0e4e,
     ];
-    let mut output = [0u8; 4];
+    let mut output = [0u8; 32];
     let mut padded = [0u8; 64];
 
     let padded_len = pad(bytes, &mut padded);
@@ -204,10 +204,15 @@ pub const fn sm3(bytes: &[u8]) -> [u8; 4] {
         count += 1;
     }
 
-    output[0] = (digest[0] >> 24) as u8;
-    output[1] = (digest[0] >> 16) as u8;
-    output[2] = (digest[0] >> 8) as u8;
-    output[3] = digest[0] as u8;
+    let mut i = 0;
+    while i < 8 {
+        output[i * 4] = (digest[i] >> 24) as u8;
+        output[i * 4 + 1] = (digest[i] >> 16) as u8;
+        output[i * 4 + 2] = (digest[i] >> 8) as u8;
+        output[i * 4 + 3] = digest[i] as u8;
+
+        i += 1;
+    }
 
     output
 }

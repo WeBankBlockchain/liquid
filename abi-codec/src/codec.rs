@@ -454,7 +454,7 @@ pub trait Decode: Sized {
 
 pub trait Codec: Encode + Decode {}
 
-fn encode_head_tail(mediates: &[Mediate]) -> Vec<Word> {
+pub fn encode_head_tail(mediates: &[Mediate]) -> Vec<Word> {
     let heads_len = mediates.iter().fold(0, |acc, m| acc + m.head_len());
 
     let (mut result, len) = mediates.iter().fold(
