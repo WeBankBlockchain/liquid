@@ -12,8 +12,9 @@
 
 use crate::{
     codegen::GenerateCode,
-    ir::{Contract, FnArg, Function, FunctionKind, HashType, Signature},
+    ir::{Contract, FnArg, Function, FunctionKind, Signature},
 };
+use liquid_primitives::HashType;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, quote_spanned};
 use syn::{punctuated::Punctuated, spanned::Spanned, Token};

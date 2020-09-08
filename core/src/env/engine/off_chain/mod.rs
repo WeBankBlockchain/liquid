@@ -13,7 +13,7 @@
 mod db;
 pub mod test_api;
 
-use self::db::{Block, ContractStorage, ExecContext};
+use self::db::{Block, ContractStorage, Event, ExecContext};
 use crate::env::{
     engine::OnInstance,
     types::{Address, BlockNumber, Timestamp, Topics},
@@ -25,6 +25,7 @@ pub struct EnvInstance {
     contract_storage: ContractStorage,
     blocks: Vec<Block>,
     exec_contexts: Vec<ExecContext>,
+    events: Vec<Event>,
 }
 
 impl Default for EnvInstance {
@@ -36,6 +37,7 @@ impl Default for EnvInstance {
             contract_storage: ContractStorage::new(),
             blocks,
             exec_contexts: Vec::new(),
+            events: Vec::new(),
         }
     }
 }
@@ -51,6 +53,10 @@ impl EnvInstance {
         self.blocks
             .last()
             .expect("there must be at least one block in test environment")
+    }
+
+    pub fn get_events(&self) -> std::slice::Iter<Event> {
+        self.events.iter()
     }
 }
 
@@ -95,11 +101,11 @@ impl Env for EnvInstance {
         .unwrap());
     }
 
-    fn emit<Event>(&mut self, _: Event)
+    fn emit<E>(&mut self, event: E)
     where
-        Event: Topics + liquid_abi_codec::Encode,
+        E: Topics + liquid_abi_codec::Encode,
     {
-        unimplemented!();
+        self.events.push(Event::new(event));
     }
 
     fn get_caller(&mut self) -> Address {

@@ -209,6 +209,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
         impl liquid_lang::You_Should_Use_An_Valid_Parameter_Type for #ident {}
         impl liquid_lang::You_Should_Use_An_Valid_Return_Type for #ident {}
         impl liquid_lang::You_Should_Use_An_Valid_Input_Type for #ident {}
+        impl liquid_lang::You_Should_Use_An_Valid_Event_Data_Type for #ident {}
 
         impl _ty_mapping::SolTypeNameLen<#ident> for liquid_prelude::vec::Vec<#ident> {
             const LEN: usize = <#ident as _ty_mapping::SolTypeNameLen>::LEN + 2;

@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use super::{EnvInstance, ExecContext};
+use super::{EnvInstance, Event, ExecContext};
 use crate::env::{
     engine::OnInstance,
     types::{Address, ADDRESS_LENGTH},
@@ -53,14 +53,21 @@ pub struct DefaultAccounts {
 }
 
 /// Returns the default accounts for testing purposes:
-/// Alice, Bob, Charlie, Django, Eve and Frank
+/// Alice, Bob, Charlie, David, Eve and Frank
 pub fn default_accounts() -> DefaultAccounts {
     DefaultAccounts {
-        alice: Address::from_bytes(&[0x00; ADDRESS_LENGTH]),
-        bob: Address::from_bytes(&[0x01; ADDRESS_LENGTH]),
-        charlie: Address::from_bytes(&[0x02; ADDRESS_LENGTH]),
-        david: Address::from_bytes(&[0x03; ADDRESS_LENGTH]),
-        eva: Address::from_bytes(&[0x04; ADDRESS_LENGTH]),
-        frank: Address::from_bytes(&[0x05; ADDRESS_LENGTH]),
+        alice: [0x00u8; ADDRESS_LENGTH].into(),
+        bob: [0x01u8; ADDRESS_LENGTH].into(),
+        charlie: [0x02u8; ADDRESS_LENGTH].into(),
+        david: [0x03u8; ADDRESS_LENGTH].into(),
+        eva: [0x04u8; ADDRESS_LENGTH].into(),
+        frank: [0x05u8; ADDRESS_LENGTH].into(),
     }
+}
+
+/// Returns the recorded emitted events in order.
+pub fn get_events() -> Vec<Event> {
+    <EnvInstance as OnInstance>::on_instance(|instance| {
+        instance.get_events().cloned().collect::<Vec<_>>()
+    })
 }

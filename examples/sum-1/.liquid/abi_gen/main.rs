@@ -13,6 +13,6 @@ fn main() -> Result<(), std::io::Error> {
     let contents = final_abi.join(",");
     let contents = format!("[{}]", contents);
     std::fs::create_dir("target").ok();
-    std::fs::write("target/sum_1.bin", contents)?;
+    std::fs::write("target/sum_1.abi", contents)?;
     Ok(())
 }

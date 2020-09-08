@@ -10,9 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::ir::{HashType, MetaVersion};
+use crate::ir::MetaVersion;
 use core::convert::TryFrom;
 use derive_more::From;
+use liquid_primitives::HashType;
 use proc_macro2::{Ident, Span};
 use syn::{
     parse::{Parse, ParseStream},

@@ -50,7 +50,8 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/25-vec-unit-return.rs");
     t.compile_fail("tests/ui/fail/26-tuple-unit-return.rs");
     t.compile_fail("tests/ui/fail/27-too-many-topics.rs");
-    t.compile_fail("tests/ui/fail/28-invalid-event-type.rs");
-    t.compile_fail("tests/ui/fail/29-invalid-meta-info-key.rs");
-    t.compile_fail("tests/ui/fail/30-invalid-meta-info-value.rs");
+    t.compile_fail("tests/ui/fail/28-invalid-event-data-type.rs");
+    t.compile_fail("tests/ui/fail/29-invalid-event-topic-type.rs");
+    t.compile_fail("tests/ui/fail/30-invalid-meta-info-key.rs");
+    t.compile_fail("tests/ui/fail/31-invalid-meta-info-value.rs");
 }

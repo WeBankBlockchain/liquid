@@ -12,9 +12,10 @@
 
 use crate::{
     codegen::GenerateCode,
-    ir::{utils, Contract, HashType},
+    ir::{utils, Contract},
 };
 use derive_more::From;
+use liquid_primitives::HashType;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, quote_spanned};
 
@@ -135,10 +136,16 @@ impl<'a> Events<'a> {
                 }
             };
 
-            let event_field_tys = event_fields.iter().map(|field| {
+            let event_field_tys = event_fields.iter().enumerate().map(|(i, field)| {
                 let ty = &field.ty;
-                quote! {
-                    <#ty as liquid_lang::You_Should_Use_An_Valid_Input_Type>::T
+                if item_event.indexed_fields.iter().find(|index| **index == i).is_none() {
+                    quote! {
+                        <#ty as liquid_lang::You_Should_Use_An_Valid_Event_Data_Type>::T
+                    }
+                } else {
+                    quote! {
+                        <#ty as liquid_lang::You_Should_Use_An_Valid_Event_Topic_Type>::T
+                    }
                 }
             }).collect::<Vec<_>>();
             for i in 1..=event_field_tys.len() {
@@ -179,8 +186,6 @@ impl<'a> Events<'a> {
                         <EventSigHelper<#event_ident, (#(#event_field_tys,)*)> as liquid_ty_mapping::SolTypeName<_>>::NAME);
             };
 
-            let indexed_field_idents = item_event.indexed_fields.iter().map(|index| &event_fields[*index].ident);
-
             macro_rules! hash_by {
                 ($t:ident) => {
                     (
@@ -190,22 +195,25 @@ impl<'a> Events<'a> {
                                 liquid_primitives::hash::$t(&SIG)
                             }
                         },
-                        quote! {
-                            #(
-                                {
-                                    let encoded = liquid_abi_codec::Encode::encode(&self.#indexed_field_idents);
-                                    if encoded.len() != 32 {
-                                        liquid_primitives::hash::$t(&encoded)
-                                    }
-                                    else {
-                                        let mut topic_hash: liquid_core::env::types::Hash = Default::default();
-                                        for i in 0..topic_hash.len() {
-                                            topic_hash[i] = encoded[i];
-                                        }
-                                        topic_hash
-                                    }
-                                },
-                            )*
+                        {
+                            let hash_type = match self.contract.meta_info.hash_type {
+                                HashType::Keccak256 => quote! { liquid_primitives::HashType::Keccak256 },
+                                HashType::SM3 => quote! { liquid_primitives::HashType::SM3 },
+                            };
+
+                            let calculate_topics = item_event.indexed_fields.iter().map(|index| {
+                                let ident = &event_fields[*index].ident;
+                                let ty = &event_fields[*index].ty;
+                                quote! {
+                                    <#ty as liquid_lang::You_Should_Use_An_Valid_Event_Topic_Type>::topic(&self.#ident, #hash_type)
+                                }
+                            });
+
+                            quote! {
+                                #(
+                                    #calculate_topics,
+                                )*
+                            }
                         }
                     )
                 };
@@ -233,7 +241,7 @@ impl<'a> Events<'a> {
 
                 impl liquid_core::env::types::Topics for #event_ident {
                     fn topics(&self) -> liquid_prelude::vec::Vec<liquid_core::env::types::Hash> {
-                        [#sig_hash, #topic_hash].to_vec()
+                        [#sig_hash.into(), #topic_hash].to_vec()
                     }
                 }
 

@@ -22,6 +22,7 @@ use liquid_prelude::{
 use liquid_ty_mapping::{SolTypeName, SolTypeNameLen};
 
 pub const ADDRESS_LENGTH: usize = 20;
+pub const HASH_LENGTH: usize = 32;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, scale::Decode, scale::Encode)]
 #[cfg_attr(feature = "std", derive(Debug))]
@@ -87,39 +88,50 @@ impl ToString for Address {
     }
 }
 
-impl Address {
-    pub fn from_string<Q>(origin: Q) -> Self
-    where
-        Q: AsRef<str>,
-    {
-        let addr_str: &str = origin.as_ref();
-
-        if !addr_str.is_ascii() {
+impl From<&str> for Address {
+    fn from(mut addr: &str) -> Self {
+        if !addr.is_ascii() {
             panic!("invalid address representation");
         }
 
-        if addr_str.len() != ADDRESS_LENGTH * 2 + 2 {
-            panic!("invalid address representation");
-        }
-
-        if !addr_str.starts_with("0x") && !addr_str.starts_with("0X") {
+        if addr.starts_with("0x") || addr.starts_with("0X") {
+            if addr.len() > ADDRESS_LENGTH * 2 + 2 {
+                panic!("invalid address representation");
+            }
+            addr = &addr[2..];
+        } else if addr.len() > ADDRESS_LENGTH * 2 {
             panic!("invalid address representation");
         }
 
         let mut address = [0u8; ADDRESS_LENGTH];
-        let bytes = addr_str.as_bytes();
+        let bytes = addr.as_bytes();
+        let padding_len = ADDRESS_LENGTH * 2 - bytes.len();
         for i in 0..ADDRESS_LENGTH {
-            let high = (bytes[2 + i * 2] as char).to_digit(16).unwrap();
-            let low = (bytes[3 + i * 2] as char).to_digit(16).unwrap();
+            let (low, high) = if i * 2 + 1 < padding_len {
+                (0, 0)
+            } else {
+                (
+                    (bytes[i * 2 + 1 - padding_len] as char)
+                        .to_digit(16)
+                        .unwrap(),
+                    if i * 2 < padding_len {
+                        0
+                    } else {
+                        (bytes[i * 2 - padding_len] as char).to_digit(16).unwrap()
+                    },
+                )
+            };
+
             let digit = (high << 4) + low;
             address[i] = digit as u8;
         }
-
         Self(address)
     }
+}
 
-    pub fn from_bytes(bytes: &[u8; ADDRESS_LENGTH]) -> Self {
-        Self(*bytes)
+impl From<[u8; ADDRESS_LENGTH]> for Address {
+    fn from(bytes: [u8; ADDRESS_LENGTH]) -> Self {
+        Self(bytes)
     }
 }
 
@@ -169,7 +181,80 @@ impl SolTypeNameLen<Address> for Vec<Address> {
 
 pub type Timestamp = u64;
 pub type BlockNumber = u64;
-pub type Hash = [u8; 32];
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Debug))]
+pub struct Hash([u8; HASH_LENGTH]);
+
+impl Default for Hash {
+    fn default() -> Self {
+        Self([0u8; HASH_LENGTH])
+    }
+}
+
+impl Hash {
+    pub fn as_ptr(&self) -> *const [u8; HASH_LENGTH] {
+        &self.0 as *const _
+    }
+}
+
+impl From<[u8; HASH_LENGTH]> for Hash {
+    fn from(hash: [u8; HASH_LENGTH]) -> Self {
+        Self(hash)
+    }
+}
+
+impl From<Vec<u8>> for Hash {
+    fn from(bytes: Vec<u8>) -> Self {
+        assert!(bytes.len() == HASH_LENGTH);
+
+        let mut hash = [0u8; HASH_LENGTH];
+        hash[..HASH_LENGTH].clone_from_slice(&bytes[..HASH_LENGTH]);
+        Self(hash)
+    }
+}
+
+impl From<&str> for Hash {
+    fn from(mut hash: &str) -> Self {
+        if !hash.is_ascii() {
+            panic!("invalid hash representation");
+        }
+
+        if hash.starts_with("0x") || hash.starts_with("0X") {
+            if hash.len() != HASH_LENGTH * 2 + 2 {
+                panic!("invalid hash representation");
+            }
+            hash = &hash[2..];
+        } else if hash.len() != HASH_LENGTH * 2 {
+            panic!("invalid hash representation");
+        }
+
+        let mut ret = [0u8; HASH_LENGTH];
+        let bytes = hash.as_bytes();
+        for i in 0..HASH_LENGTH {
+            let high = (bytes[i * 2] as char).to_digit(16).unwrap();
+            let low = (bytes[i * 2 + 1] as char).to_digit(16).unwrap();
+            let digit = (high << 4) + low;
+            ret[i] = digit as u8;
+        }
+        Self(ret)
+    }
+}
+
+impl ToString for Hash {
+    fn to_string(&self) -> String {
+        let mut ret = String::with_capacity(ADDRESS_LENGTH * 2 + 2);
+        ret.push_str("0x");
+
+        for digit in self.0.iter() {
+            let low = digit & 0x0fu8;
+            let high = digit >> 4;
+            ret.push(core::char::from_digit(high.into(), 16).unwrap());
+            ret.push(core::char::from_digit(low.into(), 16).unwrap());
+        }
+        ret
+    }
+}
 
 pub trait Topics {
     fn topics(&self) -> liquid_prelude::vec::Vec<Hash>;
@@ -233,27 +318,72 @@ mod tests {
         let address = Address(TEST_ADDR.clone());
         let addr_str = "0x3e9afaa4a062a49d64b8ab057b3cb51892e17ecb";
         assert_eq!(address.to_string(), addr_str);
-        assert_eq!(Address::from_string(addr_str), address);
+        assert_eq!(Address::from(addr_str), address);
 
         let addr_str = String::from(addr_str);
-        assert_eq!(Address::from_string(&addr_str), address);
+        assert_eq!(Address::from(addr_str.as_str()), address);
     }
 
     #[test]
-    #[should_panic]
-    fn invalid_addr_length() {
-        let _ = Address::from_string("0x3e9afaa4a062a49d64b8ab057b3cb51892e1");
+    fn padding_1() {
+        let address: Address = "0x12".into();
+        assert_eq!(
+            address,
+            Address::from("0x0000000000000000000000000000000000000012")
+        );
+        assert_eq!(
+            address.to_string(),
+            "0x0000000000000000000000000000000000000012"
+        );
+    }
+
+    #[test]
+    fn padding_2() {
+        let address: Address = "0x121".into();
+        assert_eq!(
+            address,
+            Address::from("0x0000000000000000000000000000000000000121")
+        );
+        assert_eq!(
+            address.to_string(),
+            "0x0000000000000000000000000000000000000121"
+        );
     }
 
     #[test]
     #[should_panic]
     fn invalid_addr_start() {
-        let _ = Address::from_string("0b3e9afaa4a062a49d64b8ab057b3cb51892e17ecb");
+        let _: Address = "0b3e9afaa4a062a49d64b8ab057b3cb51892e17ecb".into();
     }
 
     #[test]
     #[should_panic]
     fn invalid_addr_str_encode() {
-        let _ = Address::from_string("羞答答小白虎头李荣浩");
+        let _: Address = "羞答答小白虎头李荣浩".into();
+    }
+
+    #[test]
+    fn test_hash() {
+        let hash: Hash =
+            "27772adc63db07aae765b71eb2b533064fa781bd57457e1b138592d8198d0959".into();
+        assert_eq!(
+            hash.to_string(),
+            "0x27772adc63db07aae765b71eb2b533064fa781bd57457e1b138592d8198d0959"
+        );
+        assert_eq!(
+            hash,
+            Hash::from([
+                0x27, 0x77, 0x2a, 0xdc, 0x63, 0xdb, 0x07, 0xaa, 0xe7, 0x65, 0xb7, 0x1e,
+                0xb2, 0xb5, 0x33, 0x06, 0x4f, 0xa7, 0x81, 0xbd, 0x57, 0x45, 0x7e, 0x1b,
+                0x13, 0x85, 0x92, 0xd8, 0x19, 0x8d, 0x09, 0x59
+            ])
+        )
+    }
+
+    #[test]
+    #[should_panic]
+    fn invalid_hash() {
+        let _: Hash =
+            "0x772adc63db07aae765b71eb2b533064fa781bd57457e1b138592d8198d0959".into();
     }
 }

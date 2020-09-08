@@ -18,8 +18,7 @@ pub mod utils;
 pub use self::{
     params::{MetaParam, Params},
     syn_def::{
-        Contract, FnArg, Function, FunctionKind, HashType, IdentType, Item, ItemEvent,
-        ItemImpl, ItemStorage, LiquidItem, Marker, MetaInfo, MetaVersion, RustItem,
-        Signature,
+        Contract, FnArg, Function, FunctionKind, IdentType, Item, ItemEvent, ItemImpl,
+        ItemStorage, LiquidItem, Marker, MetaInfo, MetaVersion, RustItem, Signature,
     },
 };

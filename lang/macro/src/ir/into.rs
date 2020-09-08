@@ -14,6 +14,7 @@ use crate::ir::{self, utils};
 use core::convert::TryFrom;
 use either::Either;
 use itertools::Itertools;
+use liquid_primitives::HashType;
 use proc_macro2::Ident;
 use quote::quote;
 use regex::Regex;
@@ -24,20 +25,6 @@ use syn::{
     spanned::Spanned,
     Error, Result, Token,
 };
-
-impl TryFrom<&String> for ir::HashType {
-    type Error = ();
-
-    fn try_from(content: &String) -> core::result::Result<Self, Self::Error> {
-        if content == "sm3" {
-            Ok(ir::HashType::SM3)
-        } else if content == "keccak256" {
-            Ok(ir::HashType::Keccak256)
-        } else {
-            Err(())
-        }
-    }
-}
 
 impl TryFrom<&String> for ir::MetaVersion {
     type Error = regex::Error;
@@ -239,7 +226,7 @@ impl TryFrom<ir::Params> for ir::MetaInfo {
         };
 
         let hash_type = if hash_type.is_none() {
-            ir::HashType::Keccak256
+            HashType::Keccak256
         } else {
             hash_type.expect("")
         };

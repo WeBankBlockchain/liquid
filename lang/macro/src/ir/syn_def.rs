@@ -11,6 +11,7 @@
 // limitations under the License.
 
 use derive_more::From;
+use liquid_primitives::HashType;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::ToTokens;
 use syn::{punctuated::Punctuated, spanned::Spanned, Token};
@@ -21,12 +22,6 @@ pub struct MetaVersion {
     pub major: usize,
     pub minor: usize,
     pub patch: usize,
-}
-
-#[derive(Copy, Clone)]
-pub enum HashType {
-    SM3,
-    Keccak256,
 }
 
 /// The meta info for a contract.

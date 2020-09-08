@@ -1,5 +1,5 @@
 error: unknown parameter: invalid_key
- --> $DIR/29-invalid-meta-info-key.rs:3:39
+ --> $DIR/30-invalid-meta-info-key.rs:3:39
   |
 3 | #[liquid::contract(version = "0.1.0", invalid_key = "whatever")]
   |                                       ^^^^^^^^^^^

@@ -11,10 +11,10 @@
 // limitations under the License.
 
 use liquid_abi_codec::{Decode, Encode};
-use liquid_core::env::types::Address;
+use liquid_core::env::types::{Address, Hash};
 use liquid_macro::seq;
 use liquid_prelude::{string::String, vec::Vec};
-use liquid_primitives::Selector;
+use liquid_primitives::{HashType, Selector};
 
 pub trait FnInput {
     type Input: Decode + 'static;
@@ -49,19 +49,53 @@ pub trait You_Should_Use_An_Valid_Input_Type: Sized {
     type T = Self;
 }
 
+#[allow(non_camel_case_types)]
+pub trait You_Should_Use_An_Valid_Event_Data_Type: Sized {
+    type T = Self;
+}
+
+#[allow(non_camel_case_types)]
+pub trait You_Should_Use_An_Valid_Event_Topic_Type: Sized {
+    type T = Self;
+
+    fn topic(&self, _: HashType) -> Hash
+    where
+        Self: liquid_abi_codec::Encode,
+    {
+        self.encode().into()
+    }
+}
+
 macro_rules! impl_for_primitives {
     ($($t:ty),*) => {
         $(
             impl You_Should_Use_An_Valid_Parameter_Type for $t {}
             impl You_Should_Use_An_Valid_Return_Type for $t {}
             impl You_Should_Use_An_Valid_Input_Type for $t {}
+            impl You_Should_Use_An_Valid_Event_Data_Type for $t {}
+            impl You_Should_Use_An_Valid_Event_Topic_Type for $t {}
         )*
     };
 }
 
-impl_for_primitives!(
-    u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, String, bool, Address
-);
+impl_for_primitives!(u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, bool, Address);
+
+impl You_Should_Use_An_Valid_Parameter_Type for String {}
+impl You_Should_Use_An_Valid_Return_Type for String {}
+impl You_Should_Use_An_Valid_Input_Type for String {}
+impl You_Should_Use_An_Valid_Event_Data_Type for String {}
+impl You_Should_Use_An_Valid_Event_Topic_Type for String {
+    type T = Self;
+
+    fn topic(&self, hash_type: HashType) -> Hash {
+        match hash_type {
+            HashType::Keccak256 => {
+                liquid_primitives::hash::keccak256(self.as_bytes()).into()
+            }
+            HashType::SM3 => liquid_primitives::hash::sm3(self.as_bytes()).into(),
+        }
+    }
+}
 
 impl<T> You_Should_Use_An_Valid_Parameter_Type for Vec<T> where
     T: You_Should_Use_An_Valid_Parameter_Type
@@ -74,6 +108,11 @@ impl<T> You_Should_Use_An_Valid_Return_Type for Vec<T> where
 }
 
 impl<T> You_Should_Use_An_Valid_Input_Type for Vec<T> where
+    T: You_Should_Use_An_Valid_Parameter_Type
+{
+}
+
+impl<T> You_Should_Use_An_Valid_Event_Data_Type for Vec<T> where
     T: You_Should_Use_An_Valid_Parameter_Type
 {
 }

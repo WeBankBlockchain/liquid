@@ -10,12 +10,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod block;
-mod contract_storage;
-mod events;
-mod exec_context;
+use crate::env::types::{Hash, Topics};
+use liquid_abi_codec::{Decode, Encode};
 
-pub use block::Block;
-pub use contract_storage::ContractStorage;
-pub use events::Event;
-pub use exec_context::ExecContext;
+#[derive(Clone)]
+pub struct Event {
+    pub data: Vec<u8>,
+    pub topics: Vec<Hash>,
+}
+
+impl Event {
+    pub fn new<E>(event: E) -> Self
+    where
+        E: Topics + Encode,
+    {
+        Self {
+            data: event.encode(),
+            topics: event.topics(),
+        }
+    }
+
+    pub fn decode_data<R>(&self) -> R
+    where
+        R: Decode,
+    {
+        <R as Decode>::decode(&mut self.data.as_slice()).unwrap()
+    }
+}

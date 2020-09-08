@@ -27,6 +27,7 @@ impl<'a> GenerateCode for EnvTypes<'a> {
             type Address = liquid_core::env::types::Address;
             type Timestamp = liquid_core::env::types::Timestamp;
             type BlockNumber = liquid_core::env::types::BlockNumber;
+            type Hash = liquid_core::env::types::Hash;
 
             type Vec<T> = liquid_prelude::vec::Vec<T>;
             type String = liquid_prelude::string::String;
