@@ -334,16 +334,17 @@ impl<'a> Dispatch<'a> {
         let input_tys = generate_input_tys(sig);
         let ident = &sig.ident;
         let (input_idents, pat_idents) = generate_input_idents(&sig.inputs);
-        let hash_type = match self.contract.meta_info.hash_type {
+        let _hash_type = match self.contract.meta_info.hash_type {
             HashType::Keccak256 => 0,
             HashType::SM3 => 1,
         };
 
         quote! {
+            /*
             #[no_mangle]
             fn hash_type() -> u32 {
                 #hash_type as u32
-            }
+            }*/
 
             #[no_mangle]
             fn deploy() {
