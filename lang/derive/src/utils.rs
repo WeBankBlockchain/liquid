@@ -21,6 +21,11 @@ pub fn struct_syntax_check(ast: &DeriveInput) -> Result<(Vec<&Ident>, Vec<&Type>
         Data::Union(_) => bail!(&ast, "unions are not supported"),
     };
 
+    match ast.vis {
+        syn::Visibility::Public(_) => (),
+        _ => bail!(&ast, "the visibility of InOut/State type should be `pub`"),
+    }
+
     if ast.generics.type_params().count() > 0 {
         bail!(&ast, "generic structs are not supported")
     }

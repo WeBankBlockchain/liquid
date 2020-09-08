@@ -25,7 +25,7 @@ macro_rules! test_encode_decode {
 }
 
 #[derive(InOut, PartialEq, Debug, Clone)]
-struct T0 {
+pub struct T0 {
     a: u128,
     b: bool,
 }
@@ -53,7 +53,7 @@ fn test_T0_panic() {
 }
 
 #[derive(InOut, PartialEq, Debug, Clone)]
-struct T1 {
+pub struct T1 {
     a: u128,
     b: String,
     c: bool,
@@ -75,7 +75,7 @@ fn test_T1() {
 }
 
 #[derive(InOut, PartialEq, Debug, Clone)]
-struct T2 {
+pub struct T2 {
     a: T0,
     b: T1,
 }

@@ -2,6 +2,8 @@ use liquid_lang as liquid;
 
 use liquid::InOut;
 #[derive(InOut)]
-pub struct MyStruct {}
+struct MyStruct {
+    i: i128,
+}
 
 fn main() {}
