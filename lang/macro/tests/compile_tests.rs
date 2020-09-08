@@ -22,6 +22,7 @@ fn compile_tests() {
     t.pass("tests/ui/pass/07-getter.rs");
     t.pass("tests/ui/pass/08-unit-return.rs");
     t.pass("tests/ui/pass/09-event.rs");
+    t.pass("tests/ui/pass/10-sm3-mode.rs");
     t.compile_fail("tests/ui/fail/01-constructor-returns.rs");
     t.compile_fail("tests/ui/fail/02-missing-constructor.rs");
     t.compile_fail("tests/ui/fail/03-multiple-constructors.rs");
@@ -50,4 +51,6 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/26-tuple-unit-return.rs");
     t.compile_fail("tests/ui/fail/27-too-many-topics.rs");
     t.compile_fail("tests/ui/fail/28-invalid-event-type.rs");
+    t.compile_fail("tests/ui/fail/29-invalid-meta-info-key.rs");
+    t.compile_fail("tests/ui/fail/30-invalid-meta-info-value.rs");
 }
