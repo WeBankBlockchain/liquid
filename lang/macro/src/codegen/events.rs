@@ -135,7 +135,12 @@ impl<'a> Events<'a> {
                 }
             };
 
-            let event_field_tys = event_fields.iter().map(|field| &field.ty).collect::<Vec<_>>();
+            let event_field_tys = event_fields.iter().map(|field| {
+                let ty = &field.ty;
+                quote! {
+                    <#ty as liquid_lang::You_Should_Use_An_Valid_Input_Type>::T
+                }
+            }).collect::<Vec<_>>();
             for i in 1..=event_field_tys.len() {
                 let tys = &event_field_tys[..i];
                 let first_tys = &tys[0..i - 1];
