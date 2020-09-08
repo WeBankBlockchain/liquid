@@ -23,6 +23,7 @@ fn compile_tests() {
     t.pass("tests/ui/pass/08-unit-return.rs");
     t.pass("tests/ui/pass/09-event.rs");
     t.pass("tests/ui/pass/10-sm3-mode.rs");
+    t.pass("tests/ui/pass/11-empty-event.rs");
     t.compile_fail("tests/ui/fail/01-constructor-returns.rs");
     t.compile_fail("tests/ui/fail/02-missing-constructor.rs");
     t.compile_fail("tests/ui/fail/03-multiple-constructors.rs");

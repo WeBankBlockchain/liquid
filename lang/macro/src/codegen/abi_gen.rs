@@ -28,6 +28,7 @@ impl<'a> GenerateCode for ABIGen<'a> {
         let storage_ident = &self.contract.storage.ident;
         let constructor_abi = self.generate_constructor_abi();
         let external_fn_abis = self.generate_external_fn_abis();
+        let event_abis = self.generate_event_abis();
 
         quote! {
             #[cfg(feature = "liquid-abi-gen")]
@@ -36,10 +37,12 @@ impl<'a> GenerateCode for ABIGen<'a> {
                     fn generate_abi() -> liquid_abi_gen::ContractABI {
                         let constructor_abi = #constructor_abi;
                         let external_fn_abis = #external_fn_abis;
+                        let event_abis = #event_abis;
 
                         liquid_abi_gen::ContractABI {
                             constructor_abi,
-                            external_fn_abis
+                            external_fn_abis,
+                            event_abis,
                         }
                     }
                 }
@@ -122,6 +125,38 @@ impl<'a> ABIGen<'a> {
                 let mut external_fn_abis = Vec::new();
                 #(external_fn_abis.push(#fn_abis);)*
                 external_fn_abis
+            }
+        }
+    }
+
+    fn generate_event_abis(&self) -> TokenStream2 {
+        let events = &self.contract.events;
+        let abis = events.iter().map(|event| {
+            let event_name = event.ident.to_string();
+            let inputs = event.fields.iter().enumerate().map(|(i, field)|{
+                let field_name = field.ident.as_ref().unwrap().to_string();
+                let field_ty = &field.ty;
+                let is_indexed = event.indexed_fields.iter().any(|index| *index == i);
+
+                let ty_name = generate_ty_name(field_ty);
+                let components = generate_components(field_ty);
+
+                quote!{
+                    #components, String::from(#field_name), #ty_name, #is_indexed
+                }});
+            quote! {
+                {
+                    let mut builder = liquid_abi_gen::EventABI::new_builder(String::from(#event_name));
+                    #(builder.input(#inputs);)*
+                    builder.done()
+                }
+            }
+        });
+        quote! {
+            {
+                let mut event_abis = Vec::new();
+                #(event_abis.push(#abis);)*
+                event_abis
             }
         }
     }

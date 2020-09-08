@@ -18,6 +18,7 @@ use serde::Serialize;
 pub struct ContractABI {
     pub constructor_abi: ConstructorABI,
     pub external_fn_abis: Vec<ExternalFnABI>,
+    pub event_abis: Vec<EventABI>,
 }
 
 #[derive(Serialize)]
@@ -140,6 +141,64 @@ impl ExternalFnABIBuilder {
     }
 
     pub fn done(self) -> ExternalFnABI {
+        self.abi
+    }
+}
+
+#[derive(Serialize)]
+pub struct EventParamABI {
+    pub indexed: bool,
+    #[serde(skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub components: Vec<ParamABI>,
+    pub name: String,
+    #[serde(rename = "type")]
+    pub ty: String,
+}
+
+#[derive(Serialize)]
+#[allow(non_snake_case)]
+pub struct EventABI {
+    anonymous: bool,
+    inputs: Vec<EventParamABI>,
+    name: String,
+    #[serde(rename = "type")]
+    ty: String,
+}
+
+pub struct EventABIBuilder {
+    abi: EventABI,
+}
+
+impl EventABI {
+    pub fn new_builder(name: String) -> EventABIBuilder {
+        EventABIBuilder {
+            abi: Self {
+                anonymous: false,
+                inputs: Vec::new(),
+                name,
+                ty: "event".to_owned(),
+            },
+        }
+    }
+}
+
+impl EventABIBuilder {
+    pub fn input(
+        &mut self,
+        components: Vec<ParamABI>,
+        name: String,
+        ty: String,
+        indexed: bool,
+    ) {
+        self.abi.inputs.push(EventParamABI {
+            indexed,
+            components,
+            name,
+            ty,
+        });
+    }
+
+    pub fn done(self) -> EventABI {
         self.abi
     }
 }

@@ -138,7 +138,7 @@ impl<'a> Events<'a> {
 
             let event_field_tys = event_fields.iter().enumerate().map(|(i, field)| {
                 let ty = &field.ty;
-                if item_event.indexed_fields.iter().find(|index| **index == i).is_none() {
+                if !item_event.indexed_fields.iter().any(|index| *index == i) {
                     quote! {
                         <#ty as liquid_lang::You_Should_Use_An_Valid_Event_Data_Type>::T
                     }
