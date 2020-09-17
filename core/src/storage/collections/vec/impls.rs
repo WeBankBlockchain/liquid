@@ -195,9 +195,7 @@ where
         *len += 1;
     }
 
-    /// Replaces the `n`-th element of the vector and returns its replaced value.
-    ///
-    /// Returns `None` if `n` is out of bounds.
+    ///  Removes the last element of the vector.
     pub fn pop(&mut self) -> Option<T> {
         if self.is_empty() {
             return None;
