@@ -34,7 +34,13 @@ impl Address {
     }
 
     pub fn empty() -> Self {
-        Self([0u8; ADDRESS_LENGTH])
+        Default::default()
+    }
+}
+
+impl Default for Address {
+    fn default() -> Self {
+        Self([0; ADDRESS_LENGTH])
     }
 }
 

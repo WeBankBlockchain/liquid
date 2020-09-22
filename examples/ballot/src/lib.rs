@@ -2,7 +2,7 @@
 
 use liquid_lang as liquid;
 
-/// This example is inspired by [Solidity by Example](https://solidity.readthedocs.io/en/v0.5.3/solidity-by-example.html).
+/// This example is inspired by [Solidity by Example](https://solidity.readthedocs.io/en/latest/solidity-by-example.html).
 /// Voting with delegation.
 #[liquid::contract(version = "0.1.0")]
 mod ballot {
@@ -83,8 +83,7 @@ mod ballot {
         /// May only be called by `chairperson`.
         pub fn give_right_to_vote(&mut self, voter: Address) {
             // If the first argument of `require` evaluates
-            // to `false`, execution terminates and all
-            // changes to the state and to Ether balances
+            // to `false`, execution terminates.
             // It is often a good idea to use `require` to check if
             // functions are called correctly.
             // As a second argument, you can also provide an
@@ -143,7 +142,7 @@ mod ballot {
             }
 
             // Since `sender` is a reference, this
-            // modifies `self.voters[msg.sender].voted`
+            // modifies `self.voters`
             let sender = &mut self.voters[caller];
             sender.voted = true;
             sender.delegate = to;
@@ -162,7 +161,7 @@ mod ballot {
         }
 
         /// Give your vote (including votes delegated to you)
-        /// to proposal `proposals[proposal].name`.
+        /// to proposal `self.proposals[proposal].name`.
         pub fn vote(&mut self, proposal: u32) {
             let caller = self.env().get_caller();
             let sender = &mut self.voters[&caller];

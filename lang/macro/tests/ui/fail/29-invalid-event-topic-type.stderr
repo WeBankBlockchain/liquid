@@ -1,4 +1,4 @@
-error[E0277]: the trait bound `std::vec::Vec<i32>: liquid_lang::You_Should_Use_An_Valid_Event_Topic_Type` is not satisfied
+error[E0277]: the trait bound `std::vec::Vec<i32>: You_Should_Use_An_Valid_Event_Topic_Type` is not satisfied
   --> $DIR/29-invalid-event-topic-type.rs:8:5
    |
 8  | /     #[liquid(event)]
@@ -8,12 +8,12 @@ error[E0277]: the trait bound `std::vec::Vec<i32>: liquid_lang::You_Should_Use_A
 12 | |         #[liquid(indexed)]
 13 | |         tv: Vec<i32>,
 14 | |     }
-   | |_____^ the trait `liquid_lang::You_Should_Use_An_Valid_Event_Topic_Type` is not implemented for `std::vec::Vec<i32>`
+   | |_____^ the trait `You_Should_Use_An_Valid_Event_Topic_Type` is not implemented for `std::vec::Vec<i32>`
 
-error[E0277]: the trait bound `std::vec::Vec<i32>: liquid_lang::You_Should_Use_An_Valid_Event_Topic_Type` is not satisfied
+error[E0277]: the trait bound `std::vec::Vec<i32>: You_Should_Use_An_Valid_Event_Topic_Type` is not satisfied
  --> $DIR/29-invalid-event-topic-type.rs:3:1
   |
 3 | #[liquid::contract(version = "0.1.0")]
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `liquid_lang::You_Should_Use_An_Valid_Event_Topic_Type` is not implemented for `std::vec::Vec<i32>`
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `You_Should_Use_An_Valid_Event_Topic_Type` is not implemented for `std::vec::Vec<i32>`
   |
   = note: this error originates in an attribute macro (in Nightly builds, run with -Z macro-backtrace for more info)

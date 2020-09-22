@@ -1,21 +1,21 @@
-error[E0277]: the trait bound `(): liquid_lang::You_Should_Use_An_Valid_Parameter_Type` is not satisfied
+error[E0277]: the trait bound `(): You_Should_Use_An_Valid_Parameter_Type` is not satisfied
   --> $DIR/25-vec-unit-return.rs:12:28
    |
 12 |         pub fn noop(&self) -> Vec<()> {}
-   |                            ^^^^^^^^^^ the trait `liquid_lang::You_Should_Use_An_Valid_Parameter_Type` is not implemented for `()`
+   |                            ^^^^^^^^^^ the trait `You_Should_Use_An_Valid_Parameter_Type` is not implemented for `()`
    |
-   = note: required because of the requirements on the impl of `liquid_lang::You_Should_Use_An_Valid_Return_Type` for `std::vec::Vec<()>`
+   = note: required because of the requirements on the impl of `You_Should_Use_An_Valid_Return_Type` for `std::vec::Vec<()>`
 
-error[E0277]: the trait bound `(): liquid_abi_codec::MediateEncode` is not satisfied
+error[E0277]: the trait bound `(): MediateEncode` is not satisfied
   --> $DIR/25-vec-unit-return.rs:12:28
    |
 12 |         pub fn noop(&self) -> Vec<()> {}
-   |                            ^^^^^^^^^^ the trait `liquid_abi_codec::MediateEncode` is not implemented for `()`
+   |                            ^^^^^^^^^^ the trait `MediateEncode` is not implemented for `()`
    |
   ::: $WORKSPACE/lang/src/traits.rs:24:18
    |
 24 |     type Output: Encode + 'static;
-   |                  ------ required by this bound in `liquid_lang::FnOutput`
+   |                  ------ required by this bound in `FnOutput`
    |
-   = note: required because of the requirements on the impl of `liquid_abi_codec::MediateEncode` for `std::vec::Vec<()>`
-   = note: required because of the requirements on the impl of `liquid_abi_codec::Encode` for `std::vec::Vec<()>`
+   = note: required because of the requirements on the impl of `MediateEncode` for `std::vec::Vec<()>`
+   = note: required because of the requirements on the impl of `Encode` for `std::vec::Vec<()>`
