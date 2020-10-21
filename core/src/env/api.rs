@@ -74,3 +74,13 @@ where
 {
     <EnvInstance as OnInstance>::on_instance(|instance| Env::emit(instance, event));
 }
+
+pub fn call<Data, R>(address: Address, data: &Data) -> Result<R>
+where
+    Data: liquid_abi_codec::Encode,
+    R: liquid_abi_codec::Decode,
+{
+    <EnvInstance as OnInstance>::on_instance(|instance| {
+        Env::call(instance, address, data)
+    })
+}

@@ -49,6 +49,12 @@ mod sys {
         pub fn getBlockTimestamp() -> u64;
 
         pub fn getBlockNumber() -> u64;
+
+        pub fn call(address_offset: u32, data_offset: u32, data_length: u32) -> u32;
+
+        pub fn getReturnDataSize() -> u32;
+
+        pub fn getReturnData(result_offset: u32);
     }
 
     #[link(wasm_import_module = "debug")]
@@ -71,12 +77,12 @@ pub fn set_storage(key: &[u8], encoded_value: &[u8]) {
     }
 }
 
-pub fn get_storage(key: &[u8], result_offset: &mut [u8]) -> Result<u32> {
+pub fn get_storage(key: &[u8], result: &mut [u8]) -> Result<u32> {
     let size = unsafe {
         sys::getStorage(
             key.as_ptr() as u32,
             key.len() as u32,
-            result_offset.as_mut_ptr() as u32,
+            result.as_mut_ptr() as u32,
         )
     };
     match size {
@@ -89,9 +95,9 @@ pub fn get_call_data_size() -> u32 {
     unsafe { sys::getCallDataSize() }
 }
 
-pub fn get_call_data(result_offset: &mut [u8]) {
+pub fn get_call_data(result: &mut [u8]) {
     unsafe {
-        sys::getCallData(result_offset.as_mut_ptr() as u32);
+        sys::getCallData(result.as_mut_ptr() as u32);
     }
 }
 
@@ -172,6 +178,26 @@ pub fn get_block_timestamp() -> u64 {
 
 pub fn get_block_number() -> u64 {
     unsafe { sys::getBlockNumber() }
+}
+
+pub fn call(address: &[u8], data: &[u8]) -> u32 {
+    unsafe {
+        sys::call(
+            address.as_ptr() as u32,
+            data.as_ptr() as u32,
+            data.len() as u32,
+        )
+    }
+}
+
+pub fn get_return_data_size() -> u32 {
+    unsafe { sys::getReturnDataSize() }
+}
+
+pub fn get_return_data(result: &mut [u8]) {
+    unsafe {
+        sys::getReturnData(result.as_ptr() as u32);
+    }
 }
 
 pub fn print32(i: i32) {

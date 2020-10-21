@@ -48,7 +48,7 @@ impl<'a> GenerateCode for Dispatch<'a> {
     }
 }
 
-fn generate_input_tys<'a>(sig: &'a Signature) -> Vec<&'a syn::Type> {
+fn generate_input_tys(sig: &Signature) -> Vec<&syn::Type> {
     sig.inputs
         .iter()
         .skip(1)
@@ -59,9 +59,9 @@ fn generate_input_tys<'a>(sig: &'a Signature) -> Vec<&'a syn::Type> {
         .collect::<Vec<_>>()
 }
 
-fn generate_input_idents<'a>(
-    args: &'a Punctuated<FnArg, Token![,]>,
-) -> (Vec<&'a proc_macro2::Ident>, TokenStream2) {
+fn generate_input_idents(
+    args: &Punctuated<FnArg, Token![,]>,
+) -> (Vec<&proc_macro2::Ident>, TokenStream2) {
     let input_idents = args
         .iter()
         .skip(1)

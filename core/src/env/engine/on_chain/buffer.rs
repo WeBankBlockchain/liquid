@@ -17,7 +17,7 @@ pub struct StaticBuffer {
 
 impl StaticBuffer {
     /// The capacity of the static buffer
-    const CAPACITY: usize = 1 << 14; // 16kB
+    pub const CAPACITY: usize = 1 << 14; // 16KB
 
     pub const fn new() -> Self {
         Self {

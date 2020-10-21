@@ -63,7 +63,7 @@ fn generate_ty_name(ty: &syn::Type) -> TokenStream2 {
     }
 }
 
-fn generate_fn_inputs<'a>(sig: &'a Signature) -> impl Iterator<Item = TokenStream2> + 'a {
+fn generate_fn_inputs(sig: &Signature) -> impl Iterator<Item = TokenStream2> + '_ {
     sig.inputs.iter().skip(1).map(|arg| match arg {
         FnArg::Typed(ident_type) => {
             let ident = &ident_type.ident.to_string();

@@ -119,6 +119,14 @@ impl Env for EnvInstance {
     fn get_block_number(&mut self) -> BlockNumber {
         self.current_block().block_number()
     }
+
+    fn call<Data, R>(&mut self, _address: Address, _data: &Data) -> Result<R>
+    where
+        Data: liquid_abi_codec::Encode,
+        R: liquid_abi_codec::Decode,
+    {
+        unimplemented!();
+    }
 }
 
 impl OnInstance for EnvInstance {

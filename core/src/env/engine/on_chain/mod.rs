@@ -67,6 +67,14 @@ impl EnvInstance {
         let len = self.buffer.len();
         scale::Decode::decode(&mut &self.buffer[..len]).map_err(Into::into)
     }
+
+    fn decode_from_buffer_abi<R>(&mut self) -> Result<R>
+    where
+        R: liquid_abi_codec::Decode,
+    {
+        let len = self.buffer.len();
+        liquid_abi_codec::Decode::decode(&mut &self.buffer[..len]).map_err(Into::into)
+    }
 }
 
 impl Env for EnvInstance {
@@ -102,7 +110,7 @@ impl Env for EnvInstance {
 
         let mut call_data_buf =
             liquid_prelude::vec::from_elem(0u8, call_data_size as usize);
-        ext::get_call_data(&mut call_data_buf[..]);
+        ext::get_call_data(call_data_buf.as_mut_slice());
 
         if mode == CallMode::Call {
             CallData::decode(&mut call_data_buf.as_slice()).map_err(Into::into)
@@ -118,16 +126,16 @@ impl Env for EnvInstance {
     where
         V: liquid_abi_codec::Encode,
     {
-        self.encode_into_buffer_abi(return_value);
-        ext::finish(&self.buffer[..self.buffer.len()]);
+        let encoded = return_value.encode();
+        ext::finish(&encoded);
     }
 
     fn revert<V>(&mut self, revert_info: &V)
     where
         V: liquid_abi_codec::Encode,
     {
-        self.encode_into_buffer_abi(revert_info);
-        ext::revert(&self.buffer[..self.buffer.len()]);
+        let encoded = revert_info.encode();
+        ext::revert(&encoded);
     }
 
     fn emit<Event>(&mut self, event: Event)
@@ -153,5 +161,38 @@ impl Env for EnvInstance {
 
     fn get_block_number(&mut self) -> BlockNumber {
         ext::get_block_number() as BlockNumber
+    }
+
+    fn call<Data, R>(&mut self, address: Address, data: &Data) -> Result<R>
+    where
+        Data: liquid_abi_codec::Encode,
+        R: liquid_abi_codec::Decode,
+    {
+        let encoded = data.encode();
+        let status = ext::call(address.inner(), &encoded);
+        if status != 0 {
+            return Err(EnvError::FailToCallRemoteContract);
+        }
+
+        if core::mem::size_of::<R>() == 0 {
+            self.buffer.resize(0);
+            self.decode_from_buffer_abi()
+        } else {
+            let return_data_size = ext::get_return_data_size();
+
+            if return_data_size <= StaticBuffer::CAPACITY as u32 {
+                if return_data_size != 0 {
+                    ext::get_return_data(&mut self.buffer[..]);
+                }
+                self.buffer.resize(return_data_size as usize);
+                self.decode_from_buffer_abi()
+            } else {
+                let mut return_data_buffer =
+                    liquid_prelude::vec::from_elem(0u8, return_data_size as usize);
+                ext::get_return_data(&mut return_data_buffer);
+                liquid_abi_codec::Decode::decode(&mut return_data_buffer.as_slice())
+                    .map_err(Into::into)
+            }
+        }
     }
 }

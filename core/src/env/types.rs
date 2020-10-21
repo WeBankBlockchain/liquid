@@ -36,6 +36,11 @@ impl Address {
     pub fn empty() -> Self {
         Default::default()
     }
+
+    #[allow(dead_code)]
+    pub(crate) fn inner(&self) -> &[u8] {
+        &self.0
+    }
 }
 
 impl Default for Address {

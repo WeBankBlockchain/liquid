@@ -19,6 +19,7 @@ pub enum EnvError {
     ABIDecode(liquid_abi_codec::Error),
     UnableToReadFromStorage,
     UnableToReadCallData,
+    FailToCallRemoteContract,
 }
 
 /// A result of environmental operations

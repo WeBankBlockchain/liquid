@@ -1,17 +1,3 @@
-error[E0277]: the trait bound `((), ()): Encode` is not satisfied
-  --> $DIR/26-tuple-unit-return.rs:12:28
-   |
-12 |         pub fn noop(&self) -> ((), ()) {
-   |                            ^^^^^^^^^^^ the trait `Encode` is not implemented for `((), ())`
-   |
-  ::: $WORKSPACE/lang/src/traits.rs:24:18
-   |
-24 |     type Output: Encode + 'static;
-   |                  ------ required by this bound in `FnOutput`
-   |
-   = help: the following implementations were found:
-             <(T14, T15) as Encode>
-
 error[E0277]: the trait bound `(): You_Should_Use_An_Valid_Parameter_Type` is not satisfied
   --> $DIR/26-tuple-unit-return.rs:12:28
    |

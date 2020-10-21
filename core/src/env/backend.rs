@@ -51,4 +51,9 @@ pub trait Env {
     fn now(&mut self) -> Timestamp;
 
     fn get_block_number(&mut self) -> BlockNumber;
+
+    fn call<Data, R>(&mut self, address: Address, data: &Data) -> Result<R>
+    where
+        Data: liquid_abi_codec::Encode,
+        R: liquid_abi_codec::Decode;
 }
