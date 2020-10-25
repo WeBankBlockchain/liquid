@@ -10,15 +10,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::ir::{self, utils};
+use crate::{
+    ir::{self, utils as ir_utils},
+    utils as lang_utils,
+};
 use core::convert::TryFrom;
 use either::Either;
 use itertools::Itertools;
-use liquid_primitives::HashType;
 use proc_macro2::Ident;
 use quote::quote;
 use regex::Regex;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
@@ -94,12 +96,6 @@ impl TryFrom<syn::Attribute> for ir::Marker {
     }
 }
 
-fn calculate_fn_id(ident: &Ident) -> usize {
-    let ident_hash = liquid_primitives::hash::keccak256(ident.to_string().as_bytes());
-    u32::from_be_bytes([ident_hash[0], ident_hash[1], ident_hash[2], ident_hash[3]])
-        as usize
-}
-
 impl TryFrom<(ir::Params, syn::ItemMod)> for ir::Contract {
     type Error = Error;
 
@@ -129,7 +125,8 @@ impl TryFrom<(ir::Params, syn::ItemMod)> for ir::Contract {
                 ir::Item::Rust(rust_item) => Either::Right(*rust_item),
             });
 
-        let (storage, events, mut functions) = utils::split_items(liquid_items)?;
+        let (storage, events, mut functions, constants) =
+            ir_utils::split_items(liquid_items)?;
         storage.public_fields.iter().for_each(|index| {
             let field = &storage.fields.named[*index];
             let ident = &field.ident.as_ref().unwrap();
@@ -144,8 +141,8 @@ impl TryFrom<(ir::Params, syn::ItemMod)> for ir::Contract {
 
             functions.push(ir::Function{
                 attrs: getter.attrs,
-                kind: ir::FunctionKind::External(calculate_fn_id(ident)),
-                sig: ir::Signature::try_from(&getter.sig).unwrap(),
+                kind: ir::FunctionKind::External(lang_utils::calculate_fn_id(ident)),
+                sig: ir::Signature::try_from((&getter.sig, false)).unwrap(),
                 body: *getter.block,
                 span: field.span(),
             });
@@ -175,10 +172,7 @@ impl TryFrom<(ir::Params, syn::ItemMod)> for ir::Contract {
         }
 
         if external_func_count < 1 {
-            bail!(
-                item_mod,
-                "liquid contract needs at least 1 external function"
-            )
+            bail!(item_mod, "contract needs at least 1 external function")
         }
 
         let constructor = functions.remove(constructor.unwrap());
@@ -191,6 +185,7 @@ impl TryFrom<(ir::Params, syn::ItemMod)> for ir::Contract {
             events,
             constructor,
             functions,
+            constants,
             rust_items,
         })
     }
@@ -202,7 +197,6 @@ impl TryFrom<ir::Params> for ir::MetaInfo {
     fn try_from(params: ir::Params) -> Result<Self> {
         let mut unique_param_names = HashSet::new();
         let mut liquid_version = None;
-        let mut hash_type = None;
         for param in params.params.iter() {
             let name = param.ident().to_string();
             if !unique_param_names.insert(name.clone()) {
@@ -213,7 +207,6 @@ impl TryFrom<ir::Params> for ir::MetaInfo {
                 ir::MetaParam::Version(param) => {
                     liquid_version = Some(param.version.clone())
                 }
-                ir::MetaParam::HashType(param) => hash_type = Some(param.hash_type),
             }
         }
 
@@ -225,16 +218,7 @@ impl TryFrom<ir::Params> for ir::MetaInfo {
             Some(liquid_version) => liquid_version,
         };
 
-        let hash_type = if hash_type.is_none() {
-            HashType::Keccak256
-        } else {
-            hash_type.expect("")
-        };
-
-        Ok(Self {
-            liquid_version,
-            hash_type,
-        })
+        Ok(Self { liquid_version })
     }
 }
 
@@ -274,42 +258,42 @@ impl TryFrom<syn::FnArg> for ir::FnArg {
     }
 }
 
-impl TryFrom<&syn::Signature> for ir::Signature {
+impl TryFrom<(&syn::Signature, bool)> for ir::Signature {
     type Error = Error;
 
-    fn try_from(sig: &syn::Signature) -> Result<Self> {
+    fn try_from((sig, for_interface): (&syn::Signature, bool)) -> Result<Self> {
         if sig.constness.is_some() {
             bail!(
                 sig.constness,
-                "`const` is not supported for functions in liquid contract",
+                "`const` is not supported for functions in contract",
             )
         }
 
         if sig.asyncness.is_some() {
             bail!(
                 sig.asyncness,
-                "`async` is not supported for functions in liquid contract",
+                "`async` is not supported for functions in contract",
             )
         }
 
         if sig.unsafety.is_some() {
             bail!(
                 sig.unsafety,
-                "`unsafe` is not supported for functions in liquid contract",
+                "`unsafe` is not supported for functions in contract",
             )
         }
 
         if sig.abi.is_some() {
             bail! {
                 sig.abi,
-                "specifying ABI is not supported for functions in liquid contract",
+                "specifying ABI is not supported for functions in contract",
             }
         }
 
         if !(sig.generics.params.is_empty() && sig.generics.where_clause.is_none()) {
             bail! {
                 sig.generics,
-                "generic is not supported for functions in liquid contract",
+                "generic is not supported for functions in contract",
             }
         }
 
@@ -320,7 +304,7 @@ impl TryFrom<&syn::Signature> for ir::Signature {
             }
         }
 
-        if sig.inputs.is_empty() {
+        if !for_interface && sig.inputs.is_empty() {
             bail!(
                 sig,
                 "`&self` or `&mut self` is mandatory for liquid functions",
@@ -335,23 +319,25 @@ impl TryFrom<&syn::Signature> for ir::Signature {
             .collect::<Result<Punctuated<ir::FnArg, Token![,]>>>()?;
         let output = &sig.output;
 
-        if let ir::FnArg::Typed(ident_type) = &inputs[0] {
-            bail_span!(
-                ident_type.span(),
-                "first argument of liquid functions must be `&self` or `&mut self`",
-            )
-        }
-
-        for arg in inputs.iter().skip(1) {
-            if let ir::FnArg::Receiver(receiver) = arg {
+        if !for_interface {
+            if let ir::FnArg::Typed(ident_type) = &inputs[0] {
                 bail_span!(
-                    receiver.span(),
-                    "unexpected `self` argument found for liquid function",
+                    ident_type.span(),
+                    "first argument of liquid functions must be `&self` or `&mut self`",
                 )
             }
         }
 
-        let input_args_count = inputs.len() - 1;
+        for arg in inputs.iter().skip(if for_interface { 0 } else { 1 }) {
+            if let ir::FnArg::Receiver(receiver) = arg {
+                bail_span!(receiver.span(), "unexpected `self` argument",)
+            }
+        }
+
+        let mut input_args_count = inputs.len();
+        if !for_interface {
+            input_args_count -= 1;
+        }
         if input_args_count > 16 {
             bail_span!(
                 inputs[1]
@@ -407,7 +393,7 @@ impl TryFrom<syn::ImplItemMethod> for ir::Function {
         }
 
         let span = method.span();
-        let sig = ir::Signature::try_from(&method.sig)?;
+        let sig = ir::Signature::try_from((&method.sig, false))?;
         let ident = &sig.ident;
 
         let kind = if ident == "new" {
@@ -416,7 +402,7 @@ impl TryFrom<syn::ImplItemMethod> for ir::Function {
                     if !sig.is_mut() {
                         bail_span!(
                             sig.inputs[0].span(),
-                            "`&mut self` is mandatory for constructor of liquid contract"
+                            "`&mut self` is mandatory for constructor of contract"
                         )
                     }
                     if let syn::ReturnType::Type(t, ty) = sig.output {
@@ -424,7 +410,7 @@ impl TryFrom<syn::ImplItemMethod> for ir::Function {
                             t.span().join(ty.span()).expect(
                                 "right arrow token and return type are in the same file"
                             ),
-                            "constructor of liquid contract should not have return value"
+                            "constructor of contract should not have return value"
                         )
                     }
 
@@ -432,11 +418,11 @@ impl TryFrom<syn::ImplItemMethod> for ir::Function {
                 }
                 _ => bail!(
                     ident,
-                    "the visibility for constructor of liquid contract should be `pub`",
+                    "the visibility for constructor of contract should be `pub`",
                 ),
             }
         } else if let syn::Visibility::Public(_) = method.vis {
-            let fn_id = calculate_fn_id(ident);
+            let fn_id = crate::utils::calculate_fn_id(ident);
             ir::FunctionKind::External(fn_id)
         } else {
             ir::FunctionKind::Normal
@@ -516,14 +502,19 @@ impl TryFrom<syn::ItemImpl> for ir::ItemImpl {
         };
 
         let mut functions = Vec::new();
+        let mut constants = Vec::new();
         for item in item_impl.items.into_iter() {
             match item {
                 syn::ImplItem::Method(method) => {
                     functions.push(ir::Function::try_from(method)?);
                 }
+                syn::ImplItem::Const(constant) => {
+                    constants.push(constant);
+                }
                 unsupported => bail!(
                     unsupported,
-                    "only methods are supported inside impl blocks in liquid",
+                    "only methods and constants are supported inside impl blocks in \
+                     liquid",
                 ),
             }
         }
@@ -534,6 +525,7 @@ impl TryFrom<syn::ItemImpl> for ir::ItemImpl {
             ty: ident,
             brace_token: item_impl.brace_token,
             functions,
+            constants,
         })
     }
 }
@@ -690,8 +682,9 @@ impl TryFrom<syn::Item> for ir::Item {
                 let is_contract_storage;
                 let is_event;
                 {
-                    let markers = utils::filter_map_liquid_attributes(&item_struct.attrs)
-                        .collect::<Vec<_>>();
+                    let markers =
+                        ir_utils::filter_map_liquid_attributes(&item_struct.attrs)
+                            .collect::<Vec<_>>();
                     is_contract_storage =
                         markers.iter().any(|marker| marker.ident == "storage");
                     is_event = markers.iter().any(|marker| marker.ident == "event");
@@ -718,7 +711,7 @@ impl TryFrom<syn::Item> for ir::Item {
                 let is_contract_impl;
                 {
                     let mut markers =
-                        utils::filter_map_liquid_attributes(&item_impl.attrs);
+                        ir_utils::filter_map_liquid_attributes(&item_impl.attrs);
                     is_contract_impl = markers.any(|marker| marker.ident == "methods");
                 }
 
@@ -730,12 +723,186 @@ impl TryFrom<syn::Item> for ir::Item {
                 } else {
                     bail!(
                         item_impl,
-                        "impl blocks in liquid contract should be tagged with \
+                        "`impl` blocks in contract should be tagged with \
                          `#[liquid(methods)]`"
                     )
                 }
             }
             _ => Ok(ir::Item::Rust(Box::new(item.into()))),
         }
+    }
+}
+
+impl TryFrom<syn::ItemStruct> for ir::ForeignStruct {
+    type Error = Error;
+
+    fn try_from(item_struct: syn::ItemStruct) -> Result<Self> {
+        if item_struct.vis != syn::Visibility::Inherited {
+            bail!(
+                item_struct.vis,
+                "`struct` in interface must have no visibility modifier",
+            )
+        }
+
+        if item_struct.generics.type_params().count() > 0 {
+            bail!(
+                item_struct.generics,
+                "generics are not allowed for `struct` in interface"
+            )
+        }
+
+        let span = item_struct.span();
+        let fields = match item_struct.fields {
+            syn::Fields::Named(named_fields) => {
+                for field in &named_fields.named {
+                    match &field.vis {
+                        syn::Visibility::Inherited => (),
+                        _ => bail!(
+                            field,
+                            "visibility modifier is not allowed for fields of
+                             `struct` in interface"
+                        ),
+                    }
+                }
+                named_fields
+            }
+            syn::Fields::Unnamed(_) => bail!(
+                item_struct,
+                "tuple-struct is not allowed for `struct` in interface"
+            ),
+            syn::Fields::Unit => bail!(
+                item_struct,
+                "unit-struct is not allowed for `struct` in interface`"
+            ),
+        };
+
+        Ok(Self {
+            attrs: item_struct.attrs,
+            struct_token: item_struct.struct_token,
+            ident: item_struct.ident,
+            fields,
+            span,
+        })
+    }
+}
+
+impl TryFrom<&syn::ForeignItem> for ir::ForeignFn {
+    type Error = Error;
+
+    fn try_from(foreign_item: &syn::ForeignItem) -> Result<Self> {
+        match foreign_item {
+            syn::ForeignItem::Fn(foreign_fn) => {
+                let sig = ir::Signature::try_from((&foreign_fn.sig, true))?;
+                let fn_id = lang_utils::calculate_fn_id(&sig.ident);
+                let span = foreign_fn.span();
+
+                if sig.ident == "new" {
+                    bail!(
+                        foreign_item,
+                        "declaration of contract constructor is not allowed for \
+                         `extern` block in interface"
+                    )
+                }
+
+                Ok(Self {
+                    attrs: foreign_fn.attrs.clone(),
+                    sig,
+                    semi_token: foreign_fn.semi_token,
+                    fn_id,
+                    span,
+                })
+            }
+            unsupported => bail!(
+                unsupported,
+                "only function declaration is allowed for `extern` block in interface"
+            ),
+        }
+    }
+}
+
+impl TryFrom<syn::ItemMod> for ir::Interface {
+    type Error = Error;
+
+    fn try_from(item_mod: syn::ItemMod) -> Result<Self> {
+        if item_mod.vis != syn::Visibility::Inherited {
+            bail!(
+                item_mod.vis,
+                "interface module must have no visibility modifier",
+            )
+        }
+
+        let items = match &item_mod.content {
+            None => bail!(
+                item_mod,
+                "interface module must be inline, e.g. `mod m {{ ... }}`",
+            ),
+            Some((_, items)) => items.clone(),
+        };
+
+        let mut foreign_structs = Vec::new();
+        let mut foreign_fns = BTreeMap::<_, Vec<ir::ForeignFn>>::new();
+        let mut imports = Vec::new();
+        let span = item_mod.span();
+
+        for item in items {
+            match item {
+                syn::Item::Struct(item_struct) => {
+                    foreign_structs.push(ir::ForeignStruct::try_from(item_struct)?);
+                }
+                syn::Item::Use(item_use) => {
+                    imports.push(item_use);
+                }
+                syn::Item::ForeignMod(item_foreign_mod) => {
+                    if !foreign_fns.is_empty() {
+                        bail!(
+                            item_foreign_mod,
+                            "the total number of `extern` block in interface module \
+                             should not be more than 1"
+                        )
+                    }
+
+                    let abi = &item_foreign_mod.abi;
+                    match abi.name {
+                        Some(ref name) if name.value() != "liquid" => bail!(
+                            abi,
+                            "ABI should be specified  as `\"liquid\"` or nothing"
+                        ),
+                        _ => (),
+                    }
+
+                    for foreign_item in item_foreign_mod.items.iter() {
+                        let foreign_fn = ir::ForeignFn::try_from(foreign_item)?;
+                        let ident = foreign_fn.sig.ident.clone();
+                        if let Some(fns) = foreign_fns.get_mut(&ident) {
+                            fns.push(foreign_fn);
+                        } else {
+                            foreign_fns.insert(ident, vec![foreign_fn]);
+                        }
+                    }
+
+                    if foreign_fns.is_empty() {
+                        bail!(
+                            item_foreign_mod,
+                            "at least 1 declaration of method should be provided in \
+                             `extern` block"
+                        )
+                    }
+                }
+                other => bail!(
+                    other,
+                    "only `struct`, `extern` blocks or `use` statements are allowed in \
+                     interface"
+                ),
+            }
+        }
+
+        Ok(Self {
+            mod_token: item_mod.mod_token,
+            ident: item_mod.ident,
+            foreign_structs,
+            foreign_fns,
+            imports,
+            span,
+        })
     }
 }

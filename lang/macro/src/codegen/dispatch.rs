@@ -11,10 +11,10 @@
 // limitations under the License.
 
 use crate::{
-    codegen::GenerateCode,
-    ir::{Contract, FnArg, Function, FunctionKind, Signature},
+    codegen::{utils, GenerateCode},
+    ir::{Contract, FnArg, Function, FunctionKind},
 };
-use liquid_primitives::HashType;
+
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, quote_spanned};
 use syn::{punctuated::Punctuated, spanned::Spanned, Token};
@@ -48,17 +48,6 @@ impl<'a> GenerateCode for Dispatch<'a> {
     }
 }
 
-fn generate_input_tys(sig: &Signature) -> Vec<&syn::Type> {
-    sig.inputs
-        .iter()
-        .skip(1)
-        .map(|arg| match arg {
-            FnArg::Typed(ident_type) => &ident_type.ty,
-            _ => unreachable!(),
-        })
-        .collect::<Vec<_>>()
-}
-
 fn generate_input_idents(
     args: &Punctuated<FnArg, Token![,]>,
 ) -> (Vec<&proc_macro2::Ident>, TokenStream2) {
@@ -80,24 +69,14 @@ fn generate_input_idents(
     (input_idents, pat_idents)
 }
 
-fn generate_input_ty_checker(tys: &[&syn::Type]) -> TokenStream2 {
-    let guards = tys.iter().map(|ty| {
-        quote! {
-            <#ty as liquid_lang::You_Should_Use_An_Valid_Input_Type>::T
-        }
-    });
-
-    quote! { (#(#guards,)*) }
-}
-
 impl<'a> Dispatch<'a> {
     fn generate_external_fn_marker(&self) -> TokenStream2 {
         quote! {
-            pub struct ExternalMarker<S> {
+            pub struct FnMarker<S> {
                 marker: core::marker::PhantomData<fn() -> S>,
             }
 
-            pub struct DispatchHelper<S, T> {
+            pub struct TyMappingHelper<S, T> {
                 marker_s: core::marker::PhantomData<fn() -> S>,
                 marker_t: core::marker::PhantomData<fn() -> T>,
             }
@@ -124,13 +103,13 @@ impl<'a> Dispatch<'a> {
         };
 
         let span = func.span();
-        let external_marker = quote! { ExternalMarker<[(); #fn_id]> };
+        let fn_marker = quote! { FnMarker<[(); #fn_id]> };
         let sig = &func.sig;
 
-        let input_tys = generate_input_tys(sig);
-        let input_ty_checker = generate_input_ty_checker(input_tys.as_slice());
+        let input_tys = utils::generate_input_tys(sig, true);
+        let input_ty_checker = utils::generate_ty_checker(input_tys.as_slice());
         let fn_input = quote_spanned! { sig.inputs.span() =>
-            impl liquid_lang::FnInput for #external_marker  {
+            impl liquid_lang::FnInput for #fn_marker  {
                 type Input = #input_ty_checker;
             }
         };
@@ -146,85 +125,15 @@ impl<'a> Dispatch<'a> {
             }
         };
         let fn_output = quote_spanned! { output.span() =>
-            impl liquid_lang::FnOutput for #external_marker {
+            impl liquid_lang::FnOutput for #fn_marker {
                 type Output = #output_ty_checker;
             }
         };
 
-        let mut selectors = quote_spanned! { span =>
-            impl liquid_ty_mapping::SolTypeName for DispatchHelper<#external_marker, ()> {
-                const NAME: &'static [u8] = <() as liquid_ty_mapping::SolTypeName>::NAME;
-            }
-            impl liquid_ty_mapping::SolTypeNameLen for DispatchHelper<#external_marker, ()> {
-                const LEN: usize = <() as liquid_ty_mapping::SolTypeNameLen>::LEN;
-            }
-        };
-        for i in 1..=input_tys.len() {
-            let tys = &input_tys[..i];
-            let first_tys = &tys[0..i - 1];
-            let rest_ty = &tys[i - 1];
-            if i > 1 {
-                selectors.extend(quote_spanned! { span =>
-                    impl liquid_ty_mapping::SolTypeName for DispatchHelper<#external_marker, (#(#tys,)*)> {
-                        const NAME: &'static [u8] = {
-                            const LEN: usize =
-                                <(#(#first_tys,)*) as liquid_ty_mapping::SolTypeNameLen<_>>::LEN
-                                + <#rest_ty as liquid_ty_mapping::SolTypeNameLen<_>>::LEN
-                                + 1;
-                            &liquid_ty_mapping::concat::<DispatchHelper<#external_marker, (#(#first_tys,)*)>, #rest_ty, (), _, LEN>(true)
-                        };
-                    }
-                });
-            } else {
-                selectors.extend(quote_spanned! { span =>
-                    impl liquid_ty_mapping::SolTypeName for DispatchHelper<#external_marker, (#rest_ty,)> {
-                        const NAME: &'static [u8] = <#rest_ty as liquid_ty_mapping::SolTypeName<_>>::NAME;
-                    }
-                });
-            }
-        }
-
-        let fn_name = sig.ident.to_string();
-        let fn_name_bytes = fn_name.as_bytes();
-        let fn_name_len = fn_name_bytes.len();
-        let composite_sig = quote! {
-            const SIG_LEN: usize =
-                <(#(#input_tys,)*) as liquid_ty_mapping::SolTypeNameLen<_>>::LEN + #fn_name_len
-                + 2;
-            const SIG: [u8; SIG_LEN] =
-                liquid_ty_mapping::composite::<SIG_LEN>(
-                    &[#(#fn_name_bytes),*],
-                    <DispatchHelper<#external_marker, (#(#input_tys,)*)> as liquid_ty_mapping::SolTypeName<_>>::NAME);
-        };
-
-        match self.contract.meta_info.hash_type {
-            HashType::Keccak256 => {
-                selectors.extend(quote_spanned! { span =>
-                    impl liquid_lang::FnSelector for #external_marker {
-                        const SELECTOR: liquid_primitives::Selector = {
-                            #composite_sig
-                            let hash = liquid_primitives::hash::keccak256(&SIG);
-                            [hash[0], hash[1], hash[2], hash[3]]
-                        };
-                    }
-                });
-            }
-            HashType::SM3 => {
-                selectors.extend(quote_spanned! { span =>
-                    impl liquid_lang::FnSelector for #external_marker {
-                        const SELECTOR: liquid_primitives::Selector = {
-                            #composite_sig
-                            let hash = liquid_primitives::hash::sm3(&SIG);
-                            [hash[0], hash[1], hash[2], hash[3]]
-                        };
-                    }
-                });
-            }
-        }
-
+        let selectors = utils::generate_ty_mapping(*fn_id, &sig.ident, &input_tys);
         let is_mut = sig.is_mut();
         let mutability = quote_spanned! { span =>
-            impl liquid_lang::FnMutability for #external_marker {
+            impl liquid_lang::FnMutability for #fn_marker {
                 const IS_MUT: bool = #is_mut;
             }
         };
@@ -234,7 +143,7 @@ impl<'a> Dispatch<'a> {
             #fn_output
             #selectors
             #mutability
-            impl liquid_lang::ExternalFn for #external_marker {}
+            impl liquid_lang::ExternalFn for #fn_marker {}
         }
     }
 
@@ -247,7 +156,7 @@ impl<'a> Dispatch<'a> {
             FunctionKind::External(fn_id) => fn_id,
             _ => return quote! {},
         };
-        let namespace = quote! { ExternalMarker<[(); #fn_id]> };
+        let namespace = quote! { FnMarker<[(); #fn_id]> };
 
         let sig = &func.sig;
         let fn_name = &sig.ident;
@@ -282,9 +191,9 @@ impl<'a> Dispatch<'a> {
         let constr = &self.contract.constructor;
         let sig = &constr.sig;
         let inputs = &sig.inputs;
-        let input_tys = generate_input_tys(sig);
-        let marker = quote! { ExternalMarker<[(); 0]> };
-        let input_ty_checker = generate_input_ty_checker(input_tys.as_slice());
+        let input_tys = utils::generate_input_tys(sig, true);
+        let marker = quote! { FnMarker<[(); 0]> };
+        let input_ty_checker = utils::generate_ty_checker(input_tys.as_slice());
         quote_spanned! { inputs.span() =>
             impl liquid_lang::FnInput for #marker  {
                 type Input = #input_ty_checker;
@@ -331,20 +240,19 @@ impl<'a> Dispatch<'a> {
     fn generate_entry_point(&self) -> TokenStream2 {
         let constr = &self.contract.constructor;
         let sig = &constr.sig;
-        let input_tys = generate_input_tys(sig);
+        let input_tys = utils::generate_input_tys(sig, true);
         let ident = &sig.ident;
         let (input_idents, pat_idents) = generate_input_idents(&sig.inputs);
-        let _hash_type = match self.contract.meta_info.hash_type {
-            HashType::Keccak256 => 0,
-            HashType::SM3 => 1,
-        };
 
         quote! {
-            /*
             #[no_mangle]
             fn hash_type() -> u32 {
-                #hash_type as u32
-            }*/
+                if cfg!(feature = "gm") {
+                    1
+                } else {
+                    0
+                }
+            }
 
             #[no_mangle]
             fn deploy() {

@@ -38,6 +38,10 @@ liquid-abi-gen = [
     "liquid_abi_gen",
     "liquid_lang/liquid-abi-gen",
 ]
+gm = [
+    "liquid_lang/gm",
+    "liquid_primitives/gm",
+]
 
 [profile.release]
 panic = "abort"

@@ -14,11 +14,10 @@ use crate::{
     codegen::{
         abi_gen::ABIGen,
         dispatch::Dispatch,
-        env_types::EnvTypes,
         events::{EventStructs, Events},
         storage::Storage,
         testable::Testable,
-        GenerateCode,
+        utils, GenerateCode,
     },
     ir,
 };
@@ -29,7 +28,7 @@ impl GenerateCode for ir::Contract {
     fn generate_code(&self) -> TokenStream2 {
         let ident = &self.ident;
         let storage_ident = &self.storage.ident;
-        let env_types = EnvTypes::from(self).generate_code();
+        let types = utils::generate_primitive_types();
         let storage = Storage::from(self).generate_code();
         let events = Events::from(self).generate_code();
         let event_struct = EventStructs::from(self).generate_code();
@@ -41,7 +40,7 @@ impl GenerateCode for ir::Contract {
         quote! {
             mod #ident {
                 use liquid_lang::intrinsics::*;
-                #env_types
+                #types
 
                 mod __liquid_private {
                     use super::*;

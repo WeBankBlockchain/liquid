@@ -1,4 +1,4 @@
-error: `const` is not supported for functions in liquid contract
+error: `const` is not supported for functions in contract
   --> $DIR/12-const-function.rs:12:13
    |
 12 |         pub const fn noop(&self) {}

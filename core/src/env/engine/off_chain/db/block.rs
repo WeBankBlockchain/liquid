@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::env::types::{BlockNumber, Timestamp};
+use liquid_primitives::types::{BlockNumber, Timestamp};
 
 pub struct Block {
     /// The current block number.

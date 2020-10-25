@@ -38,9 +38,14 @@ where
         .filter_map(|attr| Marker::try_from(attr).ok())
 }
 
-pub fn split_items(
-    items: Vec<LiquidItem>,
-) -> Result<(ItemStorage, Vec<ItemEvent>, Vec<Function>)> {
+pub type ContractItems = (
+    ItemStorage,
+    Vec<ItemEvent>,
+    Vec<Function>,
+    Vec<syn::ImplItemConst>,
+);
+
+pub fn split_items(items: Vec<LiquidItem>) -> Result<ContractItems> {
     use either::Either;
     use itertools::Itertools;
 
@@ -82,11 +87,12 @@ pub fn split_items(
         }
     }
 
-    let functions = impl_blocks
+    let (functions, constants): (Vec<_>, Vec<_>) = impl_blocks
         .into_iter()
-        .map(|block| block.functions)
-        .flatten()
-        .collect::<Vec<_>>();
+        .map(|block| (block.functions, block.constants))
+        .unzip();
 
-    Ok((storage, events, functions))
+    let functions = functions.into_iter().flatten().collect();
+    let constants = constants.into_iter().flatten().collect();
+    Ok((storage, events, functions, constants))
 }

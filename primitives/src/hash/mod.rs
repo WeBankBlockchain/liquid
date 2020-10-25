@@ -10,8 +10,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod keccak;
-mod sm3;
+use cfg_if::cfg_if;
 
-pub use keccak::keccak256;
-pub use sm3::sm3;
+cfg_if! {
+    if #[cfg(not(feature = "gm"))] {
+        mod keccak;
+        pub use keccak::keccak256 as hash;
+    } else {
+        mod sm3;
+        pub use sm3::sm3 as hash;
+    }
+}

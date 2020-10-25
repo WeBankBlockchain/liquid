@@ -12,6 +12,7 @@ serde = { version = "1.0.114", default-features = false, features = ["derive", "
 liquid_macro = { version = "0.1.0", path = "../macro", default-features = false }
 liquid_prelude = { version = "0.1.0", path = "../prelude", default-features = false }
 liquid_ty_mapping = { version = "0.1.0", path = "../ty_mapping", default-features = false }
+liquid_primitives = { version = "0.1.0", path = "../primitives", default-features = false }
 
 [features]
 default = ["std"]
@@ -19,4 +20,5 @@ std = [
     "serde/std",
     "liquid_prelude/std",
     "liquid_ty_mapping/std",
+    "liquid_primitives/std",
 ]

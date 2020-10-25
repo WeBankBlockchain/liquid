@@ -1,4 +1,4 @@
-error: impl blocks in liquid contract should be tagged with `#[liquid(methods)]`
+error: `impl` blocks in contract should be tagged with `#[liquid(methods)]`
   --> $DIR/22-missing-liquid-methods-tag.rs:8:5
    |
 8  | /     impl Noop {

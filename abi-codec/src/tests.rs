@@ -12,6 +12,7 @@
 
 use crate::codec::{Decode, Encode};
 use hex_literal::hex;
+use liquid_primitives::types::{i256, u256, Address};
 
 macro_rules! test_encode_decode {
     (name: $name:ident,type: $t:ty,value: $value:expr,data: $data:expr) => {
@@ -441,4 +442,28 @@ test_encode_decode! {
     0000000000000000000000000000000000000000000000000000000000000001
     0000000000000000000000000000000000000000000000000000000000000002
     0000000000000000000000000000000000000000000000000000000000000003"
+}
+
+test_encode_decode! {
+    name: address,
+    type: (Address,),
+    value: (Address::from([
+        0x3e, 0x9A, 0xFa, 0xA4, 0xa0, 0x62, 0xA4, 0x9d, 0x64, 0xb8, 0xAb, 0x05, 0x7B,
+        0x3C, 0xb5, 0x18, 0x92, 0xe1, 0x7E, 0xcb,
+    ]),),
+    data: "0000000000000000000000003e9afaa4a062a49d64b8ab057b3cb51892e17ecb"
+}
+
+test_encode_decode! {
+    name: int256,
+    type: (i256,),
+    value: (i256::from(-1),),
+    data: "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+}
+
+test_encode_decode! {
+    name: uint256,
+    type: (u256,),
+    value: (u256::from([0xff; 32]),),
+    data: "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
 }

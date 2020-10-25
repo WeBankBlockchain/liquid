@@ -14,6 +14,9 @@ set results[1].result=0
 set results[2].name=abi_test
 set results[2].result=0
 
+set results[3].name=gm_test
+set results[3].result=0
+
 for /f %%f in ('dir /b examples') do (
     cargo +nightly build --release --no-default-features --target=wasm32-unknown-unknown --verbose --manifest-path examples/%%f/Cargo.toml
     if !errorlevel! neq 0 (
@@ -29,6 +32,11 @@ for /f %%f in ('dir /b examples') do (
     if !errorlevel! neq 0 (
         set results[2].result=1
     )
+
+    cargo +nightly build --release --no-default-features --features "gm" --target=wasm32-unknown-unknown --verbose --manifest-path examples/%%f/Cargo.toml
+    if !errorlevel! neq 0 (
+        set results[3].result=1
+    )
 )
 
 set all_check_passed=0
@@ -37,7 +45,7 @@ set banner=-----------------
 echo Examples Results
 echo %banner%
 
-for /l %%i in (0,1,2) do (
+for /l %%i in (0,1,3) do (
     set cur.name=
     set cur.result=
 

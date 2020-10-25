@@ -194,10 +194,8 @@ pub struct DecodeResult<T: Sized> {
     pub new_offset: usize,
 }
 
-pub trait MediateDecode {
-    fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error>
-    where
-        Self: Sized;
+pub trait MediateDecode: Sized {
+    fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error>;
 }
 
 impl MediateEncode for bool {
@@ -318,7 +316,7 @@ macro_rules! impl_integer {
                     };
 
                     let be = self.to_be_bytes();
-                    buf[(WORD_SIZE - be.len())..].clone_from_slice(&be);
+                    buf[(WORD_SIZE - be.len())..].copy_from_slice(&be);
                     Mediate::Raw([buf].to_vec())
                 }
             }
@@ -479,21 +477,21 @@ pub fn encode_head_tail(mediates: &[Mediate]) -> Vec<Word> {
 
 macro_rules! impl_tuple {
     (
-        $first:ident,
+        $first_ty:ident,
     ) => {
-        impl<$first: MediateEncode> Encode for ($first,) {
+        impl<$first_ty: MediateEncode> Encode for ($first_ty,) {
             fn encode(&self) -> Vec<u8> {
-                encode_head_tail(&[<$first as MediateEncode>::encode(&self.0)]).iter().flat_map(|word| word.to_vec()).collect()
+                encode_head_tail(&[<$first_ty as MediateEncode>::encode(&self.0)]).iter().flat_map(|word| word.to_vec()).collect()
             }
         }
 
-        impl<$first: MediateEncode> Encode for $first {
+        impl<$first_ty: MediateEncode> Encode for $first_ty {
             fn encode(&self) -> Vec<u8> {
-                encode_head_tail(&[<$first as MediateEncode>::encode(&self)]).iter().flat_map(|word| word.to_vec()).collect()
+                encode_head_tail(&[<$first_ty as MediateEncode>::encode(&self)]).iter().flat_map(|word| word.to_vec()).collect()
             }
         }
 
-        impl<$first: MediateDecode> Decode for ($first,) {
+        impl<$first_ty: MediateDecode> Decode for ($first_ty,) {
             fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
                 let size = input.remaining_len();
                 if size & (WORD_SIZE - 1) > 0 {
@@ -504,14 +502,14 @@ macro_rules! impl_tuple {
                 let len = size / WORD_SIZE;
                 let mut buf = from_elem([0u8; WORD_SIZE], len);
                 input.read_words(buf.as_mut_slice())?;
-                match <$first as MediateDecode>::decode(buf.as_slice(), 0) {
+                match <$first_ty as MediateDecode>::decode(buf.as_slice(), 0) {
                     Ok(r) => Ok((r.value,)),
                     Err(e) => Err(e),
                 }
             }
         }
 
-        impl<$first: MediateDecode> Decode for $first {
+        impl<$first_ty: MediateDecode> Decode for $first_ty {
             fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
                 let size = input.remaining_len();
                 if size & (WORD_SIZE - 1) > 0 {
@@ -522,7 +520,7 @@ macro_rules! impl_tuple {
                 let len = size / WORD_SIZE;
                 let mut buf = from_elem([0u8; WORD_SIZE], len);
                 input.read_words(buf.as_mut_slice())?;
-                match <$first as MediateDecode>::decode(buf.as_slice(), 0) {
+                match <$first_ty as MediateDecode>::decode(buf.as_slice(), 0) {
                     Ok(r) => Ok(r.value),
                     Err(e) => Err(e),
                 }
@@ -530,24 +528,24 @@ macro_rules! impl_tuple {
         }
     };
     (
-        $first:ident, $( $rest: ident, )+
+        $first_ty:ident, $( $rest_ty:ident, )+
     ) => {
-        impl<$first: MediateEncode, $( $rest: MediateEncode),+> Encode for ($first, $( $rest ),+) {
+        impl<$first_ty: MediateEncode, $( $rest_ty: MediateEncode),+> Encode for ($first_ty, $( $rest_ty ),+) {
             fn encode(&self) -> Vec<u8> {
                 let mut mediates: Vec<Mediate> = Vec::new();
                 let (
-                    ref $first,
-                    $( ref $rest ),+
+                    ref $first_ty,
+                    $( ref $rest_ty ),+
                 ) = *self;
 
-                mediates.push($first.encode());
-                $( mediates.push($rest.encode()); )+
+                mediates.push($first_ty.encode());
+                $( mediates.push($rest_ty.encode()); )+
                 encode_head_tail(&mediates).iter().flat_map(|word| word.to_vec()).collect()
             }
         }
 
         #[allow(unused_assignments)]
-        impl<$first: MediateDecode, $( $rest: MediateDecode ),+> Decode for ($first, $( $rest ),+){
+        impl<$first_ty: MediateDecode, $( $rest_ty: MediateDecode ),+> Decode for ($first_ty, $( $rest_ty ),+){
             fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
                 let size = input.remaining_len();
                 debug_assert!(size % WORD_SIZE == 0);
@@ -557,30 +555,30 @@ macro_rules! impl_tuple {
                 input.read_words(buf.as_mut_slice())?;
                 let mut offset = 0;
 
-                let $first = match <$first>::decode(buf.as_slice(), offset) {
+                let $first_ty = match <$first_ty>::decode(buf.as_slice(), offset) {
                     Ok(r) => r,
                     Err(e) => return Err(e),
                 };
-                offset = $first.new_offset;
+                offset = $first_ty.new_offset;
 
                 $(
-                    let $rest = match <$rest>::decode(buf.as_slice(), offset) {
+                    let $rest_ty = match <$rest_ty>::decode(buf.as_slice(), offset) {
                         Ok(r) => r,
                         Err(e) => return Err(e),
                     };
-                    offset = $rest.new_offset;
+                    offset = $rest_ty.new_offset;
                 )+
 
                 Ok(
                     (
-                        $first.value,
-                        $( $rest.value ),+
+                        $first_ty.value,
+                        $( $rest_ty.value ),+
                     )
                 )
             }
         }
 
-        impl_tuple!( $( $rest, )+ );
+        impl_tuple!( $( $rest_ty, )+ );
     };
 }
 
@@ -616,5 +614,87 @@ impl Encode for ((),) {
 impl Decode for ((),) {
     fn decode<I: Input>(_: &mut I) -> Result<((),), Error> {
         Ok(((),))
+    }
+}
+
+use liquid_primitives::types::{i256, u256, Address, ADDRESS_LENGTH};
+
+impl IsDynamic for Address {}
+
+impl MediateEncode for Address {
+    fn encode(&self) -> Mediate {
+        let mut buf = [0x00; WORD_SIZE];
+        buf[(WORD_SIZE - ADDRESS_LENGTH)..].copy_from_slice(&self.0);
+        Mediate::Raw([buf].to_vec())
+    }
+}
+
+impl MediateDecode for Address {
+    fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error> {
+        let slice = peek(slices, offset)?;
+
+        if !slice[..(WORD_SIZE - ADDRESS_LENGTH)]
+            .iter()
+            .all(|x| *x == 0)
+        {
+            Err("Invalid address representation".into())
+        } else {
+            let new_offset = offset + 1;
+            let mut address = [0u8; ADDRESS_LENGTH];
+            address[..].copy_from_slice(&slice[(WORD_SIZE - ADDRESS_LENGTH)..]);
+            Ok(DecodeResult {
+                value: Self(address),
+                new_offset,
+            })
+        }
+    }
+}
+
+impl IsDynamic for i256 {}
+
+impl MediateEncode for i256 {
+    fn encode(&self) -> Mediate {
+        let be = self.0.to_signed_bytes_be();
+        let mut buf = match self.0.sign() {
+            num_bigint::Sign::Plus | num_bigint::Sign::NoSign => [0x00; WORD_SIZE],
+            _ => [0xff; WORD_SIZE],
+        };
+
+        buf[(WORD_SIZE - be.len())..].copy_from_slice(&be);
+        Mediate::Raw([buf].to_vec())
+    }
+}
+
+impl MediateDecode for i256 {
+    fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error> {
+        let slice = peek(slices, offset)?;
+        let value = num_bigint::BigInt::from_signed_bytes_be(slice);
+        Ok(DecodeResult {
+            value: i256(value),
+            new_offset: offset + 1,
+        })
+    }
+}
+
+impl IsDynamic for u256 {}
+
+impl MediateEncode for u256 {
+    fn encode(&self) -> Mediate {
+        let be = self.0.to_bytes_be();
+        let mut buf: Word = [0x00; WORD_SIZE];
+
+        buf[(WORD_SIZE - be.len())..].copy_from_slice(&be);
+        Mediate::Raw([buf].to_vec())
+    }
+}
+
+impl MediateDecode for u256 {
+    fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error> {
+        let slice = peek(slices, offset)?;
+        let value = u256::from_bytes_be(slice);
+        Ok(DecodeResult {
+            value,
+            new_offset: offset + 1,
+        })
     }
 }

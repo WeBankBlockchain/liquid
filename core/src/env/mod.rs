@@ -14,8 +14,7 @@ mod api;
 mod backend;
 mod calldata;
 pub mod engine;
-mod error;
-pub mod types;
+pub mod error;
 
 pub use self::{
     api::*,

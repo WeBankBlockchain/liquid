@@ -10,13 +10,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use liquid_core::env;
-use liquid_primitives::types::Address;
+mod address;
+mod hash;
+mod int256;
+mod uint256;
 
-pub struct EnvAccess;
+pub use address::{Address, ADDRESS_LENGTH};
+pub use hash::{Hash, HASH_LENGTH};
+pub use int256::i256;
+use liquid_prelude::vec::Vec;
+pub use uint256::u256;
 
-impl EnvAccess {
-    pub fn get_caller(self) -> Address {
-        env::get_caller()
-    }
+pub type Timestamp = u64;
+pub type BlockNumber = u64;
+
+pub trait Topics {
+    fn topics(&self) -> Vec<Hash>;
 }

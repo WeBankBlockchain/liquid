@@ -11,9 +11,9 @@
 // limitations under the License.
 
 use derive_more::From;
-use liquid_primitives::HashType;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::ToTokens;
+use std::collections::BTreeMap;
 use syn::{punctuated::Punctuated, spanned::Spanned, Token};
 
 /// The major, minor and patch version of the version parameter.
@@ -27,7 +27,6 @@ pub struct MetaVersion {
 /// The meta info for a contract.
 pub struct MetaInfo {
     pub liquid_version: MetaVersion,
-    pub hash_type: HashType,
 }
 
 /// Contract item.
@@ -80,7 +79,7 @@ impl Spanned for ItemStorage {
 
 /// An event struct.
 pub struct ItemEvent {
-    /// Outer attributes of the event,
+    /// Outer attributes of the event.
     pub attrs: Vec<syn::Attribute>,
     /// The `struct` token.
     pub struct_token: Token![struct],
@@ -103,7 +102,7 @@ impl Spanned for ItemEvent {
     }
 }
 
-/// The implementation of the storage struct
+/// The implementation of the storage struct.
 pub struct ItemImpl {
     /// Inner attributes.
     pub attrs: Vec<syn::Attribute>,
@@ -115,18 +114,20 @@ pub struct ItemImpl {
     pub brace_token: syn::token::Brace,
     /// Constructor and external functions.
     pub functions: Vec<Function>,
+    /// Constants defined for the contract.
+    pub constants: Vec<syn::ImplItemConst>,
 }
 
 pub struct Function {
-    /// The attributes of the function
+    /// The attributes of the function.
     pub attrs: Vec<syn::Attribute>,
-    /// The kind of the function
+    /// The kind of the function.
     pub kind: FunctionKind,
-    /// The signature of the function
+    /// The signature of the function.
     pub sig: Signature,
-    /// The body of the function
+    /// The body of the function.
     pub body: syn::Block,
-    /// The span of the function
+    /// The span of the function.
     pub span: Span,
 }
 
@@ -266,6 +267,59 @@ pub struct Contract {
     pub constructor: Function,
     /// External and normal functions of the contract.
     pub functions: Vec<Function>,
+    /// Constants defined for the contract.
+    pub constants: Vec<syn::ImplItemConst>,
     /// The non-liquid items.
     pub rust_items: Vec<RustItem>,
+}
+
+/// The user-defined data structure declared in an interface.
+pub struct ForeignStruct {
+    pub attrs: Vec<syn::Attribute>,
+    /// The `struct` token.
+    pub struct_token: Token![struct],
+    pub ident: Ident,
+    /// The named fields of the foreign struct.
+    pub fields: syn::FieldsNamed,
+    /// The span of the foreign struct.
+    pub span: Span,
+}
+
+impl Spanned for ForeignStruct {
+    fn span(&self) -> Span {
+        self.span
+    }
+}
+
+/// The method declared in an interface.
+pub struct ForeignFn {
+    pub attrs: Vec<syn::Attribute>,
+    /// The signature of the foreign method.
+    pub sig: Signature,
+    pub semi_token: Token![;],
+    pub fn_id: usize,
+    /// The span of the foreign method.
+    pub span: Span,
+}
+
+impl Spanned for ForeignFn {
+    fn span(&self) -> Span {
+        self.span
+    }
+}
+
+/// The interface with all required information.
+pub struct Interface {
+    /// The `mod` token.
+    pub mod_token: Token![mod],
+    /// The modules snake case identifier.
+    pub ident: Ident,
+    /// The user-defined data structures.
+    pub foreign_structs: Vec<ForeignStruct>,
+    /// The declarations of methods.
+    pub foreign_fns: BTreeMap<Ident, Vec<ForeignFn>>,
+    /// The use declarations to import other symbols.
+    pub imports: Vec<syn::ItemUse>,
+    /// The span of the interface.
+    pub span: Span,
 }

@@ -39,3 +39,7 @@ liquid-abi-gen = [
     "liquid_abi_gen",
     "liquid_core/liquid-abi-gen"
 ]
+gm = [
+    "liquid_lang_macro/gm",
+    "liquid_primitives/gm",
+]

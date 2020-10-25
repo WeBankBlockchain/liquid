@@ -12,6 +12,7 @@
 
 use liquid_macro::seq;
 use liquid_prelude::{string::String, vec::Vec};
+use liquid_primitives::types::{i256, u256, Address};
 
 /// The generic type parameter `T` is just used for evade orphan rule in Rust.
 pub trait SolTypeName<T = ()> {
@@ -56,11 +57,13 @@ mapping_type_to_sol!(u16, uint16);
 mapping_type_to_sol!(u32, uint32);
 mapping_type_to_sol!(u64, uint64);
 mapping_type_to_sol!(u128, uint128);
+mapping_type_to_sol!(u256, uint256);
 mapping_type_to_sol!(i8, int8);
 mapping_type_to_sol!(i16, int8);
 mapping_type_to_sol!(i32, int32);
 mapping_type_to_sol!(i64, int64);
 mapping_type_to_sol!(i128, int128);
+mapping_type_to_sol!(i256, int256);
 mapping_type_to_sol!(bool, bool);
 mapping_type_to_sol!(String, string);
 
@@ -159,4 +162,23 @@ pub const fn composite<const N: usize>(name: &[u8], params: &[u8]) -> [u8; N] {
 
     ret[i + j] = 0x29; // `)`
     ret
+}
+
+pub const ADDRESS_MAPPED_TYPE: &str = "address";
+pub const ADDRESS_ARRAY_MAPPED_TYPE: &str = "address[]";
+
+impl SolTypeName for Address {
+    const NAME: &'static [u8] = ADDRESS_MAPPED_TYPE.as_bytes();
+}
+
+impl SolTypeNameLen for Address {
+    const LEN: usize = ADDRESS_MAPPED_TYPE.len();
+}
+
+impl SolTypeName for Vec<Address> {
+    const NAME: &'static [u8] = ADDRESS_ARRAY_MAPPED_TYPE.as_bytes();
+}
+
+impl SolTypeNameLen for Vec<Address> {
+    const LEN: usize = ADDRESS_MAPPED_TYPE.len() + 2;
 }

@@ -12,7 +12,8 @@
 
 //! External C API to communicate with FISCO BCOS Wasm runtime
 
-use crate::env::{types::Hash, EnvError, Result};
+use crate::env::{EnvError, Result};
+use liquid_primitives::types::Hash;
 
 mod sys {
     #[link(wasm_import_module = "bcos")]

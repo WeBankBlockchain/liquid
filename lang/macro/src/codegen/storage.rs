@@ -29,6 +29,7 @@ impl<'a> GenerateCode for Storage<'a> {
         let span = self.contract.storage.span();
         let storage_struct = self.generate_storage_struct();
         let function_impls = self.generate_functions();
+        let constants = self.generate_constants();
 
         quote_spanned! { span =>
             mod __liquid_storage {
@@ -42,6 +43,7 @@ impl<'a> GenerateCode for Storage<'a> {
 
             const _: () = {
                 #function_impls
+                #constants
             };
         }
     }
@@ -164,11 +166,21 @@ impl<'a> Storage<'a> {
             .iter()
             .map(|func| self.generate_function(func));
 
-        quote_spanned!( span =>
+        quote_spanned!(span =>
             impl Storage {
                 #constructor
                 #(#functions)*
             }
         )
+    }
+
+    fn generate_constants(&self) -> TokenStream2 {
+        let constants = &self.contract.constants;
+
+        quote! {
+            impl Storage {
+                #(#constants)*
+            }
+        }
     }
 }

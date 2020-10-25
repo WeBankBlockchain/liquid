@@ -1,0 +1,7 @@
+error: generic structs are not supported
+ --> $DIR/05-generic.rs:5:1
+  |
+5 | / pub struct MyStruct<T> {
+6 | |     a: T,
+7 | | }
+  | |_^

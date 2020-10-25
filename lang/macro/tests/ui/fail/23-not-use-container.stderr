@@ -1,5 +1,5 @@
 error[E0277]: the trait bound `bool: You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage` is not satisfied
- --> $DIR/23-non-storage-fields.rs:3:1
+ --> $DIR/23-not-use-container.rs:3:1
   |
 3 | #[liquid::contract(version = "0.1.0")]
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage` is not implemented for `bool`

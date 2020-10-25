@@ -22,4 +22,5 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/02-enum.rs");
     t.compile_fail("tests/ui/fail/03-union.rs");
     t.compile_fail("tests/ui/fail/04-not-public.rs");
+    t.compile_fail("tests/ui/fail/05-generic.rs");
 }

@@ -26,5 +26,5 @@ mod tests;
 pub use dispatch_error::{DispatchError, DispatchResult, DispatchRetInfo};
 pub use env_access::EnvAccess;
 pub use liquid_lang_derive::{InOut, State};
-pub use liquid_lang_macro::contract;
+pub use liquid_lang_macro::{contract, interface};
 pub use traits::*;

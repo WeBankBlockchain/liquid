@@ -1,4 +1,4 @@
-error: `async` is not supported for functions in liquid contract
+error: `async` is not supported for functions in contract
   --> $DIR/13-async-function.rs:12:13
    |
 12 |         pub async fn noop(&self) {}

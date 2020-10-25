@@ -11,6 +11,7 @@
 // limitations under the License.
 
 use proc_macro2::{Ident, TokenStream as TokenStream2, TokenTree};
+use std::string::ToString;
 use syn::Error;
 
 pub fn check_idents<P, E>(input: TokenStream2, pred: P, or_err: E) -> Result<(), Error>
@@ -33,4 +34,15 @@ where
     }
 
     Ok(())
+}
+
+pub fn calculate_fn_id<T>(ident: &T) -> usize
+where
+    T: ToString,
+{
+    let ident_hash = liquid_primitives::hash::hash(ident.to_string().as_bytes());
+    // In declaration of array where the `fn_id` is used, the length of array must be an `usize` integer.
+    // **DO NOT** attempt to change the return type of this function.
+    u32::from_be_bytes([ident_hash[0], ident_hash[1], ident_hash[2], ident_hash[3]])
+        as usize
 }

@@ -11,10 +11,8 @@
 // limitations under the License.
 
 use super::{EnvInstance, Event, ExecContext};
-use crate::env::{
-    engine::OnInstance,
-    types::{Address, ADDRESS_LENGTH},
-};
+use crate::env::engine::OnInstance;
+use liquid_primitives::types::{Address, ADDRESS_LENGTH};
 
 /// Pushes a contract execution context.
 ///

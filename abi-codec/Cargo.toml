@@ -8,9 +8,11 @@ edition = "2018"
 
 [dependencies]
 paste = "0.1.17"
+num-bigint = { package = "num-bigint", version = "0.3.0", default-features = false }
 
 liquid_prelude = { version = "0.1.0", path = "../prelude", default-features = false }
 liquid_macro = { version = "0.1.0", path = "../macro", default-features = false }
+liquid_primitives = { version = "0.1.0", path = "../primitives", default-features = false }
 
 [dev-dependencies]
 hex-literal = "0.2.1"
@@ -20,4 +22,5 @@ default = ["std"]
 std = [
     "liquid_prelude/std",
     "liquid_macro/std",
+    "liquid_primitives/std",
 ]

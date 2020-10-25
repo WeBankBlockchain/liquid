@@ -14,16 +14,18 @@
 fn compile_tests() {
     let t = trybuild::TestCases::new();
     t.pass("tests/ui/pass/01-noop-contract.rs");
-    t.pass("tests/ui/pass/02-hello-world-contract.rs");
-    t.pass("tests/ui/pass/03-incrementer-contract.rs");
+    t.pass("tests/ui/pass/02-hello-world.rs");
+    t.pass("tests/ui/pass/03-incrementer.rs");
     t.pass("tests/ui/pass/04-type-alias.rs");
     t.pass("tests/ui/pass/05-different-functions-same-inputs.rs");
     t.pass("tests/ui/pass/06-multiple-returns.rs");
     t.pass("tests/ui/pass/07-getter.rs");
     t.pass("tests/ui/pass/08-unit-return.rs");
     t.pass("tests/ui/pass/09-event.rs");
-    t.pass("tests/ui/pass/10-sm3-mode.rs");
-    t.pass("tests/ui/pass/11-empty-event.rs");
+    t.pass("tests/ui/pass/10-empty-event.rs");
+    t.pass("tests/ui/pass/11-u256-i256.rs");
+    t.pass("tests/ui/pass/12-multiple-impls.rs");
+    t.pass("tests/ui/pass/13-interface.rs");
     t.compile_fail("tests/ui/fail/01-constructor-returns.rs");
     t.compile_fail("tests/ui/fail/02-missing-constructor.rs");
     t.compile_fail("tests/ui/fail/03-multiple-constructors.rs");
@@ -46,7 +48,7 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/20-invalid-constructor-parameter.rs");
     t.compile_fail("tests/ui/fail/21-generic-storage.rs");
     t.compile_fail("tests/ui/fail/22-missing-liquid-methods-tag.rs");
-    t.compile_fail("tests/ui/fail/23-non-storage-fields.rs");
+    t.compile_fail("tests/ui/fail/23-not-use-container.rs");
     t.compile_fail("tests/ui/fail/24-vec-tuple-return.rs");
     t.compile_fail("tests/ui/fail/25-vec-unit-return.rs");
     t.compile_fail("tests/ui/fail/26-tuple-unit-return.rs");
@@ -54,5 +56,4 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/28-invalid-event-data-type.rs");
     t.compile_fail("tests/ui/fail/29-invalid-event-topic-type.rs");
     t.compile_fail("tests/ui/fail/30-invalid-meta-info-key.rs");
-    t.compile_fail("tests/ui/fail/31-invalid-meta-info-value.rs");
 }

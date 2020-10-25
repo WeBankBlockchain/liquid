@@ -124,3 +124,14 @@ macro_rules! impl_for_tuple {
 seq!(N in 0..16 {
     impl_for_tuple!(#(T#N,)*);
 });
+
+use liquid_primitives::types::Address;
+use liquid_ty_mapping::ADDRESS_MAPPED_TYPE;
+
+impl GenerateComponents for Address {}
+
+impl TyName for Address {
+    fn ty_name() -> String {
+        String::from(ADDRESS_MAPPED_TYPE)
+    }
+}

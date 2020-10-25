@@ -10,8 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::env::types::{Hash, Topics};
 use liquid_abi_codec::{Decode, Encode};
+use liquid_primitives::types::{Hash, Topics};
 
 #[derive(Clone)]
 pub struct Event {

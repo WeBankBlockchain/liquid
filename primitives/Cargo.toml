@@ -7,6 +7,13 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cfg-if = "0.1.10"
+num = { package = "num", version = "0.3.0", default-features = false, features = ["alloc"] }
+num-derive = "0.3"
+num-traits = { package = "num-traits", version = "0.2", default-features = false }
+lazy_static = { package = "lazy_static", version = "1.4.0", default-features = false, features = ["spin_no_std"] }
+scale = { package = "parity-scale-codec", version = "1.3.1", default-features = false, features = ["derive", "full"] }
+
 liquid_prelude = { version = "0.1.0", path = "../prelude/", default-features = false }
 
 [features]
@@ -14,3 +21,4 @@ default = ["std"]
 std = [
     "liquid_prelude/std",
 ]
+gm = []

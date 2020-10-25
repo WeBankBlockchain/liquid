@@ -1,4 +1,4 @@
-error: specifying ABI is not supported for functions in liquid contract
+error: specifying ABI is not supported for functions in contract
   --> $DIR/14-abi-function.rs:12:13
    |
 12 |         pub extern "C" fn noop(&self) {}

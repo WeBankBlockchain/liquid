@@ -1,4 +1,4 @@
-error: `&mut self` is mandatory for constructor of liquid contract
+error: `&mut self` is mandatory for constructor of contract
   --> $DIR/06-constructor-no-mut-ref.rs:10:20
    |
 10 |         pub fn new(&self) {}

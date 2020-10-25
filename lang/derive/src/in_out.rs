@@ -25,7 +25,6 @@ pub fn generate(input: TokenStream2) -> TokenStream2 {
 
 fn generate_ty_mapping(input_tys: &[&syn::Type]) -> TokenStream2 {
     let mut expanded = quote! {
-        #[allow(non_camel_case_types)]
         struct TyMappingHelper<T> {
             marker: core::marker::PhantomData<fn() -> T>,
         }

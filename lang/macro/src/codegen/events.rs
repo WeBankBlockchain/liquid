@@ -15,7 +15,6 @@ use crate::{
     ir::{utils, Contract},
 };
 use derive_more::From;
-use liquid_primitives::HashType;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, quote_spanned};
 
@@ -99,8 +98,8 @@ impl<'a> Events<'a> {
                 }
             )*
 
-            impl liquid_core::env::types::Topics for Event {
-                fn topics(&self) -> liquid_prelude::vec::Vec<liquid_core::env::types::Hash> {
+            impl liquid_primitives::types::Topics for Event {
+                fn topics(&self) -> liquid_prelude::vec::Vec<liquid_primitives::types::Hash> {
                     match self {
                         #(
                             Event::#event_idents(event) => event.topics(),
@@ -186,45 +185,26 @@ impl<'a> Events<'a> {
                         <EventSigHelper<#event_ident, (#(#event_field_tys,)*)> as liquid_ty_mapping::SolTypeName<_>>::NAME);
             };
 
-            macro_rules! hash_by {
-                ($t:ident) => {
-                    (
-                        quote! {
-                            {
-                                #composite_sig
-                                liquid_primitives::hash::$t(&SIG)
-                            }
-                        },
-                        {
-                            let hash_type = match self.contract.meta_info.hash_type {
-                                HashType::Keccak256 => quote! { liquid_primitives::HashType::Keccak256 },
-                                HashType::SM3 => quote! { liquid_primitives::HashType::SM3 },
-                            };
-
-                            let calculate_topics = item_event.indexed_fields.iter().map(|index| {
-                                let ident = &event_fields[*index].ident;
-                                let ty = &event_fields[*index].ty;
-                                quote! {
-                                    <#ty as liquid_lang::You_Should_Use_An_Valid_Event_Topic_Type>::topic(&self.#ident, #hash_type)
-                                }
-                            });
-
-                            quote! {
-                                #(
-                                    #calculate_topics,
-                                )*
-                            }
-                        }
-                    )
-                };
-            }
-
-            let (sig_hash, topic_hash) = match self.contract.meta_info.hash_type {
-                HashType::Keccak256 => {
-                    hash_by!(keccak256)
+            let sig_hash = quote! {
+                {
+                    #composite_sig
+                    liquid_primitives::hash::hash(&SIG)
                 }
-                HashType::SM3 => {
-                    hash_by!(sm3)
+            };
+
+            let topic_hash = {
+                let calculate_topics = item_event.indexed_fields.iter().map(|index| {
+                    let ident = &event_fields[*index].ident;
+                    let ty = &event_fields[*index].ty;
+                    quote! {
+                        <#ty as liquid_lang::You_Should_Use_An_Valid_Event_Topic_Type>::topic(&self.#ident)
+                    }
+                });
+
+                quote! {
+                    #(
+                        #calculate_topics,
+                    )*
                 }
             };
 
@@ -239,8 +219,8 @@ impl<'a> Events<'a> {
             quote! {
                 #sig_helper
 
-                impl liquid_core::env::types::Topics for #event_ident {
-                    fn topics(&self) -> liquid_prelude::vec::Vec<liquid_core::env::types::Hash> {
+                impl liquid_primitives::types::Topics for #event_ident {
+                    fn topics(&self) -> liquid_prelude::vec::Vec<liquid_primitives::types::Hash> {
                         [#sig_hash.into(), #topic_hash].to_vec()
                     }
                 }

@@ -13,10 +13,11 @@
 mod abi_gen;
 mod contract;
 mod dispatch;
-mod env_types;
 mod events;
+mod interface;
 mod storage;
 mod testable;
+mod utils;
 
 use proc_macro2::TokenStream as TokenStream2;
 

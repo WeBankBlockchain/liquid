@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::env::types::Address;
+use liquid_primitives::types::Address;
 
 pub struct ExecContext {
     /// The caller of the contract execution.

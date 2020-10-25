@@ -9,10 +9,12 @@ edition = "2018"
 [dependencies]
 liquid_prelude = { version = "0.1.0", path = "../prelude", default-features = false }
 liquid_macro = { version = "0.1.0", path = "../macro", default-features = false }
+liquid_primitives = { version = "0.1.0", path = "../primitives", default-features = false }
 
 [features]
 default = ["std"]
 std = [
     "liquid_prelude/std",
     "liquid_macro/std",
+    "liquid_primitives/std",
 ]

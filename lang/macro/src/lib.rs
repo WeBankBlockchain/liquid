@@ -17,10 +17,16 @@ mod error;
 
 mod codegen;
 mod contract;
+mod interface;
 mod ir;
-mod lint;
+mod utils;
 
 use proc_macro::TokenStream;
+
+#[proc_macro_attribute]
+pub fn interface(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    interface::generate(item.into()).into()
+}
 
 #[proc_macro_attribute]
 pub fn contract(attr: TokenStream, item: TokenStream) -> TokenStream {

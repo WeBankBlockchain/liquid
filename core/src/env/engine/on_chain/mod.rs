@@ -15,11 +15,9 @@ pub mod ext;
 
 use self::buffer::StaticBuffer;
 use super::OnInstance;
-use crate::env::{
-    types::{Address, BlockNumber, Timestamp, Topics, ADDRESS_LENGTH},
-    CallData, CallMode, Env, EnvError, Result,
-};
+use crate::env::{CallData, CallMode, Env, EnvError, Result};
 use liquid_abi_codec::Decode;
+use liquid_primitives::types::{Address, BlockNumber, Timestamp, Topics, ADDRESS_LENGTH};
 
 /// The on-chain environment
 pub struct EnvInstance {
@@ -163,15 +161,13 @@ impl Env for EnvInstance {
         ext::get_block_number() as BlockNumber
     }
 
-    fn call<Data, R>(&mut self, address: Address, data: &Data) -> Result<R>
+    fn call<R>(&mut self, address: &Address, data: &[u8]) -> Result<R>
     where
-        Data: liquid_abi_codec::Encode,
         R: liquid_abi_codec::Decode,
     {
-        let encoded = data.encode();
-        let status = ext::call(address.inner(), &encoded);
+        let status = ext::call(&address.0, data);
         if status != 0 {
-            return Err(EnvError::FailToCallRemoteContract);
+            return Err(EnvError::FailToCallForeignContract);
         }
 
         if core::mem::size_of::<R>() == 0 {
