@@ -796,14 +796,6 @@ impl TryFrom<&syn::ForeignItem> for ir::ForeignFn {
                 let fn_id = lang_utils::calculate_fn_id(&sig.ident);
                 let span = foreign_fn.span();
 
-                if sig.ident == "new" {
-                    bail!(
-                        foreign_item,
-                        "declaration of contract constructor is not allowed for \
-                         `extern` block in interface"
-                    )
-                }
-
                 Ok(Self {
                     attrs: foreign_fn.attrs.clone(),
                     sig,
