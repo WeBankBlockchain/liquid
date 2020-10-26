@@ -96,10 +96,10 @@ impl TryFrom<syn::Attribute> for ir::Marker {
     }
 }
 
-impl TryFrom<(ir::Params, syn::ItemMod)> for ir::Contract {
+impl TryFrom<(ir::ContractParams, syn::ItemMod)> for ir::Contract {
     type Error = Error;
 
-    fn try_from((params, item_mod): (ir::Params, syn::ItemMod)) -> Result<Self> {
+    fn try_from((params, item_mod): (ir::ContractParams, syn::ItemMod)) -> Result<Self> {
         if item_mod.vis != syn::Visibility::Inherited {
             bail!(
                 item_mod.vis,
@@ -176,7 +176,7 @@ impl TryFrom<(ir::Params, syn::ItemMod)> for ir::Contract {
         }
 
         let constructor = functions.remove(constructor.unwrap());
-        let meta_info = ir::MetaInfo::try_from(params)?;
+        let meta_info = ir::ContractMetaInfo::try_from(params)?;
         Ok(Self {
             mod_token: item_mod.mod_token,
             ident: item_mod.ident,
@@ -191,10 +191,10 @@ impl TryFrom<(ir::Params, syn::ItemMod)> for ir::Contract {
     }
 }
 
-impl TryFrom<ir::Params> for ir::MetaInfo {
+impl TryFrom<ir::ContractParams> for ir::ContractMetaInfo {
     type Error = Error;
 
-    fn try_from(params: ir::Params) -> Result<Self> {
+    fn try_from(params: ir::ContractParams) -> Result<Self> {
         let mut unique_param_names = HashSet::new();
         let mut liquid_version = None;
         for param in params.params.iter() {
@@ -204,7 +204,7 @@ impl TryFrom<ir::Params> for ir::MetaInfo {
             }
 
             match param {
-                ir::MetaParam::Version(param) => {
+                ir::ContractMetaParam::Version(param) => {
                     liquid_version = Some(param.version.clone())
                 }
             }
@@ -219,6 +219,45 @@ impl TryFrom<ir::Params> for ir::MetaInfo {
         };
 
         Ok(Self { liquid_version })
+    }
+}
+
+impl TryFrom<ir::InterfaceParams> for ir::InterfaceMetaInfo {
+    type Error = Error;
+
+    fn try_from(params: ir::InterfaceParams) -> Result<Self> {
+        let mut unique_param_names = HashSet::new();
+        let mut interface_name = None;
+        for param in params.params.iter() {
+            let name = param.ident().to_string();
+            if !unique_param_names.insert(name.clone()) {
+                bail_span!(param.span(), "duplicate parameter encountered: {}", name)
+            }
+
+            match param {
+                ir::InterfaceMetaParam::Name(param_name) => {
+                    if let ir::NameValue::Name(name) = &param_name.value {
+                        // The parsing of interface meta info ensures that
+                        // if `name` is not specified as `auto` then it must
+                        // be a non-empty string.
+                        interface_name = Some(name.clone());
+                    } else {
+                        // Represent that interface name is specified as `auto`.
+                        interface_name = Some(String::new());
+                    }
+                }
+            }
+        }
+
+        let interface_name = match interface_name {
+            None => bail_span!(
+                params.span(),
+                "expected `name` parameter at `#[liquid::interface(..)]`",
+            ),
+            Some(interface_name) => interface_name,
+        };
+
+        Ok(Self { interface_name })
     }
 }
 
@@ -812,10 +851,10 @@ impl TryFrom<&syn::ForeignItem> for ir::ForeignFn {
     }
 }
 
-impl TryFrom<syn::ItemMod> for ir::Interface {
+impl TryFrom<(ir::InterfaceParams, syn::ItemMod)> for ir::Interface {
     type Error = Error;
 
-    fn try_from(item_mod: syn::ItemMod) -> Result<Self> {
+    fn try_from((params, item_mod): (ir::InterfaceParams, syn::ItemMod)) -> Result<Self> {
         if item_mod.vis != syn::Visibility::Inherited {
             bail!(
                 item_mod.vis,
@@ -888,9 +927,11 @@ impl TryFrom<syn::ItemMod> for ir::Interface {
             }
         }
 
+        let meta_info = ir::InterfaceMetaInfo::try_from(params)?;
         Ok(Self {
             mod_token: item_mod.mod_token,
             ident: item_mod.ident,
+            meta_info,
             foreign_structs,
             foreign_fns,
             imports,

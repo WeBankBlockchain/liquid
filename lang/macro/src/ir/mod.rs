@@ -16,10 +16,13 @@ mod syn_def;
 pub mod utils;
 
 pub use self::{
-    params::{MetaParam, Params},
+    params::{
+        ContractMetaParam, ContractParams, InterfaceMetaParam, InterfaceParams,
+        NameValue, ParamName,
+    },
     syn_def::{
-        Contract, FnArg, ForeignFn, ForeignStruct, Function, FunctionKind, IdentType,
-        Interface, Item, ItemEvent, ItemImpl, ItemStorage, LiquidItem, Marker, MetaInfo,
-        MetaVersion, RustItem, Signature,
+        Contract, ContractMetaInfo, FnArg, ForeignFn, ForeignStruct, Function,
+        FunctionKind, IdentType, Interface, InterfaceMetaInfo, Item, ItemEvent, ItemImpl,
+        ItemStorage, LiquidItem, Marker, MetaVersion, RustItem, Signature,
     },
 };

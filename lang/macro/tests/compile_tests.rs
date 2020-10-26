@@ -26,6 +26,7 @@ fn compile_tests() {
     t.pass("tests/ui/pass/11-u256-i256.rs");
     t.pass("tests/ui/pass/12-multiple-impls.rs");
     t.pass("tests/ui/pass/13-interface.rs");
+    t.pass("tests/ui/pass/14-interface-name-alias.rs");
     t.compile_fail("tests/ui/fail/01-constructor-returns.rs");
     t.compile_fail("tests/ui/fail/02-missing-constructor.rs");
     t.compile_fail("tests/ui/fail/03-multiple-constructors.rs");
@@ -55,5 +56,11 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/27-too-many-topics.rs");
     t.compile_fail("tests/ui/fail/28-invalid-event-data-type.rs");
     t.compile_fail("tests/ui/fail/29-invalid-event-topic-type.rs");
-    t.compile_fail("tests/ui/fail/30-invalid-meta-info-key.rs");
+    t.compile_fail("tests/ui/fail/30-invalid-meta-info-key-1.rs");
+    t.compile_fail("tests/ui/fail/31-invalid-meta-info-key-2.rs");
+    t.compile_fail("tests/ui/fail/32-no-interface-name.rs");
+    t.compile_fail("tests/ui/fail/33-empty-interface-name.rs");
+    t.compile_fail("tests/ui/fail/34-invalid-interface-name-1.rs");
+    t.compile_fail("tests/ui/fail/35-invalid-interface-name-2.rs");
+    t.compile_fail("tests/ui/fail/36-invalid-interface-name-3.rs")
 }

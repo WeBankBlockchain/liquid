@@ -1,0 +1,5 @@
+error: invalid interface name: `fn`
+ --> $DIR/35-invalid-interface-name-2.rs:3:28
+  |
+3 | #[liquid::interface(name = "fn")]
+  |                            ^^^^

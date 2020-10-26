@@ -21,45 +21,52 @@ use syn::{
     LitStr, Result, Token,
 };
 
-/// Parameters given to liquid's `#[contract(..)]` attribute.
-///
-/// # Example
-///
-/// ```no_compile
-/// #[liquid::contract(version = "0.1.0")]
-/// ```
-pub struct Params {
-    pub params: Punctuated<MetaParam, Token![,]>,
-}
+macro_rules! params {
+    ($t:ident) => {
+        paste::item! {
+            pub struct [<$t Params>] {
+                pub params: Punctuated< [<$t MetaParam>], Token![,]>,
+            }
 
-impl Parse for Params {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let params = Punctuated::parse_terminated(input)?;
-        Ok(Self { params })
-    }
-}
-
-impl Spanned for Params {
-    fn span(&self) -> Span {
-        if self.params.is_empty() {
-            Span::call_site()
-        } else {
-            self.params
-                .first()
-                .unwrap()
-                .span()
-                .join(self.params.last().unwrap().span())
-                .expect("params in `self` must be within the same file")
+            impl Parse for [<$t Params>] {
+                fn parse(input: ParseStream) -> Result<Self> {
+                    let params = Punctuated::parse_terminated(input)?;
+                    Ok(Self { params })
+                }
+            }
+            impl Spanned for [<$t Params>] {
+                fn span(&self) -> Span {
+                    if self.params.is_empty() {
+                        Span::call_site()
+                    } else {
+                        self.params
+                            .first()
+                            .unwrap()
+                            .span()
+                            .join(self.params.last().unwrap().span())
+                            .expect("params in `self` must be within the same file")
+                    }
+                }
+            }
         }
-    }
+    };
 }
+
+// Parameters given to liquid's `#[contract(..)]` attribute.
+//
+// # Example
+//
+// ```no_compile
+// #[liquid::contract(version = "0.1.0")]
+// ```
+params!(Contract);
 
 #[derive(From)]
-pub enum MetaParam {
+pub enum ContractMetaParam {
     Version(ParamVersion),
 }
 
-impl Parse for MetaParam {
+impl Parse for ContractMetaParam {
     fn parse(input: ParseStream) -> Result<Self> {
         let ident = input.fork().parse::<Ident>()?;
         match ident.to_string().as_str() {
@@ -73,18 +80,18 @@ impl Parse for MetaParam {
     }
 }
 
-impl Spanned for MetaParam {
+impl Spanned for ContractMetaParam {
     fn span(&self) -> Span {
         match self {
-            MetaParam::Version(param) => param.span(),
+            ContractMetaParam::Version(param) => param.span(),
         }
     }
 }
 
-impl MetaParam {
+impl ContractMetaParam {
     pub fn ident(&self) -> &Ident {
         match &self {
-            MetaParam::Version(param) => &param.ident,
+            ContractMetaParam::Version(param) => &param.ident,
         }
     }
 }
@@ -131,5 +138,126 @@ impl Spanned for ParamVersion {
             .span()
             .join(self.value.span())
             .expect("both spans are in the same file AND we are using nightly Rust")
+    }
+}
+
+// Parameters given to liquid's `#[interface(..)]` attribute.
+//
+// # Example
+//
+// ```no_compile
+// #[liquid::interface(name = auto)]
+// ```
+params!(Interface);
+
+#[derive(From)]
+pub enum InterfaceMetaParam {
+    Name(ParamName),
+}
+
+impl Parse for InterfaceMetaParam {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let ident = input.fork().parse::<Ident>()?;
+        match ident.to_string().as_str() {
+            "name" => input.parse::<ParamName>().map(Into::into),
+            unknown => Err(format_err_span!(
+                ident.span(),
+                "unknown parameter: {}",
+                unknown
+            )),
+        }
+    }
+}
+
+impl Spanned for InterfaceMetaParam {
+    fn span(&self) -> Span {
+        match self {
+            InterfaceMetaParam::Name(param) => param.span(),
+        }
+    }
+}
+
+impl InterfaceMetaParam {
+    pub fn ident(&self) -> &Ident {
+        match &self {
+            InterfaceMetaParam::Name(param) => &param.ident,
+        }
+    }
+}
+
+pub enum NameValue {
+    Auto,
+    Name(String),
+}
+
+pub struct ParamName {
+    /// The `name` identifier
+    pub ident: Ident,
+    /// The `=` token
+    pub eq_token: Token![=],
+    /// The name specified via user, maybe `auto` or a literal string.
+    pub value: NameValue,
+    /// The span of `name` parameter.
+    pub span: Span,
+}
+
+impl Parse for ParamName {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let ident = input.parse::<Ident>()?;
+        if ident != "name" {
+            bail!(ident, "invalid identifier for meta name info");
+        }
+        let span = ident.span();
+        let eq_token = input.parse::<Token![=]>()?;
+
+        let value = input.parse::<LitStr>();
+        let value = if let Ok(lit_str) = value {
+            let name = lit_str.value();
+
+            if name.starts_with("r#") {
+                return Err(format_err_span!(
+                    lit_str.span(),
+                    "invalid interface name: `{}`",
+                    name,
+                ));
+            }
+
+            if syn::parse_str::<Ident>(&name).is_err() {
+                return Err(format_err_span!(
+                    lit_str.span(),
+                    "invalid interface name: `{}`",
+                    name,
+                ));
+            }
+
+            span.join(lit_str.span())
+                .expect("both spans are in the same file AND we are using nightly Rust");
+            NameValue::Name(name)
+        } else {
+            let value: Ident = input.parse()?;
+            if value != "auto" {
+                bail!(
+                    ident,
+                    "invalid interface name, please specified meta name info as `auto` \
+                     or a literal string`"
+                );
+            }
+            span.join(ident.span())
+                .expect("both spans are in the same file AND we are using nightly Rust");
+            NameValue::Auto
+        };
+
+        Ok(Self {
+            ident,
+            eq_token,
+            value,
+            span,
+        })
+    }
+}
+
+impl Spanned for ParamName {
+    fn span(&self) -> Span {
+        self.span
     }
 }

@@ -30,7 +30,11 @@ impl GenerateCode for Interface {
         let types = codegen_utils::generate_primitive_types();
 
         let foreign_structs = self.generate_foreign_structs();
-        let foreign_contract_ident = Ident::new(&ident.to_string().to_camel_case(), span);
+        let foreign_contract_ident = if self.meta_info.interface_name.is_empty() {
+            Ident::new(&ident.to_string().to_camel_case(), span)
+        } else {
+            Ident::new(&self.meta_info.interface_name, span)
+        };
         let foreign_contract = self.generate_foreign_contract(&foreign_contract_ident);
 
         quote! {

@@ -2,7 +2,7 @@
 
 use liquid_lang as liquid;
 
-#[liquid::interface]
+#[liquid::interface(name = auto)]
 mod entry {
     extern "liquid" {
         fn getInt(key: String) -> i256;
@@ -17,7 +17,7 @@ mod entry {
     }
 }
 
-#[liquid::interface]
+#[liquid::interface(name = auto)]
 mod kv_table {
     use super::entry::*;
 
@@ -28,7 +28,7 @@ mod kv_table {
     }
 }
 
-#[liquid::interface]
+#[liquid::interface(name = auto)]
 mod kv_table_factory {
     use super::kv_table::*;
 

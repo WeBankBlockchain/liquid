@@ -34,7 +34,7 @@ fn generate_impl(attr: TokenStream2, input: TokenStream2) -> Result<TokenStream2
         },
     )?;
 
-    let params = syn::parse2::<ir::Params>(attr)?;
+    let params = syn::parse2::<ir::ContractParams>(attr)?;
     let item_mod = syn::parse2::<syn::ItemMod>(input)?;
     let liquid_ir = ir::Contract::try_from((params, item_mod))?;
     Ok(liquid_ir.generate_code())

@@ -24,8 +24,8 @@ mod utils;
 use proc_macro::TokenStream;
 
 #[proc_macro_attribute]
-pub fn interface(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    interface::generate(item.into()).into()
+pub fn interface(attr: TokenStream, item: TokenStream) -> TokenStream {
+    interface::generate(attr.into(), item.into()).into()
 }
 
 #[proc_macro_attribute]

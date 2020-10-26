@@ -15,6 +15,7 @@ derive_more = "0.99.9"
 either = { version = "1.5.3", default-features = false }
 itertools = { version = "0.9.0", default-features = false }
 heck = "0.3.1"
+paste = "0.1.17"
 
 liquid_prelude = { version = "0.1.0", path = "../../prelude", default-features = false }
 liquid_primitives = { version = "0.1.0", path = "../../primitives", default-features = false }

@@ -1,0 +1,5 @@
+error: unknown parameter: invalid_key
+ --> $DIR/31-invalid-meta-info-key-2.rs:3:34
+  |
+3 | #[liquid::interface(name = auto, invalid_key = "whatever")]
+  |                                  ^^^^^^^^^^^

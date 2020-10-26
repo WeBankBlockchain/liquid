@@ -15,14 +15,14 @@ use core::convert::TryFrom;
 use proc_macro2::TokenStream as TokenStream2;
 use syn::Result;
 
-pub fn generate(input: TokenStream2) -> TokenStream2 {
-    match generate_impl(input) {
+pub fn generate(attr: TokenStream2, input: TokenStream2) -> TokenStream2 {
+    match generate_impl(attr, input) {
         Ok(tokens) => tokens,
         Err(err) => err.to_compile_error(),
     }
 }
 
-fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
+fn generate_impl(attr: TokenStream2, input: TokenStream2) -> Result<TokenStream2> {
     check_idents(
         input.clone(),
         move |ident| !ident.to_string().starts_with("__liquid"),
@@ -34,7 +34,8 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
         },
     )?;
 
+    let params = syn::parse2::<ir::InterfaceParams>(attr)?;
     let item_mod = syn::parse2::<syn::ItemMod>(input)?;
-    let liquid_ir = ir::Interface::try_from(item_mod)?;
+    let liquid_ir = ir::Interface::try_from((params, item_mod))?;
     Ok(liquid_ir.generate_code())
 }

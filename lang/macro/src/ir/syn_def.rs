@@ -25,8 +25,13 @@ pub struct MetaVersion {
 }
 
 /// The meta info for a contract.
-pub struct MetaInfo {
+pub struct ContractMetaInfo {
     pub liquid_version: MetaVersion,
+}
+
+/// The meta info for an interface.
+pub struct InterfaceMetaInfo {
+    pub interface_name: String,
 }
 
 /// Contract item.
@@ -257,8 +262,8 @@ pub struct Contract {
     pub mod_token: Token![mod],
     /// The modules snake case identifier.
     pub ident: Ident,
-    /// Special liquid meta attributes.
-    pub meta_info: MetaInfo,
+    /// Special contract meta attributes.
+    pub meta_info: ContractMetaInfo,
     /// The contract storage.
     pub storage: ItemStorage,
     /// The contract events.
@@ -296,7 +301,9 @@ pub struct ForeignFn {
     pub attrs: Vec<syn::Attribute>,
     /// The signature of the foreign method.
     pub sig: Signature,
+    /// The semicolon token.
     pub semi_token: Token![;],
+    /// The unique identifier of the foreign method.
     pub fn_id: usize,
     /// The span of the foreign method.
     pub span: Span,
@@ -314,6 +321,8 @@ pub struct Interface {
     pub mod_token: Token![mod],
     /// The modules snake case identifier.
     pub ident: Ident,
+    /// Special interface meta attributes.
+    pub meta_info: InterfaceMetaInfo,
     /// The user-defined data structures.
     pub foreign_structs: Vec<ForeignStruct>,
     /// The declarations of methods.

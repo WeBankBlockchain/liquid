@@ -1,0 +1,5 @@
+error: invalid interface name: ``
+ --> $DIR/33-empty-interface-name.rs:3:28
+  |
+3 | #[liquid::interface(name = "")]
+  |                            ^^
