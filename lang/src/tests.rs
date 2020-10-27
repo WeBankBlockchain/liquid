@@ -13,7 +13,7 @@
 use crate as liquid_lang;
 use crate::InOut;
 use hex_literal::hex;
-use liquid_abi_codec::{Decode, Encode, IsDynamic};
+use liquid_abi_codec::{Decode, Encode, TypeInfo};
 use liquid_ty_mapping::{SolTypeName, SolTypeNameLen};
 use pretty_assertions::assert_eq;
 
@@ -33,7 +33,8 @@ pub struct T0 {
 #[test]
 #[allow(non_snake_case)]
 fn test_T0() {
-    assert_eq!(<T0 as IsDynamic>::is_dynamic(), false);
+    assert_eq!(<T0 as TypeInfo>::is_dynamic(), false);
+    assert_eq!(<T0 as TypeInfo>::size_hint(), 64);
     assert_eq!(<T0 as SolTypeName>::NAME, b"(uint128,bool)");
     assert_eq!(<T0 as SolTypeNameLen>::LEN, 14);
 
@@ -62,7 +63,7 @@ pub struct T1 {
 #[test]
 #[allow(non_snake_case)]
 fn test_T1() {
-    assert_eq!(<T1 as IsDynamic>::is_dynamic(), true);
+    assert_eq!(<T1 as TypeInfo>::is_dynamic(), true);
     assert_eq!(<T1 as SolTypeName<_>>::NAME, b"(uint128,string,bool)");
     assert_eq!(<T1 as SolTypeNameLen<_>>::LEN, 21);
 
@@ -74,6 +75,13 @@ fn test_T1() {
     test_encode_decode!(T1, t1, "0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002a00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b48656c6c6f2c576f726c64000000000000000000000000000000000000000000");
 }
 
+#[test]
+#[allow(non_snake_case)]
+#[should_panic]
+fn test_T1_size_hint() {
+    let _ = <T1 as TypeInfo>::size_hint();
+}
+
 #[derive(InOut, PartialEq, Debug, Clone)]
 pub struct T2 {
     a: T0,
@@ -83,7 +91,7 @@ pub struct T2 {
 #[test]
 #[allow(non_snake_case)]
 fn test_T2() {
-    assert_eq!(<T2 as IsDynamic>::is_dynamic(), true);
+    assert_eq!(<T2 as TypeInfo>::is_dynamic(), true);
     assert_eq!(
         <T2 as SolTypeName<_>>::NAME,
         "((uint128,bool),(uint128,string,bool))"
@@ -103,12 +111,19 @@ fn test_T2() {
     test_encode_decode!(T2, t2, "0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000002a00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b48656c6c6f2c576f726c64000000000000000000000000000000000000000000");
 }
 
+#[test]
+#[allow(non_snake_case)]
+#[should_panic]
+fn test_T2_size_hint() {
+    let _ = <T2 as TypeInfo>::size_hint();
+}
+
 use liquid_prelude::vec::Vec;
 
 #[test]
 fn test_dynamic_array() {
     type Array = Vec<T2>;
-    assert_eq!(<Array as IsDynamic>::is_dynamic(), true);
+    assert_eq!(<Array as TypeInfo>::is_dynamic(), true);
     assert_eq!(
         <Array as SolTypeName<_>>::NAME,
         "((uint128,bool),(uint128,string,bool))[]"
@@ -127,4 +142,11 @@ fn test_dynamic_array() {
     }]
     .to_vec();
     test_encode_decode!(Array, array, "000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000002a00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b48656c6c6f2c576f726c64000000000000000000000000000000000000000000");
+}
+
+#[test]
+#[should_panic]
+fn test_dynamic_array_size_hint() {
+    type Array = Vec<T0>;
+    let _ = <Array as TypeInfo>::size_hint();
 }

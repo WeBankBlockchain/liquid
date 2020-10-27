@@ -163,7 +163,7 @@ impl Env for EnvInstance {
 
     fn call<R>(&mut self, address: &Address, data: &[u8]) -> Result<R>
     where
-        R: liquid_abi_codec::Decode,
+        R: liquid_abi_codec::Decode + liquid_abi_codec::TypeInfo,
     {
         let status = ext::call(&address.0, data);
         if status != 0 {
@@ -171,10 +171,15 @@ impl Env for EnvInstance {
         }
 
         if core::mem::size_of::<R>() == 0 {
-            self.buffer.resize(0);
+            // The `R` is unit type.
+            self.buffer.clear();
             self.decode_from_buffer_abi()
         } else {
-            let return_data_size = ext::get_return_data_size();
+            let return_data_size = if <R as liquid_abi_codec::TypeInfo>::is_dynamic() {
+                ext::get_return_data_size()
+            } else {
+                <R as liquid_abi_codec::TypeInfo>::size_hint()
+            };
 
             if return_data_size <= StaticBuffer::CAPACITY as u32 {
                 if return_data_size != 0 {

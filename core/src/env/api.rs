@@ -77,7 +77,7 @@ where
 
 pub fn call<R>(address: &Address, data: &[u8]) -> Result<R>
 where
-    R: liquid_abi_codec::Decode,
+    R: liquid_abi_codec::Decode + liquid_abi_codec::TypeInfo,
 {
     <EnvInstance as OnInstance>::on_instance(|instance| {
         Env::call(instance, address, data)

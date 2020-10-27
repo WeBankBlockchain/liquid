@@ -141,9 +141,19 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
     let abi_gen_helper = generate_abi_gen(&field_names, &field_tys, &ident);
 
     Ok(quote! {
-        impl liquid_abi_codec::IsDynamic for #ident {
+        impl liquid_abi_codec::TypeInfo for #ident {
+            #[inline(always)]
             fn is_dynamic() -> bool {
-                #(<#field_tys as liquid_abi_codec::IsDynamic>::is_dynamic() ||)* false
+                #(<#field_tys as liquid_abi_codec::TypeInfo>::is_dynamic() ||)* false
+            }
+
+            #[inline]
+            fn size_hint() -> u32 {
+                if Self::is_dynamic() {
+                    unreachable!();
+                } else {
+                    #(<#field_tys as liquid_abi_codec::TypeInfo>::size_hint() +)* 0
+                }
             }
         }
 
@@ -151,7 +161,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
             fn encode(&self) -> liquid_abi_codec::Mediate {
                 let mut mediates = __std::Vec::new();
                 #(mediates.push(liquid_abi_codec::MediateEncode::encode(&self.#field_names));)*
-                if <Self as liquid_abi_codec::IsDynamic>::is_dynamic() {
+                if <Self as liquid_abi_codec::TypeInfo>::is_dynamic() {
                     liquid_abi_codec::Mediate::PrefixedTuple(mediates)
                 } else {
                     liquid_abi_codec::Mediate::RawTuple(mediates)
@@ -161,7 +171,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
 
         impl liquid_abi_codec::MediateDecode for #ident {
             fn decode(slices: &[liquid_abi_codec::Word], offset: usize) -> Result<liquid_abi_codec::DecodeResult<Self>, liquid_abi_codec::Error>{
-                let is_dynamic = <Self as liquid_abi_codec::IsDynamic>::is_dynamic();
+                let is_dynamic = <Self as liquid_abi_codec::TypeInfo>::is_dynamic();
 
                 // The first element in a dynamic Tuple is an offset to the Tuple's data
                 // For a static Tuple the data begins right away

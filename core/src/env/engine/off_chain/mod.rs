@@ -119,7 +119,7 @@ impl Env for EnvInstance {
 
     fn call<R>(&mut self, _address: &Address, _data: &[u8]) -> Result<R>
     where
-        R: liquid_abi_codec::Decode,
+        R: liquid_abi_codec::Decode + liquid_abi_codec::TypeInfo,
     {
         unimplemented!();
     }

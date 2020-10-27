@@ -26,10 +26,12 @@ impl StaticBuffer {
         }
     }
 
+    #[inline(always)]
     pub fn len(&self) -> usize {
         return self.len;
     }
 
+    #[inline(always)]
     pub fn clear(&mut self) {
         self.len = 0;
     }

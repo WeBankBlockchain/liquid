@@ -52,5 +52,5 @@ pub trait Env {
 
     fn call<R>(&mut self, address: &Address, data: &[u8]) -> Result<R>
     where
-        R: liquid_abi_codec::Decode;
+        R: liquid_abi_codec::Decode + liquid_abi_codec::TypeInfo;
 }

@@ -256,6 +256,7 @@ impl Interface {
             overloaded_fns.into_iter().unzip();
 
         quote_spanned! { span =>
+            #[allow(non_camel_case_types)]
             pub struct #foreign_contract_ident {
                 __liquid_address: liquid_primitives::types::Address,
                 #(
@@ -322,7 +323,7 @@ impl Interface {
                 const LEN: usize = liquid_ty_mapping::ADDRESS_MAPPED_TYPE.len() + 2;
             }
 
-            impl liquid_abi_codec::IsDynamic for #foreign_contract_ident {}
+            impl liquid_abi_codec::TypeInfo for #foreign_contract_ident {}
 
             impl liquid_abi_codec::MediateEncode for #foreign_contract_ident {
                 fn encode(&self) -> liquid_abi_codec::Mediate {

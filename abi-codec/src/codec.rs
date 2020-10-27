@@ -109,9 +109,20 @@ impl Output for Vec<u8> {
     }
 }
 
-pub trait IsDynamic {
+pub trait TypeInfo {
+    /// Indicate the type is whether a certain dynamic type or not.
+    #[inline(always)]
     fn is_dynamic() -> bool {
         false
+    }
+
+    /// If the type is a certain static type, this method will return
+    /// the size after the type being encoded.
+    /// Please **DO NOT** use its default implementation if the type is a
+    /// certain dynamic type.
+    #[inline(always)]
+    fn size_hint() -> u32 {
+        WORD_SIZE as u32
     }
 }
 
@@ -208,7 +219,7 @@ impl MediateEncode for bool {
     }
 }
 
-impl IsDynamic for bool {}
+impl TypeInfo for bool {}
 
 pub fn peek(slices: &[Word], position: usize) -> Result<&Word, Error> {
     match slices.get(position) {
@@ -332,7 +343,7 @@ macro_rules! impl_integer {
                 }
             }
 
-            impl IsDynamic for $t {}
+            impl TypeInfo for $t {}
         })*
     };
 }
@@ -389,9 +400,15 @@ impl MediateDecode for String {
     }
 }
 
-impl IsDynamic for String {
+impl TypeInfo for String {
+    #[inline(always)]
     fn is_dynamic() -> bool {
         true
+    }
+
+    #[inline(always)]
+    fn size_hint() -> u32 {
+        unreachable!()
     }
 }
 
@@ -432,9 +449,15 @@ where
     }
 }
 
-impl<T> IsDynamic for Vec<T> {
+impl<T> TypeInfo for Vec<T> {
+    #[inline(always)]
     fn is_dynamic() -> bool {
         true
+    }
+
+    #[inline(always)]
+    fn size_hint() -> u32 {
+        unreachable!()
     }
 }
 
@@ -545,7 +568,7 @@ macro_rules! impl_tuple {
         }
 
         #[allow(unused_assignments)]
-        impl<$first_ty: MediateDecode, $( $rest_ty: MediateDecode ),+> Decode for ($first_ty, $( $rest_ty ),+){
+        impl<$first_ty: MediateDecode, $( $rest_ty: MediateDecode ),+> Decode for ($first_ty, $( $rest_ty ),+) {
             fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
                 let size = input.remaining_len();
                 debug_assert!(size % WORD_SIZE == 0);
@@ -578,6 +601,22 @@ macro_rules! impl_tuple {
             }
         }
 
+        impl<$first_ty: TypeInfo, $( $rest_ty: TypeInfo ),+> TypeInfo for ($first_ty, $( $rest_ty ),+) {
+            #[inline(always)]
+            fn is_dynamic() -> bool {
+                $first_ty::is_dynamic() $( || $rest_ty::is_dynamic() )+
+            }
+
+            #[inline]
+            fn size_hint() -> u32 {
+                if Self::is_dynamic() {
+                    unreachable!();
+                } else {
+                    $first_ty::size_hint() $( + $rest_ty::size_hint() )+
+                }
+            }
+        }
+
         impl_tuple!( $( $rest_ty, )+ );
     };
 }
@@ -594,24 +633,40 @@ mod inner_impl_tuple {
 }
 
 impl Encode for () {
+    #[inline(always)]
     fn encode(&self) -> Vec<u8> {
         Vec::new()
     }
 }
 
 impl Decode for () {
+    #[inline(always)]
     fn decode<I: Input>(_: &mut I) -> Result<(), Error> {
         Ok(())
     }
 }
 
+impl TypeInfo for () {
+    #[inline(always)]
+    fn is_dynamic() -> bool {
+        false
+    }
+
+    #[inline(always)]
+    fn size_hint() -> u32 {
+        0
+    }
+}
+
 impl Encode for ((),) {
+    #[inline(always)]
     fn encode(&self) -> Vec<u8> {
         Vec::new()
     }
 }
 
 impl Decode for ((),) {
+    #[inline(always)]
     fn decode<I: Input>(_: &mut I) -> Result<((),), Error> {
         Ok(((),))
     }
@@ -619,7 +674,7 @@ impl Decode for ((),) {
 
 use liquid_primitives::types::{i256, u256, Address, ADDRESS_LENGTH};
 
-impl IsDynamic for Address {}
+impl TypeInfo for Address {}
 
 impl MediateEncode for Address {
     fn encode(&self) -> Mediate {
@@ -650,7 +705,7 @@ impl MediateDecode for Address {
     }
 }
 
-impl IsDynamic for i256 {}
+impl TypeInfo for i256 {}
 
 impl MediateEncode for i256 {
     fn encode(&self) -> Mediate {
@@ -676,7 +731,7 @@ impl MediateDecode for i256 {
     }
 }
 
-impl IsDynamic for u256 {}
+impl TypeInfo for u256 {}
 
 impl MediateEncode for u256 {
     fn encode(&self) -> Mediate {

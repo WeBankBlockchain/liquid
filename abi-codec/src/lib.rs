@@ -17,7 +17,7 @@ mod codec;
 
 pub use codec::{
     as_u32, encode_head_tail, peek, Codec, Decode, DecodeResult, Encode, Error, Input,
-    IsDynamic, Mediate, MediateDecode, MediateEncode, Output, Word, WORD_SIZE,
+    Mediate, MediateDecode, MediateEncode, Output, TypeInfo, Word, WORD_SIZE,
 };
 
 #[cfg(test)]
