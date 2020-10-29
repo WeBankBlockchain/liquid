@@ -21,27 +21,27 @@ pub const HASH_LENGTH: usize = 32;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct hash([u8; HASH_LENGTH]);
+pub struct Hash([u8; HASH_LENGTH]);
 
-impl Default for hash {
+impl Default for Hash {
     fn default() -> Self {
         Self(Default::default())
     }
 }
 
-impl hash {
+impl Hash {
     pub fn as_ptr(&self) -> *const [u8; HASH_LENGTH] {
         &self.0 as *const _
     }
 }
 
-impl From<[u8; HASH_LENGTH]> for hash {
+impl From<[u8; HASH_LENGTH]> for Hash {
     fn from(h: [u8; HASH_LENGTH]) -> Self {
         Self(h)
     }
 }
 
-impl From<Vec<u8>> for hash {
+impl From<Vec<u8>> for Hash {
     fn from(bytes: Vec<u8>) -> Self {
         assert!(bytes.len() == HASH_LENGTH);
 
@@ -51,7 +51,7 @@ impl From<Vec<u8>> for hash {
     }
 }
 
-impl FromStr for hash {
+impl FromStr for Hash {
     type Err = Error;
 
     fn from_str(mut s: &str) -> Result<Self, Self::Err> {
@@ -80,7 +80,7 @@ impl FromStr for hash {
     }
 }
 
-impl ToString for hash {
+impl ToString for Hash {
     fn to_string(&self) -> String {
         let mut ret = String::with_capacity(HASH_LENGTH * 2 + 2);
         ret.push_str("0x");
@@ -101,7 +101,7 @@ mod tests {
 
     #[test]
     fn test_hash() {
-        let h: hash = "27772adc63db07aae765b71eb2b533064fa781bd57457e1b138592d8198d0959"
+        let h: Hash = "27772adc63db07aae765b71eb2b533064fa781bd57457e1b138592d8198d0959"
             .parse()
             .unwrap();
         assert_eq!(
@@ -110,7 +110,7 @@ mod tests {
         );
         assert_eq!(
             h,
-            hash::from([
+            Hash::from([
                 0x27, 0x77, 0x2a, 0xdc, 0x63, 0xdb, 0x07, 0xaa, 0xe7, 0x65, 0xb7, 0x1e,
                 0xb2, 0xb5, 0x33, 0x06, 0x4f, 0xa7, 0x81, 0xbd, 0x57, 0x45, 0x7e, 0x1b,
                 0x13, 0x85, 0x92, 0xd8, 0x19, 0x8d, 0x09, 0x59
@@ -119,9 +119,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "invalid hash representation")]
     fn invalid_hash() {
-        let _: hash = "0x772adc63db07aae765b71eb2b533064fa781bd57457e1b138592d8198d0959"
+        let _: Hash = "0x772adc63db07aae765b71eb2b533064fa781bd57457e1b138592d8198d0959"
             .parse()
             .unwrap();
     }

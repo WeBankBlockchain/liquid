@@ -10,21 +10,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use liquid_primitives::types::address;
+use liquid_primitives::types::Address;
 
 pub struct ExecContext {
     /// The caller of the contract execution.
     ///
     /// Might be user or another contract.
-    pub caller: address,
+    pub caller: Address,
 }
 
 impl ExecContext {
-    pub fn new(caller: address) -> Self {
+    pub fn new(caller: Address) -> Self {
         Self { caller }
     }
 
-    pub fn caller(&self) -> address {
+    pub fn caller(&self) -> Address {
         self.caller
     }
 }

@@ -59,11 +59,11 @@ mapping_type_to_sol!(i128, int128);
 mapping_type_to_sol!(i256, int256);
 mapping_type_to_sol!(bool, bool);
 mapping_type_to_sol!(String, string);
-mapping_type_to_sol!(address, address);
-mapping_type_to_sol!(bytes, bytes);
+mapping_type_to_sol!(Address, address);
+mapping_type_to_sol!(Bytes, bytes);
 mapping_type_to_sol!(());
 seq!(N in 1..=32 {
-    mapping_type_to_sol!(bytes#N, bytes#N);
+    mapping_type_to_sol!(Bytes#N, Bytes#N);
 });
 
 pub const fn concat<T, E>() -> [u8; MAX_LENGTH_OF_MAPPED_TYPE_NAME]
@@ -270,12 +270,12 @@ mod tests {
         assert_eq!(map_to_solidity_type::<i256>(), "int256");
 
         assert_eq!(map_to_solidity_type::<String>(), "string");
-        assert_eq!(map_to_solidity_type::<address>(), "address");
+        assert_eq!(map_to_solidity_type::<Address>(), "address");
 
         seq!(N in 1..=32 {
             assert_eq!(
-                map_to_solidity_type::<bytes#N>(),
-                stringify!(bytes#N)
+                map_to_solidity_type::<Bytes#N>(),
+                stringify!(Bytes#N)
             );
         });
     }
@@ -297,13 +297,13 @@ mod tests {
         assert_eq!(map_to_solidity_type::<Vec<i256>>(), "int256[]");
 
         assert_eq!(map_to_solidity_type::<Vec<String>>(), "string[]");
-        assert_eq!(map_to_solidity_type::<Vec<address>>(), "address[]");
+        assert_eq!(map_to_solidity_type::<Vec<Address>>(), "address[]");
         assert_eq!(map_to_solidity_type::<Vec<Vec<i8>>>(), "int8[][]");
 
         seq!(N in 1..=32 {
             assert_eq!(
-                map_to_solidity_type::<Vec<bytes#N>>(),
-                stringify!(bytes#N[]).replace(" ", ""),
+                map_to_solidity_type::<Vec<Bytes#N>>(),
+                stringify!(Bytes#N[]).replace(" ", ""),
             );
         });
     }
@@ -325,13 +325,13 @@ mod tests {
         assert_eq!(map_to_solidity_type::<[i256; 1024]>(), "int256[1024]");
 
         assert_eq!(map_to_solidity_type::<[String; 0]>(), "string[0]");
-        assert_eq!(map_to_solidity_type::<[address; 0]>(), "address[0]");
+        assert_eq!(map_to_solidity_type::<[Address; 0]>(), "address[0]");
         assert_eq!(map_to_solidity_type::<Vec<[u8; 65535]>>(), "uint8[65535][]");
 
         seq!(N in 1..=32 {
             assert_eq!(
-                map_to_solidity_type::<[bytes#N; (N as usize)]>(),
-                stringify!(bytes#N[N]).replace(" ", "").replace("u64", ""),
+                map_to_solidity_type::<[Bytes#N; (N as usize)]>(),
+                stringify!(Bytes#N[N]).replace(" ", "").replace("u64", ""),
             );
         });
     }
@@ -345,7 +345,7 @@ mod tests {
             "uint8[],string"
         );
         assert_eq!(
-            map_to_solidity_type::<(Vec<u8>, [address; 1024])>(),
+            map_to_solidity_type::<(Vec<u8>, [Address; 1024])>(),
             "uint8[],address[1024]"
         )
     }

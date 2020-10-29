@@ -11,7 +11,7 @@
 // limitations under the License.
 
 use crate::ir::{FnArg, Signature};
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::quote;
 use syn::Type;
 
@@ -37,8 +37,28 @@ pub fn generate_input_tys(sig: &Signature, skip_first: bool) -> Vec<&syn::Type> 
 }
 
 pub fn generate_primitive_types() -> TokenStream2 {
+    let mut fixed_size_bytes = quote! {};
+    for i in 1..=32 {
+        let old_ident = Ident::new(&format!("Bytes{}", i), Span::call_site());
+        let new_ident = Ident::new(&format!("bytes{}", i), Span::call_site());
+        fixed_size_bytes.extend(quote! {
+            #[allow(non_camel_case_types)]
+            pub type #new_ident = liquid_primitives::types::#old_ident;
+        });
+    }
+
     quote! {
-        pub use liquid_primitives::types::*;
+        #[allow(non_camel_case_types)]
+        pub type address = liquid_primitives::types::Address;
+        #[allow(non_camel_case_types)]
+        pub type bytes = liquid_primitives::types::Bytes;
+        #[allow(non_camel_case_types)]
+        pub type byte = liquid_primitives::types::Byte;
+
+        #fixed_size_bytes
+
+        pub use liquid_primitives::types::u256;
+        pub use liquid_primitives::types::i256;
         pub use liquid_prelude::string::String;
         pub type Vec<T> = liquid_prelude::vec::Vec<T>;
     }

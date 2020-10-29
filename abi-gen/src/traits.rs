@@ -13,7 +13,7 @@
 use crate::{ExternalFnABIBuilder, ParamABI};
 use liquid_macro::seq;
 use liquid_prelude::{string::String, vec::Vec};
-use liquid_primitives::types::address;
+use liquid_primitives::types::*;
 
 pub trait GenerateComponents<T = ()> {
     fn generate_components() -> Vec<ParamABI> {
@@ -30,7 +30,7 @@ pub trait GenerateOutputs {
 }
 
 macro_rules! impl_primitive_tys {
-    ($( $t:ty ),*) => {
+    ($( $t:ty, )*) => {
         $(
             impl GenerateComponents for $t {}
 
@@ -58,9 +58,14 @@ impl_primitive_tys!(
     i64,
     i128,
     String,
-    address,
-    ()
+    Address,
+    Bytes,
+    (),
 );
+
+seq!(N in 1..=32 {
+    impl_primitive_tys!(#(Bytes#N,)*);
+});
 
 impl<T> TyName for Vec<T>
 where

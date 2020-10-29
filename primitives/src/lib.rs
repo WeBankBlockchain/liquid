@@ -55,5 +55,5 @@ impl std::fmt::Display for Error {
 
 use liquid_prelude::vec::Vec;
 pub trait Topics {
-    fn topics(&self) -> Vec<types::hash>;
+    fn topics(&self) -> Vec<types::Hash>;
 }

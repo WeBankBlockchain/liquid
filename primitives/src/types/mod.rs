@@ -10,18 +10,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![allow(non_camel_case_types)]
-
-pub mod address_impl;
-pub mod bytes_impl;
-pub mod fixed_size_bytes;
-pub mod hash_impl;
+pub mod address;
+mod bytes;
+mod fixed_size_bytes;
+pub mod hash;
 mod int256;
 mod uint256;
 
-pub use address_impl::address;
-pub use bytes_impl::bytes;
+pub use address::Address;
+pub use bytes::Bytes;
 pub use fixed_size_bytes::*;
-pub use hash_impl::hash;
+pub use hash::Hash;
 pub use int256::i256;
 pub use uint256::u256;

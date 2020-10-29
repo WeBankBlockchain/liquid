@@ -99,7 +99,7 @@ impl<'a> Events<'a> {
             )*
 
             impl liquid_primitives::Topics for Event {
-                fn topics(&self) -> liquid_prelude::vec::Vec<liquid_primitives::types::hash> {
+                fn topics(&self) -> liquid_prelude::vec::Vec<liquid_primitives::types::Hash> {
                     match self {
                         #(
                             Event::#event_idents(event) => event.topics(),
@@ -181,7 +181,7 @@ impl<'a> Events<'a> {
 
             quote_spanned! { span =>
                 impl liquid_primitives::Topics for #event_ident {
-                    fn topics(&self) -> liquid_prelude::vec::Vec<liquid_primitives::types::hash> {
+                    fn topics(&self) -> liquid_prelude::vec::Vec<liquid_primitives::types::Hash> {
                         [#sig_hash.into(), #topic_hash].to_vec()
                     }
                 }

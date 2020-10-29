@@ -14,7 +14,7 @@ use crate::env::{
     engine::{EnvInstance, OnInstance},
     CallData, CallMode, Env, Result,
 };
-use liquid_primitives::{types::address, Topics};
+use liquid_primitives::{types::Address, Topics};
 
 pub fn set_storage<V>(key: &[u8], value: &V)
 where
@@ -64,7 +64,7 @@ where
     })
 }
 
-pub fn get_caller() -> address {
+pub fn get_caller() -> Address {
     <EnvInstance as OnInstance>::on_instance(|instance| Env::get_caller(instance))
 }
 
@@ -75,7 +75,7 @@ where
     <EnvInstance as OnInstance>::on_instance(|instance| Env::emit(instance, event));
 }
 
-pub fn call<R>(addr: &address, data: &[u8]) -> Result<R>
+pub fn call<R>(addr: &Address, data: &[u8]) -> Result<R>
 where
     R: liquid_abi_codec::Decode + liquid_abi_codec::TypeInfo,
 {

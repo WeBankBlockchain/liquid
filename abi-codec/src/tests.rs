@@ -446,8 +446,8 @@ test_encode_decode! {
 
 test_encode_decode! {
     name: address,
-    type: (address,),
-    value: (address::from([
+    type: (Address,),
+    value: (Address::from([
         0x3e, 0x9A, 0xFa, 0xA4, 0xa0, 0x62, 0xA4, 0x9d, 0x64, 0xb8, 0xAb, 0x05, 0x7B,
         0x3C, 0xb5, 0x18, 0x92, 0xe1, 0x7E, 0xcb,
     ]),),
@@ -483,7 +483,7 @@ test_encode_decode! {
 
 test_encode_decode! {
     name: address_bytes32_bytes4_string,
-    type: (address, bytes32, bytes4, String),
+    type: (Address, Bytes32, Bytes4, String),
     value: (
         "8497afefdc5ac170a664a231f6efb25526ef813f".parse().unwrap(),
         [0u8; 32].into(),
@@ -500,7 +500,7 @@ test_encode_decode! {
 
 test_encode_decode! {
     name: bytes,
-    type: (bytes,),
+    type: (Bytes,),
     value: ([0x12, 0x34].into(),),
     data: "0000000000000000000000000000000000000000000000000000000000000020
     0000000000000000000000000000000000000000000000000000000000000002

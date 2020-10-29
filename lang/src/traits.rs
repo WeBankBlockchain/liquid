@@ -57,7 +57,7 @@ pub trait You_Should_Use_An_Valid_Event_Data_Type: Sized {
 pub trait You_Should_Use_An_Valid_Event_Topic_Type: Sized {
     type T = Self;
 
-    fn topic(&self) -> hash
+    fn topic(&self) -> Hash
     where
         Self: liquid_abi_codec::Encode,
     {
@@ -90,12 +90,12 @@ macro_rules! impl_for_primitives {
 }
 
 impl_for_primitives!(
-    u8, u16, u32, u64, u128, u256, i8, i16, i32, i64, i128, i256, bool, address,
+    u8, u16, u32, u64, u128, u256, i8, i16, i32, i64, i128, i256, bool, Address,
 );
 
 seq!(N in 1..=32 {
     #(
-        gen_impls!(bytes#N);
+        gen_impls!(Bytes#N);
     )*
 });
 
@@ -106,18 +106,18 @@ impl You_Should_Use_An_Valid_Event_Data_Type for String {}
 impl You_Should_Use_An_Valid_Event_Topic_Type for String {
     type T = Self;
 
-    fn topic(&self) -> hash {
+    fn topic(&self) -> Hash {
         liquid_primitives::hash::hash(self.as_bytes()).into()
     }
 }
 impl You_Should_Use_An_Valid_Field_Data_Type for String {}
 
 
-impl You_Should_Use_An_Valid_Parameter_Type for bytes {}
-impl You_Should_Use_An_Valid_Return_Type for bytes {}
-impl You_Should_Use_An_Valid_Input_Type for bytes {}
-impl You_Should_Use_An_Valid_Event_Data_Type for bytes {}
-impl You_Should_Use_An_Valid_Field_Data_Type for bytes {}
+impl You_Should_Use_An_Valid_Parameter_Type for Bytes {}
+impl You_Should_Use_An_Valid_Return_Type for Bytes {}
+impl You_Should_Use_An_Valid_Input_Type for Bytes {}
+impl You_Should_Use_An_Valid_Event_Data_Type for Bytes {}
+impl You_Should_Use_An_Valid_Field_Data_Type for Bytes {}
 
 impl<T> You_Should_Use_An_Valid_Parameter_Type for Vec<T> where
     T: You_Should_Use_An_Valid_Parameter_Type

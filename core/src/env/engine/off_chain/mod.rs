@@ -16,7 +16,7 @@ pub mod test_api;
 use self::db::{Block, ContractStorage, Event, ExecContext};
 use crate::env::{engine::OnInstance, CallData, CallMode, Env, Result};
 use core::cell::RefCell;
-use liquid_primitives::{types::address, Topics};
+use liquid_primitives::{types::Address, Topics};
 
 pub struct EnvInstance {
     contract_storage: ContractStorage,
@@ -105,7 +105,7 @@ impl Env for EnvInstance {
         self.events.push(Event::new(event));
     }
 
-    fn get_caller(&mut self) -> address {
+    fn get_caller(&mut self) -> Address {
         self.current_exec_context().caller()
     }
 
@@ -117,7 +117,7 @@ impl Env for EnvInstance {
         self.current_block().block_number()
     }
 
-    fn call<R>(&mut self, _address: &address, _data: &[u8]) -> Result<R>
+    fn call<R>(&mut self, _addr: &Address, _data: &[u8]) -> Result<R>
     where
         R: liquid_abi_codec::Decode + liquid_abi_codec::TypeInfo,
     {

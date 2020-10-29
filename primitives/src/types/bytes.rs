@@ -14,21 +14,21 @@ use liquid_prelude::vec::Vec;
 
 #[derive(PartialEq, Eq, scale::Decode, scale::Encode)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct bytes(Vec<u8>);
+pub struct Bytes(Vec<u8>);
 
-impl Default for bytes {
+impl Default for Bytes {
     fn default() -> Self {
-        bytes(Vec::new())
+        Bytes(Vec::new())
     }
 }
 
-impl bytes {
+impl Bytes {
     pub fn new() -> Self {
         Default::default()
     }
 }
 
-impl core::ops::Deref for bytes {
+impl core::ops::Deref for Bytes {
     type Target = Vec<u8>;
 
     fn deref(&self) -> &Self::Target {
@@ -36,31 +36,31 @@ impl core::ops::Deref for bytes {
     }
 }
 
-impl core::ops::DerefMut for bytes {
+impl core::ops::DerefMut for Bytes {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl From<&[u8]> for bytes {
+impl From<&[u8]> for Bytes {
     fn from(origin: &[u8]) -> Self {
         Self(origin.to_vec())
     }
 }
 
-impl<const N: usize> From<[u8; N]> for bytes {
+impl<const N: usize> From<[u8; N]> for Bytes {
     fn from(origin: [u8; N]) -> Self {
         Self(origin.to_vec())
     }
 }
 
-impl<const N: usize> From<&[u8; N]> for bytes {
+impl<const N: usize> From<&[u8; N]> for Bytes {
     fn from(origin: &[u8; N]) -> Self {
         Self(origin.to_vec())
     }
 }
 
-impl From<Vec<u8>> for bytes {
+impl From<Vec<u8>> for Bytes {
     fn from(origin: Vec<u8>) -> Self {
         Self(origin)
     }
@@ -72,12 +72,12 @@ mod tests {
 
     #[test]
     fn bytes_test() {
-        let mut b1 = bytes::new();
+        let mut b1 = Bytes::new();
         b1.push(1);
         assert_eq!(b1.len(), 1);
         assert_eq!(b1[0], 1);
 
-        let mut b2: bytes = [0, 1, 2].into();
+        let mut b2: Bytes = [0, 1, 2].into();
         assert_eq!(b2.len(), 3);
         b2.pop();
         assert_eq!(b2.len(), 2);

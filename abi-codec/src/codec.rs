@@ -17,7 +17,7 @@ use liquid_prelude::{
     vec::{from_elem, Vec},
 };
 use liquid_primitives::{
-    types::{address_impl::*, bytes as Bytes, fixed_size_bytes::*, i256, u256},
+    types::{address::*, *},
     Error,
 };
 
@@ -656,9 +656,9 @@ impl Decode for ((),) {
     }
 }
 
-impl TypeInfo for address {}
+impl TypeInfo for Address {}
 
-impl MediateEncode for address {
+impl MediateEncode for Address {
     fn encode(&self) -> Mediate {
         let mut buf = [0x00; WORD_SIZE];
         buf[(WORD_SIZE - ADDRESS_LENGTH)..].copy_from_slice(&self.0);
@@ -666,7 +666,7 @@ impl MediateEncode for address {
     }
 }
 
-impl MediateDecode for address {
+impl MediateDecode for Address {
     fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error> {
         let slice = peek(slices, offset)?;
 
@@ -737,15 +737,15 @@ impl MediateEncode for u256 {
 }
 
 seq!(N in 1..=32 {
-    impl TypeInfo for bytes#N {}
+    impl TypeInfo for Bytes#N {}
 
-    impl MediateEncode for bytes#N {
+    impl MediateEncode for Bytes#N {
         fn encode(&self) -> Mediate {
             Mediate::Raw(pad_bytes(&self.0))
         }
     }
 
-    impl MediateDecode for bytes#N {
+    impl MediateDecode for Bytes#N {
         fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error> {
             let slice = peek(slices, offset)?;
             let mut buf = [0u8; (N as usize)];
