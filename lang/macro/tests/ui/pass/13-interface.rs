@@ -7,12 +7,12 @@ mod entry {
     extern "liquid" {
         fn getInt(key: String) -> i256;
         fn getUint(key: String) -> u256;
-        fn getAddress(key: String) -> Address;
+        fn getAddress(key: String) -> address;
         fn getString(key: String) -> String;
 
         fn set(key: String, value: i256);
         fn set(key: String, value: u256);
-        fn set(key: String, value: Address);
+        fn set(key: String, value: address);
         fn set(key: String, value: String);
     }
 }
@@ -59,7 +59,7 @@ mod kv_table_test {
 
         pub fn new(&mut self) {
             self.table_factory
-                .initialize(KvTableFactory::at(Address::from("0x1010")));
+                .initialize(KvTableFactory::at("0x1010".parse().unwrap()));
             self.table_factory.createTable(
                 String::from(Self::TABLE_NAME),
                 String::from("id"),

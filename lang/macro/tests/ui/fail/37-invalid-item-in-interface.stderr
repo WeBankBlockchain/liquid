@@ -1,0 +1,5 @@
+error: only `struct`, `extern` blocks or `use` statements are allowed in interface
+ --> $DIR/37-invalid-item-in-interface.rs:9:5
+  |
+9 |     pub fn baz() {}
+  |     ^^^^^^^^^^^^^^^

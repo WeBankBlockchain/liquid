@@ -19,7 +19,7 @@ mod ballot {
         /// if true, that person already voted
         voted: bool,
         /// person delegated to
-        delegate: Address,
+        delegate: address,
         /// index of the voted proposal
         vote: u32,
     }
@@ -38,10 +38,10 @@ mod ballot {
 
     #[liquid(storage)]
     struct Ballot {
-        pub chairperson: storage::Value<Address>,
+        pub chairperson: storage::Value<address>,
         /// This declares a state variable that
         /// stores a `Voter` struct for each possible address.
-        pub voters: storage::Mapping<Address, Voter>,
+        pub voters: storage::Mapping<address, Voter>,
         /// A dynamically-sized array of `Proposal` structs.
         pub proposals: storage::Vec<Proposal>,
     }
@@ -59,7 +59,7 @@ mod ballot {
                 Voter {
                     weight: 1,
                     voted: false,
-                    delegate: Address::empty(),
+                    delegate: address::empty(),
                     vote: 0,
                 },
             );
@@ -81,7 +81,7 @@ mod ballot {
 
         /// Give `voter` the right to vote on this ballot.
         /// May only be called by `chairperson`.
-        pub fn give_right_to_vote(&mut self, voter: Address) {
+        pub fn give_right_to_vote(&mut self, voter: address) {
             // If the first argument of `require` evaluates
             // to `false`, execution terminates.
             // It is often a good idea to use `require` to check if
@@ -103,7 +103,7 @@ mod ballot {
                     Voter {
                         weight: 1,
                         voted: false,
-                        delegate: Address::empty(),
+                        delegate: address::empty(),
                         vote: 0,
                     },
                 );
@@ -111,7 +111,7 @@ mod ballot {
         }
 
         /// Delegate your vote to the voter `to`.
-        pub fn delegate(&mut self, mut to: Address) {
+        pub fn delegate(&mut self, mut to: address) {
             require(
                 to != self.env().get_caller(),
                 "Self-delegation is disallowed.",
@@ -134,7 +134,7 @@ mod ballot {
             // In this case, the delegation will not be executed,
             // but in other situations, such loops might
             // cause a contract to get "stuck" completely.
-            while self.voters[&to].delegate != Address::empty() {
+            while self.voters[&to].delegate != address::empty() {
                 to = self.voters[&to].delegate;
 
                 // We found a loop in the delegation, not allowed.
@@ -228,7 +228,7 @@ mod ballot {
             let voter = &ballot.voters[&alice];
             assert_eq!(voter.weight, 1);
             assert_eq!(voter.voted, false);
-            assert_eq!(voter.delegate, Address::empty());
+            assert_eq!(voter.delegate, address::empty());
             assert_eq!(voter.vote, 0);
 
             assert_eq!(ballot.proposals.len(), 3);
@@ -292,7 +292,7 @@ mod ballot {
                 Voter {
                     weight: 1,
                     voted: false,
-                    delegate: Address::empty(),
+                    delegate: address::empty(),
                     vote: 0,
                 }
             );

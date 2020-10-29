@@ -14,6 +14,7 @@
 #![feature(const_fn)]
 #![feature(associated_type_defaults)]
 #![feature(const_panic)]
+#![feature(min_const_generics)]
 
 mod dispatch_error;
 mod env_access;

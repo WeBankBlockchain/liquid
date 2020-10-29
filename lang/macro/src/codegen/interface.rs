@@ -13,7 +13,6 @@
 use crate::{
     codegen::{utils as codegen_utils, GenerateCode},
     ir::{FnArg, ForeignFn, Interface},
-    utils as lang_utils,
 };
 use either::Either;
 use heck::{CamelCase, ShoutySnakeCase};
@@ -47,15 +46,6 @@ impl GenerateCode for Interface {
 
                     #types
 
-                    struct FnMarker<S> {
-                        marker: core::marker::PhantomData<fn() -> S>,
-                    }
-
-                    struct TyMappingHelper<S, T> {
-                        marker_s: core::marker::PhantomData<fn() -> S>,
-                        marker_t: core::marker::PhantomData<fn() -> T>,
-                    }
-
                     #foreign_contract
                 }
 
@@ -86,7 +76,6 @@ pub fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
     let sig = &foreign_fn.sig;
     let span = foreign_fn.span;
     let fn_ident = &sig.ident;
-    let fn_id = foreign_fn.fn_id;
 
     let inputs = &sig.inputs;
     let input_tys = codegen_utils::generate_input_tys(&sig, false);
@@ -99,28 +88,35 @@ pub fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
             quote! { () }
         }
         syn::ReturnType::Type(_, ty) => quote! {
-            #ty
+            <#ty as liquid_lang::You_Should_Use_An_Valid_Return_Type>::T
         },
     };
 
-    let ty_mapping = codegen_utils::generate_ty_mapping(fn_id, fn_ident, &input_tys);
     let selector_ident = generate_selector_ident(fn_ident);
-
+    let fn_name = fn_ident.to_string();
+    let fn_name_bytes = fn_name.as_bytes();
+    let fn_name_len = fn_name.len();
     quote_spanned! { span =>
         #(#attrs)*
         #[allow(non_snake_case)]
         pub fn #fn_ident(&self, #inputs) -> Option<#output_ty> {
-            const _: () = {
-                #ty_mapping
+            type Input = #input_ty_checker;
+            const #selector_ident: liquid_primitives::Selector = {
+                const SIG_LEN: usize =
+                    liquid_ty_mapping::len::<Input>()
+                    + #fn_name_len
+                    + 2;
+
+                const SIG: [u8; SIG_LEN] =
+                    liquid_ty_mapping::composite::<Input, SIG_LEN>(&[#(#fn_name_bytes),*]);
+
+                let hash = liquid_primitives::hash::hash(&SIG);
+                [hash[0], hash[1], hash[2], hash[3]]
             };
 
-            const #selector_ident: liquid_primitives::Selector = <FnMarker<([(); #fn_id])> as liquid_lang::FnSelector>::SELECTOR;
-            type Input = #input_ty_checker;
-
-            let encoded = <Input as liquid_abi_codec::Encode>::encode(&(#input_idents));
-            let mut data = #selector_ident.to_vec();
-            data.extend(encoded);
-            liquid_core::env::call::<#output_ty>(&self.__liquid_address, &data).ok()
+            let mut encoded = #selector_ident.to_vec();
+            encoded.extend(<Input as liquid_abi_codec::Encode>::encode(&(#input_idents)));
+            liquid_core::env::call::<#output_ty>(&self.__liquid_address, &encoded).ok()
         }
     }
 }
@@ -144,34 +140,38 @@ pub fn generate_overloaded_fn(
                 quote! { () }
             }
             syn::ReturnType::Type(_, ty) => quote! {
-                #ty
+                <#ty as liquid_lang::You_Should_Use_An_Valid_Return_Type>::T
             },
         };
 
-        let mut origin_fn_id = foreign_fn.fn_id.to_string();
-        origin_fn_id.push_str(&i.to_string());
-        let fn_id = lang_utils::calculate_fn_id(&origin_fn_id);
         let origin_fn_ident = &sig.ident;
         let fn_name = format!("{}_{}", origin_fn_ident, i);
         let fn_ident = Ident::new(&fn_name, span);
 
-        let ty_mapping = codegen_utils::generate_ty_mapping(fn_id, &fn_ident, &input_tys);
         let selector_ident = generate_selector_ident(&fn_ident);
-
+        let origin_fn_name = origin_fn_ident.to_string();
+        let origin_fn_name_bytes = origin_fn_name.as_bytes();
+        let origin_fn_name_len = origin_fn_name.len();
         quote_spanned! { span =>
-            const _: () = {
-                #ty_mapping
-            };
-
             #[allow(non_snake_case)]
-            fn #fn_ident(__liquid_address: &liquid_primitives::types::Address, #inputs) -> Option<#output_ty> {
-                const #selector_ident: liquid_primitives::Selector = <FnMarker<([(); #fn_id])> as liquid_lang::FnSelector>::SELECTOR;
+            fn #fn_ident(__liquid_address: &liquid_primitives::types::address, #inputs) -> Option<#output_ty> {
                 type Input = #input_ty_checker;
+                const #selector_ident: liquid_primitives::Selector = {
+                    const SIG_LEN: usize =
+                        liquid_ty_mapping::len::<Input>()
+                        + #origin_fn_name_len
+                        + 2;
 
-                let encoded = <Input as liquid_abi_codec::Encode>::encode(&(#input_idents));
-                let mut data = #selector_ident.to_vec();
-                data.extend(encoded);
-                liquid_core::env::call::<#output_ty>(__liquid_address, &data).ok()
+                    const SIG: [u8; SIG_LEN] =
+                        liquid_ty_mapping::composite::<Input, SIG_LEN>(&[#(#origin_fn_name_bytes),*]);
+
+                    let hash = liquid_primitives::hash::hash(&SIG);
+                    [hash[0], hash[1], hash[2], hash[3]]
+                };
+
+                let mut encoded = #selector_ident.to_vec();
+                encoded.extend(<Input as liquid_abi_codec::Encode>::encode(&(#input_idents)));
+                liquid_core::env::call::<#output_ty>(&__liquid_address, &encoded).ok()
             }
 
             impl Fn<(#(#input_tys,)*)> for #origin_fn_ident {
@@ -199,11 +199,11 @@ pub fn generate_overloaded_fn(
     quote! {
         #[allow(non_camel_case_types)]
         pub struct #fn_ident {
-            __liquid_address: liquid_primitives::types::Address,
+            __liquid_address: liquid_primitives::types::address,
         }
 
-        impl From<liquid_primitives::types::Address> for #fn_ident {
-            fn from(__liquid_address: liquid_primitives::types::Address) -> Self {
+        impl From<liquid_primitives::types::address_impl::address> for #fn_ident {
+            fn from(__liquid_address: liquid_primitives::types::address) -> Self {
                 Self {
                     __liquid_address,
                 }
@@ -258,32 +258,32 @@ impl Interface {
         quote_spanned! { span =>
             #[allow(non_camel_case_types)]
             pub struct #foreign_contract_ident {
-                __liquid_address: liquid_primitives::types::Address,
+                __liquid_address: liquid_primitives::types::address,
                 #(
                     pub #overloaded_idents: #overloaded_idents,
                 )*
             }
 
             impl #foreign_contract_ident {
-                pub fn at(address: liquid_primitives::types::Address) -> Self {
+                pub fn at(addr: liquid_primitives::types::address) -> Self {
                     Self {
-                        __liquid_address: address,
+                        __liquid_address: addr,
                         #(
-                            #overloaded_idents: address.into(),
+                            #overloaded_idents: addr.into(),
                         )*
                     }
                 }
             }
 
-            impl From<liquid_primitives::types::Address> for #foreign_contract_ident {
-                fn from(address: liquid_primitives::types::Address) -> Self {
-                    Self::at(address)
+            impl From<liquid_primitives::types::address> for #foreign_contract_ident {
+                fn from(addr: liquid_primitives::types::address) -> Self {
+                    Self::at(addr)
                 }
             }
 
             impl scale::Decode for #foreign_contract_ident {
                 fn decode<I: scale::Input>(value: &mut I) -> Result<Self, scale::Error> {
-                    let __liquid_address = liquid_primitives::types::Address::decode(value)?;
+                    let __liquid_address = liquid_primitives::types::address::decode(value)?;
                     Ok(Self {
                         __liquid_address,
                         #(
@@ -301,26 +301,15 @@ impl Interface {
 
             #(#overloaded_impls)*
 
-            impl Into<liquid_primitives::types::Address> for #foreign_contract_ident {
-                fn into(self) -> liquid_primitives::types::Address {
+            impl Into<liquid_primitives::types::address> for #foreign_contract_ident {
+                fn into(self) -> liquid_primitives::types::address {
                     self.__liquid_address
                 }
             }
 
-            impl liquid_ty_mapping::SolTypeName for #foreign_contract_ident {
-                const NAME: &'static [u8] = liquid_ty_mapping::ADDRESS_MAPPED_TYPE.as_bytes();
-            }
-
-            impl liquid_ty_mapping::SolTypeNameLen for #foreign_contract_ident {
-                const LEN: usize = liquid_ty_mapping::ADDRESS_MAPPED_TYPE.len();
-            }
-
-            impl liquid_ty_mapping::SolTypeName<#foreign_contract_ident> for Vec<#foreign_contract_ident> {
-                const NAME: &'static [u8] = liquid_ty_mapping::ADDRESS_ARRAY_MAPPED_TYPE.as_bytes();
-            }
-
-            impl liquid_ty_mapping::SolTypeNameLen<#foreign_contract_ident> for Vec<#foreign_contract_ident> {
-                const LEN: usize = liquid_ty_mapping::ADDRESS_MAPPED_TYPE.len() + 2;
+            impl liquid_ty_mapping::MappingToSolidityType for #foreign_contract_ident {
+                const MAPPED_TYPE_NAME: [u8; liquid_ty_mapping::MAX_LENGTH_OF_MAPPED_TYPE_NAME] =
+                    <liquid_primitives::types::address as liquid_ty_mapping::MappingToSolidityType>::MAPPED_TYPE_NAME;
             }
 
             impl liquid_abi_codec::TypeInfo for #foreign_contract_ident {}
@@ -335,8 +324,8 @@ impl Interface {
                 fn decode(
                     slices: &[liquid_abi_codec::Word],
                     offset: usize
-                ) -> Result<liquid_abi_codec::DecodeResult<Self>, liquid_abi_codec::Error> {
-                    let decode_result = <liquid_primitives::types::Address as liquid_abi_codec::MediateDecode>::decode(slices, offset)?;
+                ) -> Result<liquid_abi_codec::DecodeResult<Self>, liquid_primitives::Error> {
+                    let decode_result = <liquid_primitives::types::address as liquid_abi_codec::MediateDecode>::decode(slices, offset)?;
                     let value = Self {
                         __liquid_address: decode_result.value,
                         #(
@@ -353,6 +342,7 @@ impl Interface {
             impl liquid_lang::You_Should_Use_An_Valid_Parameter_Type for #foreign_contract_ident {}
             impl liquid_lang::You_Should_Use_An_Valid_Return_Type for #foreign_contract_ident {}
             impl liquid_lang::You_Should_Use_An_Valid_Input_Type for #foreign_contract_ident {}
+            impl liquid_lang::You_Should_Use_An_Valid_Field_Data_Type for #foreign_contract_ident {}
 
             impl #foreign_contract_ident{
                 #(#trivial_fns)*

@@ -16,33 +16,10 @@ use liquid_prelude::{
     string::String,
     vec::{from_elem, Vec},
 };
-
-#[cfg(feature = "std")]
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub struct Error(&'static str);
-
-#[cfg(not(feature = "std"))]
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub struct Error;
-
-impl From<&'static str> for Error {
-    #[cfg(feature = "std")]
-    fn from(s: &'static str) -> Error {
-        Error(s)
-    }
-
-    #[cfg(not(feature = "std"))]
-    fn from(_: &'static str) -> Error {
-        Error
-    }
-}
-
-#[cfg(feature = "std")]
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
+use liquid_primitives::{
+    types::{address_impl::*, bytes as Bytes, fixed_size_bytes::*, i256, u256},
+    Error,
+};
 
 pub const WORD_SIZE: usize = 32;
 pub type Word = [u8; WORD_SIZE];
@@ -131,6 +108,7 @@ pub enum Mediate {
     Prefixed(Vec<Word>),
     RawTuple(Vec<Mediate>),
     PrefixedTuple(Vec<Mediate>),
+    PrefixedArray(Vec<Mediate>),
     PrefixedArrayWithLength(Vec<Mediate>),
 }
 
@@ -146,6 +124,7 @@ impl Mediate {
             Mediate::Raw(ref raw) => raw.len() * WORD_SIZE,
             Mediate::Prefixed(_)
             | Mediate::PrefixedTuple(_)
+            | Mediate::PrefixedArray(_)
             | Mediate::PrefixedArrayWithLength(_) => WORD_SIZE,
             Mediate::RawTuple(ref mediates) => mediates.len() * WORD_SIZE,
         }
@@ -156,6 +135,9 @@ impl Mediate {
             Mediate::Raw(_) | Mediate::RawTuple(_) => 0,
             Mediate::Prefixed(ref prefixed) => prefixed.len() * WORD_SIZE,
             Mediate::PrefixedTuple(ref mediates) => mediates
+                .iter()
+                .fold(0, |acc, m| acc + m.head_len() + m.tail_len()),
+            Mediate::PrefixedArray(ref mediates) => mediates
                 .iter()
                 .fold(0, |acc, m| acc + m.head_len() + m.tail_len()),
             Mediate::PrefixedArrayWithLength(ref mediates) => mediates
@@ -169,6 +151,7 @@ impl Mediate {
             Mediate::Raw(ref raw) => raw.clone(),
             Mediate::Prefixed(_)
             | Mediate::PrefixedTuple(_)
+            | Mediate::PrefixedArray(_)
             | Mediate::PrefixedArrayWithLength(_) => {
                 [u32_to_word(suffix_offset)].to_vec()
             }
@@ -185,6 +168,7 @@ impl Mediate {
             Mediate::Raw(_) | Mediate::RawTuple(_) => Vec::new(),
             Mediate::Prefixed(ref raw) => raw.clone(),
             Mediate::PrefixedTuple(ref mediates) => encode_head_tail(mediates),
+            Mediate::PrefixedArray(ref mediates) => encode_head_tail(mediates),
             Mediate::PrefixedArrayWithLength(ref mediates) => {
                 // + `WORD_SIZE` added to offset represents len of the array prepanded to tail
                 let mut result = [u32_to_word(mediates.len() as u32)].to_vec();
@@ -672,11 +656,9 @@ impl Decode for ((),) {
     }
 }
 
-use liquid_primitives::types::{i256, u256, Address, ADDRESS_LENGTH};
+impl TypeInfo for address {}
 
-impl TypeInfo for Address {}
-
-impl MediateEncode for Address {
+impl MediateEncode for address {
     fn encode(&self) -> Mediate {
         let mut buf = [0x00; WORD_SIZE];
         buf[(WORD_SIZE - ADDRESS_LENGTH)..].copy_from_slice(&self.0);
@@ -684,7 +666,7 @@ impl MediateEncode for Address {
     }
 }
 
-impl MediateDecode for Address {
+impl MediateDecode for address {
     fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error> {
         let slice = peek(slices, offset)?;
 
@@ -695,10 +677,10 @@ impl MediateDecode for Address {
             Err("Invalid address representation".into())
         } else {
             let new_offset = offset + 1;
-            let mut address = [0u8; ADDRESS_LENGTH];
-            address[..].copy_from_slice(&slice[(WORD_SIZE - ADDRESS_LENGTH)..]);
+            let mut addr = [0u8; ADDRESS_LENGTH];
+            addr[..].copy_from_slice(&slice[(WORD_SIZE - ADDRESS_LENGTH)..]);
             Ok(DecodeResult {
-                value: Self(address),
+                value: Self(addr),
                 new_offset,
             })
         }
@@ -731,6 +713,17 @@ impl MediateDecode for i256 {
     }
 }
 
+impl MediateDecode for u256 {
+    fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error> {
+        let slice = peek(slices, offset)?;
+        let value = u256::from_bytes_be(slice);
+        Ok(DecodeResult {
+            value,
+            new_offset: offset + 1,
+        })
+    }
+}
+
 impl TypeInfo for u256 {}
 
 impl MediateEncode for u256 {
@@ -743,12 +736,106 @@ impl MediateEncode for u256 {
     }
 }
 
-impl MediateDecode for u256 {
+seq!(N in 1..=32 {
+    impl TypeInfo for bytes#N {}
+
+    impl MediateEncode for bytes#N {
+        fn encode(&self) -> Mediate {
+            Mediate::Raw(pad_bytes(&self.0))
+        }
+    }
+
+    impl MediateDecode for bytes#N {
+        fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error> {
+            let slice = peek(slices, offset)?;
+            let mut buf = [0u8; (N as usize)];
+            buf.copy_from_slice(&slice[..(N as usize)]);
+            Ok(DecodeResult { value: Self(buf), new_offset: offset + 1 })
+        }
+    }
+});
+
+impl<T, const N: usize> TypeInfo for [T; N]
+where
+    T: TypeInfo,
+{
+    #[inline(always)]
+    fn is_dynamic() -> bool {
+        <T as TypeInfo>::is_dynamic()
+    }
+
+    #[inline]
+    fn size_hint() -> u32 {
+        if Self::is_dynamic() {
+            unreachable!();
+        } else {
+            <T as TypeInfo>::size_hint() * (N as u32)
+        }
+    }
+}
+
+impl<T, const N: usize> MediateEncode for [T; N]
+where
+    T: MediateEncode + TypeInfo,
+{
+    fn encode(&self) -> Mediate {
+        let mediates = self.iter().map(|elem| elem.encode()).collect::<_>();
+
+        if T::is_dynamic() {
+            Mediate::PrefixedArray(mediates)
+        } else {
+            Mediate::Raw(encode_head_tail(&mediates))
+        }
+    }
+}
+
+impl<T, const N: usize> MediateDecode for [T; N]
+where
+    T: MediateDecode + TypeInfo,
+{
     fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error> {
-        let slice = peek(slices, offset)?;
-        let value = u256::from_bytes_be(slice);
+        use mem::MaybeUninit;
+
+        let mut elems: [MaybeUninit<T>; N] =
+            unsafe { MaybeUninit::uninit().assume_init() };
+
+        let is_dynamic = Self::is_dynamic();
+        let (tail, mut new_offset) = if is_dynamic {
+            (&slices[(as_u32(peek(slices, offset)?)? as usize / 32)..], 0)
+        } else {
+            (slices, offset)
+        };
+
+        for elem in elems.iter_mut().take(N) {
+            let decode_result = T::decode(&tail, new_offset)?;
+            new_offset = decode_result.new_offset;
+            *elem = MaybeUninit::new(decode_result.value);
+        }
+
+        let elems = unsafe { mem::transmute_copy::<_, [T; N]>(&elems) };
         Ok(DecodeResult {
-            value,
+            value: elems,
+            new_offset: if is_dynamic { offset + 1 } else { new_offset },
+        })
+    }
+}
+
+impl MediateEncode for Bytes {
+    fn encode(&self) -> Mediate {
+        Mediate::Prefixed(encode_bytes(self.as_slice()))
+    }
+}
+
+impl MediateDecode for Bytes {
+    fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error> {
+        let offset_slice = peek(slices, offset)?;
+        let len_offset = (as_u32(offset_slice)? / 32) as usize;
+        let len_slice = peek(slices, len_offset)?;
+        let len = as_u32(len_slice)? as usize;
+        let taken = take(slices, len_offset + 1, len)?;
+
+        Ok(DecodeResult {
+            value: taken.bytes.into(),
             new_offset: offset + 1,
         })
     }

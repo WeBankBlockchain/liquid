@@ -121,6 +121,60 @@ fn substitute_number(var: &Ident, number: u64, body: TokenStream2) -> TokenStrea
             _ => (),
         };
 
+        if i + 6 <= tokens.len() {
+            match &tokens[i..i + 6] {
+                [TokenTree::Ident(prefix), TokenTree::Punct(pound1), TokenTree::Punct(op), TokenTree::Literal(num_literal), TokenTree::Punct(pound2), TokenTree::Ident(ident)]
+                    if (op.as_char() == '+' || op.as_char() == '-')
+                        && pound1.as_char() == '#'
+                        && pound2.as_char() == '#'
+                        && ident == var =>
+                {
+                    if let Ok(num) = num_literal.to_string().parse::<u64>() {
+                        let mut actual_number = number;
+                        if op.as_char() == '+' {
+                            actual_number += num;
+                        } else {
+                            actual_number -= num;
+                        }
+
+                        let concat = format!("{}{}", prefix, actual_number);
+                        let ident = Ident::new(&concat, prefix.span());
+                        tokens.splice(i..i + 6, iter::once(TokenTree::Ident(ident)));
+                        i += 1;
+                        continue;
+                    }
+                }
+                _ => (),
+            };
+        }
+
+        if i + 4 <= tokens.len() {
+            match &tokens[i..i + 4] {
+                [TokenTree::Punct(op), TokenTree::Literal(num_literal), TokenTree::Punct(pound), TokenTree::Ident(ident)]
+                    if (op.as_char() == '+' || op.as_char() == '-')
+                        && pound.as_char() == '#'
+                        && ident == var =>
+                {
+                    if let Ok(num) = num_literal.to_string().parse::<u64>() {
+                        let mut actual_number = number;
+                        if op.as_char() == '+' {
+                            actual_number += num;
+                        } else {
+                            actual_number -= num;
+                        }
+                        let original_span =
+                            tokens[i].span().join(tokens[i + 3].span()).unwrap();
+                        let mut literal = Literal::u64_suffixed(actual_number);
+                        literal.set_span(original_span);
+                        tokens.splice(i..i + 4, iter::once(TokenTree::Literal(literal)));
+                        i += 1;
+                        continue;
+                    }
+                }
+                _ => (),
+            };
+        }
+
         if i + 3 <= tokens.len() {
             let prefix = match &tokens[i..i + 3] {
                 [TokenTree::Ident(prefix), TokenTree::Punct(pound), TokenTree::Ident(ident)]

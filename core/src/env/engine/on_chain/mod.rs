@@ -17,7 +17,7 @@ use self::buffer::StaticBuffer;
 use super::OnInstance;
 use crate::env::{CallData, CallMode, Env, EnvError, Result};
 use liquid_abi_codec::Decode;
-use liquid_primitives::types::{Address, BlockNumber, Timestamp, Topics, ADDRESS_LENGTH};
+use liquid_primitives::{types::address_impl::*, Topics};
 
 /// The on-chain environment
 pub struct EnvInstance {
@@ -145,27 +145,27 @@ impl Env for EnvInstance {
         ext::log(&self.buffer[..self.buffer.len()], &topics);
     }
 
-    fn get_caller(&mut self) -> Address {
+    fn get_caller(&mut self) -> address {
         self.buffer.resize(ADDRESS_LENGTH);
         ext::get_caller(&mut self.buffer[..ADDRESS_LENGTH]);
-        let mut address = [0u8; ADDRESS_LENGTH];
-        address.copy_from_slice(&self.buffer[..ADDRESS_LENGTH]);
-        Address::new(address)
+        let mut addr = [0u8; ADDRESS_LENGTH];
+        addr.copy_from_slice(&self.buffer[..ADDRESS_LENGTH]);
+        address::new(addr)
     }
 
-    fn now(&mut self) -> Timestamp {
-        ext::get_block_timestamp() as Timestamp
+    fn now(&mut self) -> u64 {
+        ext::get_block_timestamp() as u64
     }
 
-    fn get_block_number(&mut self) -> BlockNumber {
-        ext::get_block_number() as BlockNumber
+    fn get_block_number(&mut self) -> u64 {
+        ext::get_block_number() as u64
     }
 
-    fn call<R>(&mut self, address: &Address, data: &[u8]) -> Result<R>
+    fn call<R>(&mut self, addr: &address, data: &[u8]) -> Result<R>
     where
         R: liquid_abi_codec::Decode + liquid_abi_codec::TypeInfo,
     {
-        let status = ext::call(&address.0, data);
+        let status = ext::call(&addr.0, data);
         if status != 0 {
             return Err(EnvError::FailToCallForeignContract);
         }

@@ -1,0 +1,6 @@
+error: only function declaration is allowed for `extern` block in interface
+ --> $DIR/38-invalid-item-in-extern.rs:8:9
+  |
+8 | /         #[link_name = "environ"]
+9 | |         static libc_environ: *const *const std::os::raw::c_char;
+  | |________________________________________________________________^

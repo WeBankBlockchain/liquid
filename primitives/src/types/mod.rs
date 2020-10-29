@@ -10,20 +10,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod address;
-mod hash;
+#![allow(non_camel_case_types)]
+
+pub mod address_impl;
+pub mod bytes_impl;
+pub mod fixed_size_bytes;
+pub mod hash_impl;
 mod int256;
 mod uint256;
 
-pub use address::{Address, ADDRESS_LENGTH};
-pub use hash::{Hash, HASH_LENGTH};
+pub use address_impl::address;
+pub use bytes_impl::bytes;
+pub use fixed_size_bytes::*;
+pub use hash_impl::hash;
 pub use int256::i256;
-use liquid_prelude::vec::Vec;
 pub use uint256::u256;
-
-pub type Timestamp = u64;
-pub type BlockNumber = u64;
-
-pub trait Topics {
-    fn topics(&self) -> Vec<Hash>;
-}

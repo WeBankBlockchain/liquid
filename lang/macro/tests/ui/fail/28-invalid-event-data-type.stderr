@@ -6,11 +6,3 @@ error[E0277]: the trait bound `f32: You_Should_Use_An_Valid_Event_Data_Type` is 
 10 | |         f: f32,
 11 | |     }
    | |_____^ the trait `You_Should_Use_An_Valid_Event_Data_Type` is not implemented for `f32`
-
-error[E0277]: the trait bound `f32: You_Should_Use_An_Valid_Event_Data_Type` is not satisfied
- --> $DIR/28-invalid-event-data-type.rs:3:1
-  |
-3 | #[liquid::contract(version = "0.1.0")]
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `You_Should_Use_An_Valid_Event_Data_Type` is not implemented for `f32`
-  |
-  = note: this error originates in an attribute macro (in Nightly builds, run with -Z macro-backtrace for more info)

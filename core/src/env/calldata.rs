@@ -10,9 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use liquid_abi_codec::{Decode, Encode, Error, Input};
+use liquid_abi_codec::{Decode, Encode, Input};
 use liquid_prelude::vec::{from_elem, Vec};
-use liquid_primitives::Selector;
+use liquid_primitives::{Error, Selector};
 
 pub struct CallData {
     pub selector: Selector,

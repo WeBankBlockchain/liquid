@@ -1,4 +1,4 @@
-error: the visibility of InOut/State type should be `pub`
+error: the visibility of type derived from `InOut` or `State` should be `pub`
  --> $DIR/04-not-public.rs:5:1
   |
 5 | / struct MyStruct {

@@ -11,23 +11,35 @@
 // limitations under the License.
 
 use liquid_prelude::vec::Vec;
-use proc_macro2::Ident;
+use proc_macro2::{Ident, Span};
 use syn::{self, parse::Result, Data, DeriveInput, Fields, Type};
 
-pub fn struct_syntax_check(ast: &DeriveInput) -> Result<(Vec<&Ident>, Vec<&Type>)> {
+pub fn struct_syntax_check(ast: &DeriveInput) -> Result<(Vec<&Ident>, Vec<&Type>, Span)> {
     let struct_data = match &ast.data {
         Data::Struct(ref struct_data) => struct_data,
-        Data::Enum(_) => bail!(&ast, "enums are not supported"),
-        Data::Union(_) => bail!(&ast, "unions are not supported"),
+        Data::Enum(ref enum_data) => bail!(
+            &enum_data.enum_token,
+            "enums are not supported to derive from `InOut` or `State`"
+        ),
+        Data::Union(ref union_data) => bail!(
+            &union_data.union_token,
+            "unions are not supported to derive from `InOut` or `State`"
+        ),
     };
 
-    match ast.vis {
+    match &ast.vis {
         syn::Visibility::Public(_) => (),
-        _ => bail!(&ast, "the visibility of InOut/State type should be `pub`"),
+        _ => bail!(
+            ast,
+            "the visibility of type derived from `InOut` or `State` should be `pub`"
+        ),
     }
 
     if ast.generics.type_params().count() > 0 {
-        bail!(&ast, "generic structs are not supported")
+        bail!(
+            &ast.generics,
+            "generic structs are not supported to derive from `InOut` or `State`"
+        )
     }
 
     let fields = &struct_data.fields;
@@ -37,13 +49,20 @@ pub fn struct_syntax_check(ast: &DeriveInput) -> Result<(Vec<&Ident>, Vec<&Type>
             .iter()
             .map(|field| (field.ident.as_ref().unwrap(), &field.ty))
             .unzip(),
-        Fields::Unnamed(_) => bail!(&ast, "unnamed structs are not supported"),
-        Fields::Unit => bail!(&ast, "unit structs are not supported"),
+        Fields::Unnamed(fields_unnamed) => bail!(
+            fields_unnamed,
+            "unnamed structs are not supported to derive from `InOut` or `State`"
+        ),
+        Fields::Unit => bail!(
+            fields,
+            "unit structs are not supported to derive from `InOut` or `State`"
+        ),
     };
 
     if field_names.is_empty() {
-        bail!(&ast, "empty structs are not supported")
+        bail!(fields, "empty structs are not supported")
     }
 
-    Ok((field_names, field_tys))
+    use syn::spanned::Spanned;
+    Ok((field_names, field_tys, fields.span()))
 }

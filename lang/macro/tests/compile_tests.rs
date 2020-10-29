@@ -27,6 +27,9 @@ fn compile_tests() {
     t.pass("tests/ui/pass/12-multiple-impls.rs");
     t.pass("tests/ui/pass/13-interface.rs");
     t.pass("tests/ui/pass/14-interface-name-alias.rs");
+    t.pass("tests/ui/pass/15-fixed-size-bytes.rs");
+    t.pass("tests/ui/pass/16-array.rs");
+    t.pass("tests/ui/pass/17-bytes.rs");
     t.compile_fail("tests/ui/fail/01-constructor-returns.rs");
     t.compile_fail("tests/ui/fail/02-missing-constructor.rs");
     t.compile_fail("tests/ui/fail/03-multiple-constructors.rs");
@@ -62,5 +65,11 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/33-empty-interface-name.rs");
     t.compile_fail("tests/ui/fail/34-invalid-interface-name-1.rs");
     t.compile_fail("tests/ui/fail/35-invalid-interface-name-2.rs");
-    t.compile_fail("tests/ui/fail/36-invalid-interface-name-3.rs")
+    t.compile_fail("tests/ui/fail/36-invalid-interface-name-3.rs");
+    t.compile_fail("tests/ui/fail/37-invalid-item-in-interface.rs");
+    t.compile_fail("tests/ui/fail/38-invalid-item-in-extern.rs");
+    t.compile_fail("tests/ui/fail/39-too-many-extern-in-interface.rs");
+    t.compile_fail("tests/ui/fail/40-invalid-ABI-specification.rs");
+    t.compile_fail("tests/ui/fail/41-invalid-method-param-type-in-interface.rs");
+    t.compile_fail("tests/ui/fail/42-invalid-method-return-type-in-interface.rs");
 }

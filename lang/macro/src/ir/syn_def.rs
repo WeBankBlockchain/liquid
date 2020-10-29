@@ -303,8 +303,6 @@ pub struct ForeignFn {
     pub sig: Signature,
     /// The semicolon token.
     pub semi_token: Token![;],
-    /// The unique identifier of the foreign method.
-    pub fn_id: usize,
     /// The span of the foreign method.
     pub span: Span,
 }

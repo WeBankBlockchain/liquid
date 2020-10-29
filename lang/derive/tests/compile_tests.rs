@@ -18,9 +18,11 @@ fn compile_tests() {
     t.pass("tests/ui/pass/03-user-defined-output.rs");
     t.pass("tests/ui/pass/04-user-defined-state.rs");
     t.pass("tests/ui/pass/05-dynamic-array-inout.rs");
+    t.pass("tests/ui/pass/06-nested-inout.rs");
     t.compile_fail("tests/ui/fail/01-empty-struct.rs");
     t.compile_fail("tests/ui/fail/02-enum.rs");
     t.compile_fail("tests/ui/fail/03-union.rs");
     t.compile_fail("tests/ui/fail/04-not-public.rs");
     t.compile_fail("tests/ui/fail/05-generic.rs");
+    t.compile_fail("tests/ui/fail/06-invalid-inout-type.rs");
 }

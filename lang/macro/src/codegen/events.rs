@@ -98,8 +98,8 @@ impl<'a> Events<'a> {
                 }
             )*
 
-            impl liquid_primitives::types::Topics for Event {
-                fn topics(&self) -> liquid_prelude::vec::Vec<liquid_primitives::types::Hash> {
+            impl liquid_primitives::Topics for Event {
+                fn topics(&self) -> liquid_prelude::vec::Vec<liquid_primitives::types::hash> {
                     match self {
                         #(
                             Event::#event_idents(event) => event.topics(),
@@ -125,69 +125,32 @@ impl<'a> Events<'a> {
             let span = item_event.span;
             let event_ident = &item_event.ident;
             let event_fields = &item_event.fields;
-
-            let mut sig_helper = quote_spanned! { span =>
-                impl liquid_ty_mapping::SolTypeName for EventSigHelper<#event_ident, ()> {
-                    const NAME: &'static [u8] = <() as liquid_ty_mapping::SolTypeName>::NAME;
-                }
-                impl liquid_ty_mapping::SolTypeNameLen for EventSigHelper<#event_ident, ()> {
-                    const LEN: usize = <() as liquid_ty_mapping::SolTypeNameLen>::LEN;
-                }
-            };
-
             let event_field_tys = event_fields.iter().enumerate().map(|(i, field)| {
                 let ty = &field.ty;
                 if !item_event.indexed_fields.iter().any(|index| *index == i) {
-                    quote! {
+                    quote_spanned! { span =>
                         <#ty as liquid_lang::You_Should_Use_An_Valid_Event_Data_Type>::T
                     }
                 } else {
-                    quote! {
+                    quote_spanned! { span =>
                         <#ty as liquid_lang::You_Should_Use_An_Valid_Event_Topic_Type>::T
                     }
                 }
             }).collect::<Vec<_>>();
-            for i in 1..=event_field_tys.len() {
-                let tys = &event_field_tys[..i];
-                let first_tys = &tys[0..i - 1];
-                let rest_ty = &tys[i - 1];
-                if i > 1 {
-                    sig_helper.extend(quote_spanned! { span =>
-                        impl liquid_ty_mapping::SolTypeName for EventSigHelper<#event_ident, (#(#tys,)*)> {
-                            const NAME: &'static [u8] = {
-                                const LEN: usize =
-                                    <(#(#first_tys,)*) as liquid_ty_mapping::SolTypeNameLen<_>>::LEN
-                                    + <#rest_ty as liquid_ty_mapping::SolTypeNameLen<_>>::LEN
-                                    + 1;
-                                &liquid_ty_mapping::concat::<EventSigHelper<#event_ident, (#(#first_tys,)*)>, #rest_ty, (), _, LEN>(true)
-                            };
-                        }
-                    });
-                } else {
-                    sig_helper.extend(quote_spanned! { span =>
-                        impl liquid_ty_mapping::SolTypeName for EventSigHelper<#event_ident, (#rest_ty,)> {
-                            const NAME: &'static [u8] = <#rest_ty as liquid_ty_mapping::SolTypeName<_>>::NAME;
-                        }
-                    });
-                }
-            }
 
             let event_name = event_ident.to_string();
             let event_name_bytes = event_name.as_bytes();
             let event_name_len = event_name_bytes.len();
-            let composite_sig = quote! {
-                const SIG_LEN: usize =
-                    <(#(#event_field_tys,)*) as liquid_ty_mapping::SolTypeNameLen<_>>::LEN + #event_name_len
-                    + 2;
-                const SIG: [u8; SIG_LEN] =
-                    liquid_ty_mapping::composite::<SIG_LEN>(
-                        &[#(#event_name_bytes),*],
-                        <EventSigHelper<#event_ident, (#(#event_field_tys,)*)> as liquid_ty_mapping::SolTypeName<_>>::NAME);
-            };
-
-            let sig_hash = quote! {
+            let sig_hash = quote_spanned! { span =>
                 {
-                    #composite_sig
+                    const SIG_LEN: usize =
+                        liquid_ty_mapping::len::<(#(#event_field_tys,)*)>()
+                        + #event_name_len
+                        + 2;
+
+                    const SIG: [u8; SIG_LEN] =
+                        liquid_ty_mapping::composite::<(#(#event_field_tys,)*), SIG_LEN>(&[#(#event_name_bytes),*]);
+
                     liquid_primitives::hash::hash(&SIG)
                 }
             };
@@ -196,7 +159,7 @@ impl<'a> Events<'a> {
                 let calculate_topics = item_event.indexed_fields.iter().map(|index| {
                     let ident = &event_fields[*index].ident;
                     let ty = &event_fields[*index].ty;
-                    quote! {
+                    quote_spanned! { span =>
                         <#ty as liquid_lang::You_Should_Use_An_Valid_Event_Topic_Type>::topic(&self.#ident)
                     }
                 });
@@ -216,17 +179,16 @@ impl<'a> Events<'a> {
                 }
             });
 
-            quote! {
-                #sig_helper
-
-                impl liquid_primitives::types::Topics for #event_ident {
-                    fn topics(&self) -> liquid_prelude::vec::Vec<liquid_primitives::types::Hash> {
+            quote_spanned! { span =>
+                impl liquid_primitives::Topics for #event_ident {
+                    fn topics(&self) -> liquid_prelude::vec::Vec<liquid_primitives::types::hash> {
                         [#sig_hash.into(), #topic_hash].to_vec()
                     }
                 }
 
                 impl liquid_abi_codec::Encode for #event_ident {
                     fn encode(&self) -> liquid_prelude::vec::Vec<u8> {
+                        #[allow(unused_mut)]
                         let mut mediates = Vec::<liquid_abi_codec::Mediate>::new();
                         #(
                             mediates.push(#mediate_encode);

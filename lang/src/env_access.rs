@@ -11,12 +11,12 @@
 // limitations under the License.
 
 use liquid_core::env;
-use liquid_primitives::types::Address;
+use liquid_primitives::types::address_impl::address;
 
 pub struct EnvAccess;
 
 impl EnvAccess {
-    pub fn get_caller(self) -> Address {
+    pub fn get_caller(self) -> address {
         env::get_caller()
     }
 }

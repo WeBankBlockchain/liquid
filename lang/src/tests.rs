@@ -14,7 +14,7 @@ use crate as liquid_lang;
 use crate::InOut;
 use hex_literal::hex;
 use liquid_abi_codec::{Decode, Encode, TypeInfo};
-use liquid_ty_mapping::{SolTypeName, SolTypeNameLen};
+use liquid_ty_mapping::MappingToSolidityType;
 use pretty_assertions::assert_eq;
 
 macro_rules! test_encode_decode {
@@ -22,6 +22,12 @@ macro_rules! test_encode_decode {
         assert_eq!(<$t as Decode>::decode(&mut &hex!($e)[..]).unwrap(), $var);
         assert_eq!(<$t as Encode>::encode(&$var), hex!($e).to_vec());
     };
+}
+
+fn map_to_solidity_type<T: MappingToSolidityType>() -> &'static str {
+    std::str::from_utf8(&<T as MappingToSolidityType>::MAPPED_TYPE_NAME)
+        .unwrap()
+        .trim_end_matches(char::from(0))
 }
 
 #[derive(InOut, PartialEq, Debug, Clone)]
@@ -35,8 +41,7 @@ pub struct T0 {
 fn test_T0() {
     assert_eq!(<T0 as TypeInfo>::is_dynamic(), false);
     assert_eq!(<T0 as TypeInfo>::size_hint(), 64);
-    assert_eq!(<T0 as SolTypeName>::NAME, b"(uint128,bool)");
-    assert_eq!(<T0 as SolTypeNameLen>::LEN, 14);
+    assert_eq!(map_to_solidity_type::<T0>(), "(uint128,bool)");
 
     let t0 = T0 { a: 0, b: true };
     test_encode_decode!(T0, t0, "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001");
@@ -64,8 +69,7 @@ pub struct T1 {
 #[allow(non_snake_case)]
 fn test_T1() {
     assert_eq!(<T1 as TypeInfo>::is_dynamic(), true);
-    assert_eq!(<T1 as SolTypeName<_>>::NAME, b"(uint128,string,bool)");
-    assert_eq!(<T1 as SolTypeNameLen<_>>::LEN, 21);
+    assert_eq!(map_to_solidity_type::<T1>(), "(uint128,string,bool)");
 
     let t1 = T1 {
         a: 42,
@@ -93,12 +97,9 @@ pub struct T2 {
 fn test_T2() {
     assert_eq!(<T2 as TypeInfo>::is_dynamic(), true);
     assert_eq!(
-        <T2 as SolTypeName<_>>::NAME,
+        map_to_solidity_type::<T2>(),
         "((uint128,bool),(uint128,string,bool))"
-            .to_string()
-            .as_bytes()
     );
-    assert_eq!(<T2 as SolTypeNameLen<_>>::LEN, 38);
 
     let t2 = T2 {
         a: T0 { a: 0, b: true },
@@ -125,12 +126,9 @@ fn test_dynamic_array() {
     type Array = Vec<T2>;
     assert_eq!(<Array as TypeInfo>::is_dynamic(), true);
     assert_eq!(
-        <Array as SolTypeName<_>>::NAME,
+        map_to_solidity_type::<Array>(),
         "((uint128,bool),(uint128,string,bool))[]"
-            .to_string()
-            .as_bytes()
     );
-    assert_eq!(<Array as SolTypeNameLen<_>>::LEN, 40);
 
     let array = [T2 {
         a: T0 { a: 0, b: true },

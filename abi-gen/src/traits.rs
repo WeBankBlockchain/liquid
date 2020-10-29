@@ -13,6 +13,7 @@
 use crate::{ExternalFnABIBuilder, ParamABI};
 use liquid_macro::seq;
 use liquid_prelude::{string::String, vec::Vec};
+use liquid_primitives::types::address;
 
 pub trait GenerateComponents<T = ()> {
     fn generate_components() -> Vec<ParamABI> {
@@ -35,7 +36,9 @@ macro_rules! impl_primitive_tys {
 
             impl TyName for $t {
                 fn ty_name() -> String {
-                    String::from_utf8((<$t as liquid_ty_mapping::SolTypeName>::NAME).to_vec()).unwrap()
+                    std::str::from_utf8(&<$t as liquid_ty_mapping::MappingToSolidityType>::MAPPED_TYPE_NAME)
+                    .unwrap()
+                    .trim_end_matches(char::from(0)).into()
                 }
             }
         )*
@@ -55,6 +58,7 @@ impl_primitive_tys!(
     i64,
     i128,
     String,
+    address,
     ()
 );
 
@@ -124,14 +128,3 @@ macro_rules! impl_for_tuple {
 seq!(N in 0..16 {
     impl_for_tuple!(#(T#N,)*);
 });
-
-use liquid_primitives::types::Address;
-use liquid_ty_mapping::ADDRESS_MAPPED_TYPE;
-
-impl GenerateComponents for Address {}
-
-impl TyName for Address {
-    fn ty_name() -> String {
-        String::from(ADDRESS_MAPPED_TYPE)
-    }
-}

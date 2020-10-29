@@ -75,11 +75,6 @@ impl<'a> Dispatch<'a> {
             pub struct FnMarker<S> {
                 marker: core::marker::PhantomData<fn() -> S>,
             }
-
-            pub struct TyMappingHelper<S, T> {
-                marker_s: core::marker::PhantomData<fn() -> S>,
-                marker_t: core::marker::PhantomData<fn() -> T>,
-            }
         }
     }
 
@@ -130,7 +125,26 @@ impl<'a> Dispatch<'a> {
             }
         };
 
-        let selectors = utils::generate_ty_mapping(*fn_id, &sig.ident, &input_tys);
+        let fn_name = sig.ident.to_string();
+        let fn_name_bytes = fn_name.as_bytes();
+        let fn_name_len = fn_name.len();
+        let selector = quote_spanned! { span =>
+            impl liquid_lang::FnSelector for #fn_marker {
+                const SELECTOR: liquid_primitives::Selector = {
+                    const SIG_LEN: usize =
+                        liquid_ty_mapping::len::<(#(#input_tys,)*)>()
+                        + #fn_name_len
+                        + 2;
+
+                    const SIG: [u8; SIG_LEN] =
+                        liquid_ty_mapping::composite::<(#(#input_tys,)*), SIG_LEN>(&[#(#fn_name_bytes),*]);
+
+                    let hash = liquid_primitives::hash::hash(&SIG);
+                    [hash[0], hash[1], hash[2], hash[3]]
+                };
+            }
+        };
+
         let is_mut = sig.is_mut();
         let mutability = quote_spanned! { span =>
             impl liquid_lang::FnMutability for #fn_marker {
@@ -141,7 +155,7 @@ impl<'a> Dispatch<'a> {
         quote_spanned! { span =>
             #fn_input
             #fn_output
-            #selectors
+            #selector
             #mutability
             impl liquid_lang::ExternalFn for #fn_marker {}
         }

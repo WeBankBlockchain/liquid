@@ -13,10 +13,7 @@
 use liquid_abi_codec::{Decode, Encode};
 use liquid_macro::seq;
 use liquid_prelude::{string::String, vec::Vec};
-use liquid_primitives::{
-    types::{i256, u256, Address, Hash},
-    Selector,
-};
+use liquid_primitives::{types::*, Selector};
 
 pub trait FnInput {
     type Input: Decode + 'static;
@@ -60,7 +57,7 @@ pub trait You_Should_Use_An_Valid_Event_Data_Type: Sized {
 pub trait You_Should_Use_An_Valid_Event_Topic_Type: Sized {
     type T = Self;
 
-    fn topic(&self) -> Hash
+    fn topic(&self) -> hash
     where
         Self: liquid_abi_codec::Encode,
     {
@@ -68,21 +65,39 @@ pub trait You_Should_Use_An_Valid_Event_Topic_Type: Sized {
     }
 }
 
+#[allow(non_camel_case_types)]
+pub trait You_Should_Use_An_Valid_Field_Data_Type: Sized {
+    type T = Self;
+}
+
+macro_rules! gen_impls {
+    ($t:ty) => {
+        impl You_Should_Use_An_Valid_Parameter_Type for $t {}
+        impl You_Should_Use_An_Valid_Return_Type for $t {}
+        impl You_Should_Use_An_Valid_Input_Type for $t {}
+        impl You_Should_Use_An_Valid_Event_Data_Type for $t {}
+        impl You_Should_Use_An_Valid_Event_Topic_Type for $t {}
+        impl You_Should_Use_An_Valid_Field_Data_Type for $t {}
+    };
+}
+
 macro_rules! impl_for_primitives {
-    ($($t:ty),*) => {
+    ($($t:ty,)*) => {
         $(
-            impl You_Should_Use_An_Valid_Parameter_Type for $t {}
-            impl You_Should_Use_An_Valid_Return_Type for $t {}
-            impl You_Should_Use_An_Valid_Input_Type for $t {}
-            impl You_Should_Use_An_Valid_Event_Data_Type for $t {}
-            impl You_Should_Use_An_Valid_Event_Topic_Type for $t {}
+            gen_impls!($t);
         )*
     };
 }
 
 impl_for_primitives!(
-    u8, u16, u32, u64, u128, u256, i8, i16, i32, i64, i128, i256, bool, Address
+    u8, u16, u32, u64, u128, u256, i8, i16, i32, i64, i128, i256, bool, address,
 );
+
+seq!(N in 1..=32 {
+    #(
+        gen_impls!(bytes#N);
+    )*
+});
 
 impl You_Should_Use_An_Valid_Parameter_Type for String {}
 impl You_Should_Use_An_Valid_Return_Type for String {}
@@ -91,10 +106,18 @@ impl You_Should_Use_An_Valid_Event_Data_Type for String {}
 impl You_Should_Use_An_Valid_Event_Topic_Type for String {
     type T = Self;
 
-    fn topic(&self) -> Hash {
+    fn topic(&self) -> hash {
         liquid_primitives::hash::hash(self.as_bytes()).into()
     }
 }
+impl You_Should_Use_An_Valid_Field_Data_Type for String {}
+
+
+impl You_Should_Use_An_Valid_Parameter_Type for bytes {}
+impl You_Should_Use_An_Valid_Return_Type for bytes {}
+impl You_Should_Use_An_Valid_Input_Type for bytes {}
+impl You_Should_Use_An_Valid_Event_Data_Type for bytes {}
+impl You_Should_Use_An_Valid_Field_Data_Type for bytes {}
 
 impl<T> You_Should_Use_An_Valid_Parameter_Type for Vec<T> where
     T: You_Should_Use_An_Valid_Parameter_Type
@@ -112,6 +135,36 @@ impl<T> You_Should_Use_An_Valid_Input_Type for Vec<T> where
 }
 
 impl<T> You_Should_Use_An_Valid_Event_Data_Type for Vec<T> where
+    T: You_Should_Use_An_Valid_Parameter_Type
+{
+}
+
+impl<T> You_Should_Use_An_Valid_Field_Data_Type for Vec<T> where
+    T: You_Should_Use_An_Valid_Parameter_Type
+{
+}
+
+impl<T, const N: usize> You_Should_Use_An_Valid_Parameter_Type for [T; N] where
+    T: You_Should_Use_An_Valid_Parameter_Type
+{
+}
+
+impl<T, const N: usize> You_Should_Use_An_Valid_Return_Type for [T; N] where
+    T: You_Should_Use_An_Valid_Parameter_Type
+{
+}
+
+impl<T, const N: usize> You_Should_Use_An_Valid_Input_Type for [T; N] where
+    T: You_Should_Use_An_Valid_Parameter_Type
+{
+}
+
+impl<T, const N: usize> You_Should_Use_An_Valid_Event_Data_Type for [T; N] where
+    T: You_Should_Use_An_Valid_Parameter_Type
+{
+}
+
+impl<T, const N: usize> You_Should_Use_An_Valid_Field_Data_Type for [T; N] where
     T: You_Should_Use_An_Valid_Parameter_Type
 {
 }

@@ -1,0 +1,47 @@
+error[E0277]: the trait bound `f32: You_Should_Use_An_Valid_Field_Data_Type` is not satisfied
+ --> $DIR/06-invalid-inout-type.rs:5:20
+  |
+5 |   pub struct MyInOut {
+  |  ____________________^
+6 | |     b: bool,
+7 | |     i: f32,
+8 | | }
+  | |_^ the trait `You_Should_Use_An_Valid_Field_Data_Type` is not implemented for `f32`
+
+error[E0277]: the trait bound `f32: MediateEncode` is not satisfied
+ --> $DIR/06-invalid-inout-type.rs:5:20
+  |
+5 |   pub struct MyInOut {
+  |  ____________________^
+6 | |     b: bool,
+7 | |     i: f32,
+8 | | }
+  | |_^ the trait `MediateEncode` is not implemented for `f32`
+  |
+  = note: required by `liquid_abi_codec::MediateEncode::encode`
+
+error[E0277]: the trait bound `f32: MediateDecode` is not satisfied
+ --> $DIR/06-invalid-inout-type.rs:4:10
+  |
+4 | #[derive(InOut)]
+  |          ^^^^^ the trait `MediateDecode` is not implemented for `f32`
+  |
+  = note: required by `liquid_abi_codec::MediateDecode::decode`
+  = note: this error originates in a derive macro (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `f32: MappingToSolidityType` is not satisfied
+   --> $DIR/06-invalid-inout-type.rs:5:20
+    |
+5   |   pub struct MyInOut {
+    |  ____________________^
+6   | |     b: bool,
+7   | |     i: f32,
+8   | | }
+    | |_^ the trait `MappingToSolidityType` is not implemented for `f32`
+    |
+   ::: $WORKSPACE/ty_mapping/src/traits.rs:178:8
+    |
+178 |       T: MappingToSolidityType,
+    |          --------------------- required by this bound in `composite`
+    |
+    = note: required because of the requirements on the impl of `MappingToSolidityType` for `(bool, f32)`

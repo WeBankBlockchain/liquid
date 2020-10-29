@@ -62,7 +62,7 @@ impl<'a> Storage<'a> {
             });
 
             let ty = &field.ty;
-            field.ty = syn::parse2::<syn::Type>(quote!(<#ty as liquid_core::storage::You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage>::T)).unwrap();
+            field.ty = syn::parse2::<syn::Type>(quote_spanned!( span => <#ty as liquid_core::storage::You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage>::T)).unwrap();
         });
 
         let field_idents = fields

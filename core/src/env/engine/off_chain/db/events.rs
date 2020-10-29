@@ -11,12 +11,12 @@
 // limitations under the License.
 
 use liquid_abi_codec::{Decode, Encode};
-use liquid_primitives::types::{Hash, Topics};
+use liquid_primitives::{types::hash, Topics};
 
 #[derive(Clone)]
 pub struct Event {
     pub data: Vec<u8>,
-    pub topics: Vec<Hash>,
+    pub topics: Vec<hash>,
 }
 
 impl Event {

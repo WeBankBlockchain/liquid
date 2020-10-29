@@ -12,12 +12,13 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![feature(associated_type_defaults)]
+#![feature(min_const_generics)]
 
 mod codec;
 
 pub use codec::{
-    as_u32, encode_head_tail, peek, Codec, Decode, DecodeResult, Encode, Error, Input,
-    Mediate, MediateDecode, MediateEncode, Output, TypeInfo, Word, WORD_SIZE,
+    as_u32, encode_head_tail, peek, Codec, Decode, DecodeResult, Encode, Input, Mediate,
+    MediateDecode, MediateEncode, Output, TypeInfo, Word, WORD_SIZE,
 };
 
 #[cfg(test)]

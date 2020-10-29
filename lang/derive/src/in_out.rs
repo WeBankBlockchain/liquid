@@ -12,8 +12,8 @@
 
 use crate::utils;
 use liquid_prelude::{string::ToString, vec::Vec};
-use proc_macro2::{Ident, TokenStream as TokenStream2};
-use quote::quote;
+use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
+use quote::{quote, quote_spanned};
 use syn::{self, parse::Result, DeriveInput};
 
 pub fn generate(input: TokenStream2) -> TokenStream2 {
@@ -21,61 +21,6 @@ pub fn generate(input: TokenStream2) -> TokenStream2 {
         Ok(output) => output,
         Err(err) => err.to_compile_error(),
     }
-}
-
-fn generate_ty_mapping(input_tys: &[&syn::Type]) -> TokenStream2 {
-    let mut expanded = quote! {
-        struct TyMappingHelper<T> {
-            marker: core::marker::PhantomData<fn() -> T>,
-        }
-
-        impl _ty_mapping::SolTypeName for TyMappingHelper<()> {
-            const NAME: &'static [u8] = <() as _ty_mapping::SolTypeName>::NAME;
-        }
-
-        impl _ty_mapping::SolTypeNameLen for TyMappingHelper<()> {
-            const LEN: usize = <() as _ty_mapping::SolTypeNameLen>::LEN;
-        }
-    };
-
-    for i in 1..=input_tys.len() {
-        let tys = &input_tys[..i];
-        let first_tys = &tys[0..i - 1];
-        let rest_ty = &tys[i - 1];
-
-        if i > 1 {
-            expanded.extend(quote! {
-                impl _ty_mapping::SolTypeName for TyMappingHelper<(#(#tys,)*)> {
-                    const NAME: &'static [u8] = {
-                        const LEN: usize =
-                            <(#(#first_tys,)*) as _ty_mapping::SolTypeNameLen<_>>::LEN
-                            + <#rest_ty as _ty_mapping::SolTypeNameLen<_>>::LEN
-                            + 1;
-                        &_ty_mapping::concat::<TyMappingHelper<(#(#first_tys,)*)>, #rest_ty, (), (), LEN>(true)
-                    };
-                }
-
-                impl _ty_mapping::SolTypeNameLen for TyMappingHelper<(#(#tys,)*)> {
-                    const LEN: usize =
-                        <TyMappingHelper<(#(#first_tys,)*)> as _ty_mapping::SolTypeNameLen<_>>::LEN
-                        + <#rest_ty as _ty_mapping::SolTypeNameLen<_>>::LEN
-                        + 1;
-                }
-            });
-        } else {
-            expanded.extend(quote! {
-                impl _ty_mapping::SolTypeName for TyMappingHelper<(#rest_ty,)> {
-                    const NAME: &'static [u8] = <#rest_ty as _ty_mapping::SolTypeName<_>>::NAME;
-                }
-
-                impl _ty_mapping::SolTypeNameLen for TyMappingHelper<(#rest_ty,)> {
-                    const LEN: usize = <#rest_ty as _ty_mapping::SolTypeNameLen<_>>::LEN;
-                }
-            });
-        }
-    }
-
-    expanded
 }
 
 fn generate_abi_gen(
@@ -96,7 +41,10 @@ fn generate_abi_gen(
                     if !param_abi.components.is_empty() {
                         param_abi.ty = String::from("tuple");
                     } else {
-                        param_abi.ty = String::from_utf8((<#field_tys as _ty_mapping::SolTypeName>::NAME).to_vec()).expect("the type name of a function argument must an valid utf-8 string");
+                        param_abi.ty = String::from_utf8((<#field_tys as liquid_ty_mapping::MappingToSolidityType>::MAPPED_TYPE_NAME).to_vec())
+                            .expect("the type name of a function argument must an valid utf-8 string")
+                            .trim_matches(char::from(0))
+                            .into();
                     }
                     param_abi
                 });)*
@@ -119,7 +67,8 @@ fn generate_abi_gen(
 
 fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
     let ast: DeriveInput = syn::parse2(input)?;
-    let (field_names, field_tys): (Vec<_>, Vec<_>) = utils::struct_syntax_check(&ast)?;
+    let (field_names, field_tys, fields_span): (Vec<_>, Vec<_>, Span) =
+        utils::struct_syntax_check(&ast)?;
     let ident = &ast.ident;
     let fields_count = field_names.len();
 
@@ -137,14 +86,13 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
         });
     }
 
-    let ty_mapping_helper = generate_ty_mapping(&field_tys);
     let abi_gen_helper = generate_abi_gen(&field_names, &field_tys, &ident);
 
-    Ok(quote! {
+    Ok(quote_spanned! { fields_span =>
         impl liquid_abi_codec::TypeInfo for #ident {
             #[inline(always)]
             fn is_dynamic() -> bool {
-                #(<#field_tys as liquid_abi_codec::TypeInfo>::is_dynamic() ||)* false
+                #(<<#field_tys as liquid_lang::You_Should_Use_An_Valid_Field_Data_Type>::T as liquid_abi_codec::TypeInfo>::is_dynamic() ||)* false
             }
 
             #[inline]
@@ -152,7 +100,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
                 if Self::is_dynamic() {
                     unreachable!();
                 } else {
-                    #(<#field_tys as liquid_abi_codec::TypeInfo>::size_hint() +)* 0
+                    #(<<#field_tys as liquid_lang::You_Should_Use_An_Valid_Field_Data_Type>::T as liquid_abi_codec::TypeInfo>::size_hint() +)* 0
                 }
             }
         }
@@ -170,7 +118,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
         }
 
         impl liquid_abi_codec::MediateDecode for #ident {
-            fn decode(slices: &[liquid_abi_codec::Word], offset: usize) -> Result<liquid_abi_codec::DecodeResult<Self>, liquid_abi_codec::Error>{
+            fn decode(slices: &[liquid_abi_codec::Word], offset: usize) -> Result<liquid_abi_codec::DecodeResult<Self>, liquid_primitives::Error>{
                 let is_dynamic = <Self as liquid_abi_codec::TypeInfo>::is_dynamic();
 
                 // The first element in a dynamic Tuple is an offset to the Tuple's data
@@ -195,23 +143,10 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
             }
         }
 
-        #ty_mapping_helper
-
-        impl _ty_mapping::SolTypeNameLen for #ident {
-            const LEN: usize =
-                <TyMappingHelper<(#(#field_tys,)*)> as _ty_mapping::SolTypeNameLen>::LEN
-                + 2;
-        }
-
-        impl _ty_mapping::SolTypeName for #ident {
-            const NAME: &'static [u8] = {
-                const LEN: usize =
-                    <TyMappingHelper<(#(#field_tys,)*)> as _ty_mapping::SolTypeNameLen>::LEN
-                    + 2;
-
-                &_ty_mapping::composite::<LEN>(
-                    b"",
-                    <TyMappingHelper<(#(#field_tys,)*)> as _ty_mapping::SolTypeName>::NAME)
+        impl liquid_ty_mapping::MappingToSolidityType for #ident {
+            const MAPPED_TYPE_NAME: [u8; liquid_ty_mapping::MAX_LENGTH_OF_MAPPED_TYPE_NAME] = {
+                const LEN: usize = liquid_ty_mapping::MAX_LENGTH_OF_MAPPED_TYPE_NAME;
+                liquid_ty_mapping::composite::<(#(#field_tys,)*), LEN>(&[])
             };
         }
 
@@ -219,18 +154,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
         impl liquid_lang::You_Should_Use_An_Valid_Return_Type for #ident {}
         impl liquid_lang::You_Should_Use_An_Valid_Input_Type for #ident {}
         impl liquid_lang::You_Should_Use_An_Valid_Event_Data_Type for #ident {}
-
-        impl _ty_mapping::SolTypeNameLen<#ident> for liquid_prelude::vec::Vec<#ident> {
-            const LEN: usize = <#ident as _ty_mapping::SolTypeNameLen>::LEN + 2;
-        }
-
-        impl _ty_mapping::SolTypeName<#ident> for liquid_prelude::vec::Vec<#ident> {
-            const NAME: &'static [u8] = {
-                const LEN: usize = <#ident as _ty_mapping::SolTypeNameLen>::LEN + 2;
-
-                &_ty_mapping::concat::<#ident, _ty_mapping::DynamicArraySuffix, (), (), LEN>(false)
-            };
-        }
+        impl liquid_lang::You_Should_Use_An_Valid_Field_Data_Type for #ident {}
 
         #abi_gen_helper
     })

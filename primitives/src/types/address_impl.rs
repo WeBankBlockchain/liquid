@@ -10,18 +10,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use core::cmp::Ordering;
-use liquid_prelude::string::{String, ToString};
+use crate::Error;
+use liquid_prelude::{
+    str::FromStr,
+    string::{String, ToString},
+};
 
 pub const ADDRESS_LENGTH: usize = 20;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, scale::Decode, scale::Encode)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct Address(pub [u8; ADDRESS_LENGTH]);
+pub struct address(pub [u8; ADDRESS_LENGTH]);
 
-impl Address {
-    pub fn new(address: [u8; ADDRESS_LENGTH]) -> Self {
-        Self(address)
+impl address {
+    pub fn new(addr: [u8; ADDRESS_LENGTH]) -> Self {
+        Self(addr)
     }
 
     pub fn empty() -> Self {
@@ -29,13 +32,13 @@ impl Address {
     }
 }
 
-impl Default for Address {
+impl Default for address {
     fn default() -> Self {
         Self([0; ADDRESS_LENGTH])
     }
 }
 
-impl ToString for Address {
+impl ToString for address {
     fn to_string(&self) -> String {
         let mut ret = String::with_capacity(ADDRESS_LENGTH * 2 + 2);
         ret.push_str("0x");
@@ -50,23 +53,25 @@ impl ToString for Address {
     }
 }
 
-impl From<&str> for Address {
-    fn from(mut addr: &str) -> Self {
-        if !addr.is_ascii() {
-            panic!("invalid address representation");
+impl FromStr for address {
+    type Err = Error;
+
+    fn from_str(mut s: &str) -> Result<Self, Self::Err> {
+        if !s.is_ascii() {
+            return Err("invalid address representation".into());
         }
 
-        if addr.starts_with("0x") || addr.starts_with("0X") {
-            if addr.len() > ADDRESS_LENGTH * 2 + 2 {
-                panic!("invalid address representation");
+        if s.starts_with("0x") || s.starts_with("0X") {
+            if s.len() > ADDRESS_LENGTH * 2 + 2 {
+                return Err("invalid address representation".into());
             }
-            addr = &addr[2..];
-        } else if addr.len() > ADDRESS_LENGTH * 2 {
-            panic!("invalid address representation");
+            s = &s[2..];
+        } else if s.len() > ADDRESS_LENGTH * 2 {
+            return Err("invalid address representation".into());
         }
 
-        let mut address = [0u8; ADDRESS_LENGTH];
-        let bytes = addr.as_bytes();
+        let mut addr = [0u8; ADDRESS_LENGTH];
+        let bytes = s.as_bytes();
         let padding_len = ADDRESS_LENGTH * 2 - bytes.len();
         for i in 0..ADDRESS_LENGTH {
             let (low, high) = if i * 2 + 1 < padding_len {
@@ -85,27 +90,15 @@ impl From<&str> for Address {
             };
 
             let digit = (high << 4) + low;
-            address[i] = digit as u8;
+            addr[i] = digit as u8;
         }
-        Self(address)
+        Ok(Self(addr))
     }
 }
 
-impl From<[u8; ADDRESS_LENGTH]> for Address {
+impl From<[u8; ADDRESS_LENGTH]> for address {
     fn from(bytes: [u8; ADDRESS_LENGTH]) -> Self {
         Self(bytes)
-    }
-}
-
-impl PartialEq<[u8; ADDRESS_LENGTH]> for Address {
-    fn eq(&self, rhs: &[u8; ADDRESS_LENGTH]) -> bool {
-        self.0.eq(rhs)
-    }
-}
-
-impl PartialOrd<[u8; ADDRESS_LENGTH]> for Address {
-    fn partial_cmp(&self, other: &[u8; ADDRESS_LENGTH]) -> Option<Ordering> {
-        self.0.partial_cmp(other)
     }
 }
 
@@ -121,7 +114,7 @@ mod tests {
     #[test]
     fn test_copy() {
         let origin = TEST_ADDR.clone();
-        let mut address_0 = Address(origin);
+        let mut address_0 = address(origin);
         let address_1 = address_0;
         let address_2 = address_1;
 
@@ -150,50 +143,56 @@ mod tests {
 
     #[test]
     fn string_convert() {
-        let address = Address(TEST_ADDR.clone());
+        let addr = address(TEST_ADDR.clone());
         let addr_str = "0x3e9afaa4a062a49d64b8ab057b3cb51892e17ecb";
-        assert_eq!(address.to_string(), addr_str);
-        assert_eq!(Address::from(addr_str), address);
+        assert_eq!(addr.to_string(), addr_str);
+        assert_eq!(addr_str.parse::<address>().unwrap(), addr);
 
         let addr_str = String::from(addr_str);
-        assert_eq!(Address::from(addr_str.as_str()), address);
+        assert_eq!(addr_str.parse::<address>().unwrap(), addr);
     }
 
     #[test]
     fn padding_1() {
-        let address: Address = "0x12".into();
+        let addr: address = "0x12".parse().unwrap();
         assert_eq!(
-            address,
-            Address::from("0x0000000000000000000000000000000000000012")
+            addr,
+            "0x0000000000000000000000000000000000000012"
+                .parse()
+                .unwrap()
         );
         assert_eq!(
-            address.to_string(),
+            addr.to_string(),
             "0x0000000000000000000000000000000000000012"
         );
     }
 
     #[test]
     fn padding_2() {
-        let address: Address = "0x121".into();
+        let addr: address = "0x121".parse().unwrap();
         assert_eq!(
-            address,
-            Address::from("0x0000000000000000000000000000000000000121")
+            addr,
+            "0x0000000000000000000000000000000000000121"
+                .parse()
+                .unwrap()
         );
         assert_eq!(
-            address.to_string(),
+            addr.to_string(),
             "0x0000000000000000000000000000000000000121"
         );
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "invalid address representation")]
     fn invalid_addr_start() {
-        let _: Address = "0b3e9afaa4a062a49d64b8ab057b3cb51892e17ecb".into();
+        let _: address = "0b3e9afaa4a062a49d64b8ab057b3cb51892e17ecb"
+            .parse()
+            .unwrap();
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "invalid address representation")]
     fn invalid_addr_str_encode() {
-        let _: Address = "羞答答小白虎头李荣浩".into();
+        let _: address = "羞答答小白虎头李荣浩".parse().unwrap();
     }
 }

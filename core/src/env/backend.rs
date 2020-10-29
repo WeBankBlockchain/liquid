@@ -11,7 +11,7 @@
 // limitations under the License.
 
 use crate::env::{CallData, Result};
-use liquid_primitives::types::{Address, BlockNumber, Timestamp, Topics};
+use liquid_primitives::{types::address, Topics};
 
 #[derive(PartialEq)]
 pub enum CallMode {
@@ -44,13 +44,13 @@ pub trait Env {
     where
         Event: Topics + liquid_abi_codec::Encode;
 
-    fn get_caller(&mut self) -> Address;
+    fn get_caller(&mut self) -> address;
 
-    fn now(&mut self) -> Timestamp;
+    fn now(&mut self) -> u64;
 
-    fn get_block_number(&mut self) -> BlockNumber;
+    fn get_block_number(&mut self) -> u64;
 
-    fn call<R>(&mut self, address: &Address, data: &[u8]) -> Result<R>
+    fn call<R>(&mut self, address: &address, data: &[u8]) -> Result<R>
     where
         R: liquid_abi_codec::Decode + liquid_abi_codec::TypeInfo;
 }

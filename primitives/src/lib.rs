@@ -10,13 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![feature(const_fn)]
 #![feature(const_mut_refs)]
-#![cfg_attr(not(feature = "std"), no_std)]
+#![feature(min_const_generics)]
 
 #[macro_use]
 extern crate lazy_static;
-
 #[macro_use]
 extern crate num_derive;
 
@@ -26,3 +26,34 @@ pub mod types;
 /// Typeless generic key into contract storage
 pub type Key = &'static str;
 pub type Selector = [u8; 4];
+
+#[cfg(feature = "std")]
+#[derive(PartialEq, Eq, Clone, Debug)]
+pub struct Error(&'static str);
+
+#[cfg(not(feature = "std"))]
+pub struct Error;
+
+impl From<&'static str> for Error {
+    #[cfg(feature = "std")]
+    fn from(s: &'static str) -> Error {
+        Error(s)
+    }
+
+    #[cfg(not(feature = "std"))]
+    fn from(_: &'static str) -> Error {
+        Error
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+use liquid_prelude::vec::Vec;
+pub trait Topics {
+    fn topics(&self) -> Vec<types::hash>;
+}

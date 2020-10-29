@@ -12,7 +12,7 @@
 
 use crate::utils;
 use liquid_prelude::vec::Vec;
-use proc_macro2::{Ident, TokenStream as TokenStream2};
+use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::quote;
 use syn::{self, parse::Result, DeriveInput, Type};
 
@@ -95,7 +95,8 @@ fn generate_decode_shadow_struct(
 
 fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
     let ast: DeriveInput = syn::parse2(input)?;
-    let (field_names, field_tys): (Vec<_>, Vec<_>) = utils::struct_syntax_check(&ast)?;
+    let (field_names, field_tys, _): (Vec<_>, Vec<_>, Span) =
+        utils::struct_syntax_check(&ast)?;
     let ident = &ast.ident;
 
     let encode_shadow_struct =

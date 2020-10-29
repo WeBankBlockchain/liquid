@@ -45,7 +45,7 @@ pub type ContractItems = (
     Vec<syn::ImplItemConst>,
 );
 
-pub fn split_items(items: Vec<LiquidItem>) -> Result<ContractItems> {
+pub fn split_items(items: Vec<LiquidItem>, span: Span) -> Result<ContractItems> {
     use either::Either;
     use itertools::Itertools;
 
@@ -57,7 +57,7 @@ pub fn split_items(items: Vec<LiquidItem>) -> Result<ContractItems> {
     let storage = match storages.len() {
         0 => {
             return Err(format_err_span!(
-                Span::call_site(),
+                span,
                 "no #[liquid(storage)] struct found in this contract"
             ))
         }

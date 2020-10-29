@@ -16,8 +16,6 @@ use quote::quote;
 pub fn generate_wrapper(impls: TokenStream2) -> TokenStream2 {
     quote! {
         const _: () = {
-            use liquid_ty_mapping as _ty_mapping;
-
             #[cfg(feature = "std")]
             mod __std {
                 pub use ::std::vec::Vec;

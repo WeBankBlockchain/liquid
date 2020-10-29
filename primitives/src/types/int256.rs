@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::types::u256;
+use crate::types::uint256::u256;
 #[cfg(feature = "std")]
 use core::fmt;
 use core::ops::{
@@ -39,6 +39,13 @@ impl i256 {
             .to_biguint()
             .map(u256)
             .filter(|value| *value <= u256::max_value() && *value >= u256::min_value())
+    }
+
+    pub fn to_be_bytes(&self) -> [u8; 32] {
+        let bytes = self.0.to_signed_bytes_be();
+        let mut res = [0u8; 32];
+        res[32 - bytes.len()..].copy_from_slice(&bytes);
+        res
     }
 }
 

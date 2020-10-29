@@ -13,7 +13,7 @@
 //! External C API to communicate with FISCO BCOS Wasm runtime
 
 use crate::env::{EnvError, Result};
-use liquid_primitives::types::Hash;
+use liquid_primitives::types::hash;
 
 mod sys {
     #[link(wasm_import_module = "bcos")]
@@ -114,7 +114,7 @@ pub fn revert(revert_info: &[u8]) {
     }
 }
 
-pub fn log(data: &[u8], topics: &[Hash]) {
+pub fn log(data: &[u8], topics: &[hash]) {
     match topics.len() {
         4 => unsafe {
             sys::log(

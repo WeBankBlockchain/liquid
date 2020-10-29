@@ -12,7 +12,7 @@
 
 use super::{EnvInstance, Event, ExecContext};
 use crate::env::engine::OnInstance;
-use liquid_primitives::types::{Address, ADDRESS_LENGTH};
+use liquid_primitives::types::address_impl::*;
 
 /// Pushes a contract execution context.
 ///
@@ -22,7 +22,7 @@ use liquid_primitives::types::{Address, ADDRESS_LENGTH};
 ///
 /// Together with [`pop_execution_context`] this can be used to emulated
 /// nested calls.
-pub fn push_execution_context(caller: Address) {
+pub fn push_execution_context(caller: address) {
     <EnvInstance as OnInstance>::on_instance(|instance| {
         instance.exec_contexts.push(ExecContext::new(caller))
     });
@@ -42,12 +42,12 @@ pub fn pop_execution_context() {
 
 /// The default accounts.
 pub struct DefaultAccounts {
-    pub alice: Address,
-    pub bob: Address,
-    pub charlie: Address,
-    pub david: Address,
-    pub eva: Address,
-    pub frank: Address,
+    pub alice: address,
+    pub bob: address,
+    pub charlie: address,
+    pub david: address,
+    pub eva: address,
+    pub frank: address,
 }
 
 /// Returns the default accounts for testing purposes:

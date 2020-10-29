@@ -125,8 +125,9 @@ impl TryFrom<(ir::ContractParams, syn::ItemMod)> for ir::Contract {
                 ir::Item::Rust(rust_item) => Either::Right(*rust_item),
             });
 
+        let span = item_mod.span();
         let (storage, events, mut functions, constants) =
-            ir_utils::split_items(liquid_items)?;
+            ir_utils::split_items(liquid_items, span)?;
         storage.public_fields.iter().for_each(|index| {
             let field = &storage.fields.named[*index];
             let ident = &field.ident.as_ref().unwrap();
@@ -832,14 +833,12 @@ impl TryFrom<&syn::ForeignItem> for ir::ForeignFn {
         match foreign_item {
             syn::ForeignItem::Fn(foreign_fn) => {
                 let sig = ir::Signature::try_from((&foreign_fn.sig, true))?;
-                let fn_id = lang_utils::calculate_fn_id(&sig.ident);
                 let span = foreign_fn.span();
 
                 Ok(Self {
                     attrs: foreign_fn.attrs.clone(),
                     sig,
                     semi_token: foreign_fn.semi_token,
-                    fn_id,
                     span,
                 })
             }
@@ -896,7 +895,7 @@ impl TryFrom<(ir::InterfaceParams, syn::ItemMod)> for ir::Interface {
                     match abi.name {
                         Some(ref name) if name.value() != "liquid" => bail!(
                             abi,
-                            "ABI should be specified  as `\"liquid\"` or nothing"
+                            "ABI should be specified  as `\"liquid\"` or empty"
                         ),
                         _ => (),
                     }

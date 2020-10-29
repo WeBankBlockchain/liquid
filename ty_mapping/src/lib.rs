@@ -13,7 +13,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![feature(const_fn)]
 #![allow(incomplete_features)]
-#![feature(const_generics)]
+#![feature(min_const_generics)]
 
 mod traits;
 

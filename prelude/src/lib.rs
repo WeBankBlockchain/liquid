@@ -20,6 +20,7 @@ cfg_if! {
             vec,
             string,
             boxed,
+            str,
         };
 
         pub mod collections{
@@ -37,6 +38,7 @@ cfg_if! {
             vec,
             string,
             boxed,
+            str,
         };
 
         pub mod collections {

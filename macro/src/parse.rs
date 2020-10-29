@@ -91,6 +91,22 @@ pub fn expect_integer(iter: &mut TokenIter) -> Result<u64> {
         }
     }
 
+    if let TokenTree::Group(group) = &token {
+        let token_stream = group.stream();
+        let mut iter = token_stream.into_iter();
+        if let Some(first_token) = iter.next() {
+            if iter.nth(1).is_none() {
+                if let TokenTree::Literal(literal) = &first_token {
+                    if let Ok(integer) =
+                        literal.to_string().replace("u64", "").parse::<u64>()
+                    {
+                        return Ok(integer);
+                    }
+                }
+            }
+        }
+    }
+
     Err(SyntaxError::new(
         "expected unsuffixed integer literal".to_owned(),
         &token,

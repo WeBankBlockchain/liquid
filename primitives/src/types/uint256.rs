@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub use crate::types::i256;
+pub use crate::types::int256::i256;
 #[cfg(feature = "std")]
 use core::fmt;
 use core::{
@@ -44,6 +44,13 @@ impl u256 {
             .to_bigint()
             .filter(|value| value.bits() <= 255)
             .map(i256)
+    }
+
+    pub fn to_be_bytes(&self) -> [u8; 32] {
+        let bytes = self.to_bytes_be();
+        let mut res = [0u8; 32];
+        res[32 - bytes.len()..].copy_from_slice(&bytes);
+        res
     }
 }
 
@@ -102,15 +109,6 @@ impl From<[u8; 32]> for u256 {
 impl<'a> From<&'a [u8]> for u256 {
     fn from(n: &'a [u8]) -> Self {
         Self(BigUint::from_bytes_be(n))
-    }
-}
-
-impl Into<[u8; 32]> for u256 {
-    fn into(self) -> [u8; 32] {
-        let bytes = self.to_bytes_be();
-        let mut res = [0u8; 32];
-        res[32 - bytes.len()..].copy_from_slice(&bytes);
-        res
     }
 }
 
@@ -274,7 +272,7 @@ mod tests {
     #[test]
     fn into_array() {
         let val = u256::from(1024u16);
-        let data: [u8; 32] = val.into();
+        let data: [u8; 32] = val.to_be_bytes();
         assert_eq!(
             data,
             [
