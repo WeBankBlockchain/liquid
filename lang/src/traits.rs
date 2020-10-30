@@ -112,7 +112,6 @@ impl You_Should_Use_An_Valid_Event_Topic_Type for String {
 }
 impl You_Should_Use_An_Valid_Field_Data_Type for String {}
 
-
 impl You_Should_Use_An_Valid_Parameter_Type for Bytes {}
 impl You_Should_Use_An_Valid_Return_Type for Bytes {}
 impl You_Should_Use_An_Valid_Input_Type for Bytes {}

@@ -832,6 +832,15 @@ impl TryFrom<&syn::ForeignItem> for ir::ForeignFn {
     fn try_from(foreign_item: &syn::ForeignItem) -> Result<Self> {
         match foreign_item {
             syn::ForeignItem::Fn(foreign_fn) => {
+                match &foreign_fn.vis {
+                    syn::Visibility::Inherited => (),
+                    _ => bail!(
+                        &foreign_fn.vis,
+                        "visibility modifier is not allowed for method declarations in \
+                         interface"
+                    ),
+                }
+
                 let sig = ir::Signature::try_from((&foreign_fn.sig, true))?;
                 let span = foreign_fn.span();
 

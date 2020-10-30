@@ -19,4 +19,8 @@ impl EnvAccess {
     pub fn get_caller(self) -> Address {
         env::get_caller()
     }
+
+    pub fn get_tx_origin(self) -> Address {
+        env::get_tx_origin()
+    }
 }

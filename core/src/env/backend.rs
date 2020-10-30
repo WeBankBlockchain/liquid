@@ -46,6 +46,8 @@ pub trait Env {
 
     fn get_caller(&mut self) -> Address;
 
+    fn get_tx_origin(&mut self) -> Address;
+
     fn now(&mut self) -> u64;
 
     fn get_block_number(&mut self) -> u64;

@@ -153,6 +153,14 @@ impl Env for EnvInstance {
         Address::new(addr)
     }
 
+    fn get_tx_origin(&mut self) -> Address {
+        self.buffer.resize(ADDRESS_LENGTH);
+        ext::get_tx_origin(&mut self.buffer[..ADDRESS_LENGTH]);
+        let mut addr = [0u8; ADDRESS_LENGTH];
+        addr.copy_from_slice(&self.buffer[..ADDRESS_LENGTH]);
+        Address::new(addr)
+    }
+
     fn now(&mut self) -> u64 {
         ext::get_block_timestamp() as u64
     }

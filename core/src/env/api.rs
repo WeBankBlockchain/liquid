@@ -68,6 +68,10 @@ pub fn get_caller() -> Address {
     <EnvInstance as OnInstance>::on_instance(|instance| Env::get_caller(instance))
 }
 
+pub fn get_tx_origin() -> Address {
+    <EnvInstance as OnInstance>::on_instance(|instance| Env::get_tx_origin(instance))
+}
+
 pub fn emit<Event>(event: Event)
 where
     Event: Topics + liquid_abi_codec::Encode,

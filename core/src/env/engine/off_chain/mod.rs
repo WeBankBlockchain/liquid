@@ -46,6 +46,12 @@ impl EnvInstance {
             .expect("there must be at least one execution context in test environment")
     }
 
+    pub fn last_exec_context(&self) -> &ExecContext {
+        self.exec_contexts
+            .first()
+            .expect("there must be at least one execution context in test environment")
+    }
+
     pub fn current_block(&self) -> &Block {
         self.blocks
             .last()
@@ -107,6 +113,10 @@ impl Env for EnvInstance {
 
     fn get_caller(&mut self) -> Address {
         self.current_exec_context().caller()
+    }
+
+    fn get_tx_origin(&mut self) -> Address {
+        self.last_exec_context().caller()
     }
 
     fn now(&mut self) -> u64 {

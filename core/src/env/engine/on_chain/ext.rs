@@ -47,6 +47,8 @@ mod sys {
 
         pub fn getCaller(data_offset: u32);
 
+        pub fn getTxOrigin(data_offset: u32);
+
         pub fn getBlockTimestamp() -> u64;
 
         pub fn getBlockNumber() -> u64;
@@ -170,6 +172,12 @@ pub fn log(data: &[u8], topics: &[Hash]) {
 pub fn get_caller(result_offset: &mut [u8]) {
     unsafe {
         sys::getCaller(result_offset.as_mut_ptr() as u32);
+    }
+}
+
+pub fn get_tx_origin(result_offset: &mut [u8]) {
+    unsafe {
+        sys::getTxOrigin(result_offset.as_mut_ptr() as u32);
     }
 }
 
