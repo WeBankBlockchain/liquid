@@ -32,6 +32,7 @@ pub type Selector = [u8; 4];
 pub struct Error(&'static str);
 
 #[cfg(not(feature = "std"))]
+#[derive(Debug)]
 pub struct Error;
 
 impl From<&'static str> for Error {

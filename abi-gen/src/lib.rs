@@ -10,6 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![feature(min_const_generics)]
+
 mod traits;
 pub use traits::*;
 

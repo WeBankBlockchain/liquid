@@ -31,10 +31,11 @@ use num::{
 pub struct u256(pub BigUint);
 
 impl u256 {
-    pub fn from_bytes_le(slice: &[u8]) -> Self {
+    pub fn from_le_bytes(slice: &[u8]) -> Self {
         Self(BigUint::from_bytes_le(slice))
     }
-    pub fn from_bytes_be(slice: &[u8]) -> Self {
+
+    pub fn from_be_bytes(slice: &[u8]) -> Self {
         Self(BigUint::from_bytes_be(slice))
     }
 
@@ -237,7 +238,7 @@ impl scale::Decode for u256 {
         let size = value.read_byte()?;
         let mut buf = from_elem(0, (size - 1) as usize);
         value.read(buf.as_mut_slice())?;
-        Ok(Self::from_bytes_be(&buf))
+        Ok(Self::from_be_bytes(&buf))
     }
 }
 

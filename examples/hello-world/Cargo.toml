@@ -17,6 +17,9 @@ liquid_abi_gen = { version = "0.1.0", path = "../../abi-gen", default-features =
 liquid_ty_mapping = { version = "0.1.0", path = "../../ty_mapping", default-features = false }
 liquid_prelude = { version = "0.1.0", path = "../../prelude", default-features = false }
 
+[dev-dependencies]
+predicates = "1.0.5"
+
 [lib]
 name = "hello_world"
 crate-type = [
@@ -29,8 +32,7 @@ crate-type = [
 [features]
 default = ["std"]
 std = [
-    "liquid_core/std",
-    "liquid_primitives/std",
+    "liquid_lang/std",
     "scale/std",
 ]
 liquid-abi-gen = [

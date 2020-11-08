@@ -52,11 +52,13 @@ impl_primitive_tys!(
     u32,
     u64,
     u128,
+    u256,
     i8,
     i16,
     i32,
     i64,
     i128,
+    i256,
     String,
     Address,
     Bytes,
@@ -79,6 +81,26 @@ where
 }
 
 impl<T> GenerateComponents for Vec<T>
+where
+    T: GenerateComponents,
+{
+    fn generate_components() -> Vec<ParamABI> {
+        <T as GenerateComponents>::generate_components()
+    }
+}
+
+impl<T, const N: usize> TyName for [T; N]
+where
+    T: TyName,
+{
+    fn ty_name() -> String {
+        let mut sub_ty = <T as TyName>::ty_name();
+        sub_ty.push_str(&format!("[{}]", N));
+        sub_ty
+    }
+}
+
+impl<T, const N: usize> GenerateComponents for [T; N]
 where
     T: GenerateComponents,
 {

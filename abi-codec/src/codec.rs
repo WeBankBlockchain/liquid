@@ -705,9 +705,9 @@ impl MediateEncode for i256 {
 impl MediateDecode for i256 {
     fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error> {
         let slice = peek(slices, offset)?;
-        let value = num_bigint::BigInt::from_signed_bytes_be(slice);
+        let value = i256::from_signed_be_bytes(slice);
         Ok(DecodeResult {
-            value: i256(value),
+            value,
             new_offset: offset + 1,
         })
     }
@@ -716,7 +716,7 @@ impl MediateDecode for i256 {
 impl MediateDecode for u256 {
     fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error> {
         let slice = peek(slices, offset)?;
-        let value = u256::from_bytes_be(slice);
+        let value = u256::from_be_bytes(slice);
         Ok(DecodeResult {
             value,
             new_offset: offset + 1,

@@ -16,6 +16,7 @@ use crate::{
 };
 use core::convert::TryFrom;
 use either::Either;
+use heck::CamelCase;
 use itertools::Itertools;
 use proc_macro2::Ident;
 use quote::quote;
@@ -72,16 +73,38 @@ impl TryFrom<&String> for ir::MetaVersion {
 
 impl Parse for ir::Marker {
     fn parse(input: ParseStream) -> Result<Self> {
+        const SINGLE_MARKER: [&str; 4] = ["indexed", "storage", "event", "methods"];
+
         let content;
         let paren_token = syn::parenthesized!(content in input);
         let ident = content.parse::<Ident>()?;
         if content.is_empty() {
-            return Ok(ir::Marker { paren_token, ident });
+            Ok(ir::Marker {
+                paren_token,
+                ident,
+                value: None,
+            })
+        } else {
+            let ident_str = ident.to_string();
+            if SINGLE_MARKER
+                .iter()
+                .any(|&single_marker| single_marker == ident_str)
+            {
+                bail_span!(
+                    ident.span(),
+                    "`{}` should be used as a single marker",
+                    ident_str,
+                )
+            }
+
+            let _ = content.parse::<Token![=]>()?;
+            let value = content.parse::<syn::LitStr>()?;
+            Ok(ir::Marker {
+                paren_token,
+                ident,
+                value: Some(value),
+            })
         }
-        bail_span!(
-            paren_token.span,
-            "invalid liquid attribute in the given context",
-        )
     }
 }
 
@@ -384,7 +407,7 @@ impl TryFrom<(&syn::Signature, bool)> for ir::Signature {
                     .span()
                     .join(inputs.last().span())
                     .expect("first argument and last argument are in the same file"),
-                "the number of input arguments should not be more than 16"
+                "the number of input arguments should not exceed 16"
             )
         }
 
@@ -398,7 +421,7 @@ impl TryFrom<(&syn::Signature, bool)> for ir::Signature {
         if output_args_count > 16 {
             bail_span!(
                 output.span(),
-                "the number of output arguments should not be more than 16"
+                "the number of output arguments should not exceed 16"
             )
         }
 
@@ -844,10 +867,37 @@ impl TryFrom<&syn::ForeignItem> for ir::ForeignFn {
                 let sig = ir::Signature::try_from((&foreign_fn.sig, true))?;
                 let span = foreign_fn.span();
 
+                let mut markers =
+                    ir_utils::filter_map_liquid_attributes(&foreign_fn.attrs);
+                let mock_context_getter = if let Some(marker) =
+                    markers.find(|marker| marker.ident == "mock_context_getter")
+                {
+                    let value = match &marker.value {
+                        Some(value) => value,
+                        None => bail_span!(
+                            marker.span(),
+                            "the attribute `mock_context_getter` should be assigned \
+                             with a literal string"
+                        ),
+                    };
+
+                    let getter = syn::parse_str::<syn::Ident>(&value.value());
+                    if getter.is_ok() {
+                        bail_span!(
+                            value.span(),
+                            "invalid identifier for mock context getter"
+                        )
+                    }
+                    Some(getter.unwrap())
+                } else {
+                    None
+                };
+
                 Ok(Self {
                     attrs: foreign_fn.attrs.clone(),
                     sig,
                     semi_token: foreign_fn.semi_token,
+                    mock_context_getter,
                     span,
                 })
             }
@@ -883,6 +933,13 @@ impl TryFrom<(ir::InterfaceParams, syn::ItemMod)> for ir::Interface {
         let mut imports = Vec::new();
         let span = item_mod.span();
 
+        let meta_info = ir::InterfaceMetaInfo::try_from(params)?;
+        let interface_ident = if meta_info.interface_name.is_empty() {
+            Ident::new(&item_mod.ident.to_string().to_camel_case(), span)
+        } else {
+            Ident::new(&meta_info.interface_name, span)
+        };
+
         for item in items {
             match item {
                 syn::Item::Struct(item_struct) => {
@@ -895,8 +952,8 @@ impl TryFrom<(ir::InterfaceParams, syn::ItemMod)> for ir::Interface {
                     if !foreign_fns.is_empty() {
                         bail!(
                             item_foreign_mod,
-                            "the total number of `extern` block in interface module \
-                             should not be more than 1"
+                            "the number of `extern` blocks in interface module should \
+                             not exceed 1"
                         )
                     }
 
@@ -913,6 +970,33 @@ impl TryFrom<(ir::InterfaceParams, syn::ItemMod)> for ir::Interface {
                         let foreign_fn = ir::ForeignFn::try_from(foreign_item)?;
                         let ident = foreign_fn.sig.ident.clone();
                         if let Some(fns) = foreign_fns.get_mut(&ident) {
+                            if interface_ident == foreign_fn.sig.ident {
+                                bail_span!(
+                                    foreign_fn.span,
+                                    "the name of the interface should not be identical \
+                                     to the name of this overloaded method"
+                                )
+                            }
+                            let last_fn = fns.last().unwrap();
+                            let consistent = match (
+                                &foreign_fn.mock_context_getter,
+                                &last_fn.mock_context_getter,
+                            ) {
+                                (Some(ident_f), Some(ident_l)) => ident_f == ident_l,
+                                (Some(_), None) => false,
+                                _ => true,
+                            };
+
+                            if !consistent {
+                                bail_span!(
+                                    last_fn.span,
+                                    "the values of `mock_context_getter` attribute \
+                                     among declarations of overloaded function `{}` is \
+                                     not consistent",
+                                    ident.to_string()
+                                )
+                            }
+
                             fns.push(foreign_fn);
                         } else {
                             foreign_fns.insert(ident, vec![foreign_fn]);
@@ -935,7 +1019,6 @@ impl TryFrom<(ir::InterfaceParams, syn::ItemMod)> for ir::Interface {
             }
         }
 
-        let meta_info = ir::InterfaceMetaInfo::try_from(params)?;
         Ok(Self {
             mod_token: item_mod.mod_token,
             ident: item_mod.ident,
@@ -943,6 +1026,7 @@ impl TryFrom<(ir::InterfaceParams, syn::ItemMod)> for ir::Interface {
             foreign_structs,
             foreign_fns,
             imports,
+            interface_ident,
             span,
         })
     }

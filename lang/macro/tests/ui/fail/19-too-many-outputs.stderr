@@ -1,4 +1,4 @@
-error: the number of output arguments should not be more than 16
+error: the number of output arguments should not exceed 16
   --> $DIR/19-too-many-outputs.rs:16:11
    |
 16 |           ) -> (

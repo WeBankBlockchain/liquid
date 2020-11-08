@@ -1,5 +1,5 @@
 [package]
-name = "erc20"
+name = "kv_table_test"
 version = "0.1.0"
 authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
 edition = "2018"
@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 scale = { package = "parity-scale-codec", version = "1.3.1", default-features = false, features = ["derive", "full"] }
+lazy_static = "1.4.0"
 
 liquid_core = { version = "0.1.0", path = "../../core", default-features = false }
 liquid_lang = { version = "0.1.0", path = "../../lang", default-features = false }
@@ -21,7 +22,7 @@ liquid_prelude = { version = "0.1.0", path = "../../prelude", default-features =
 predicates = "1.0.5"
 
 [lib]
-name = "erc20"
+name = "kv_table_test"
 crate-type = [
     # Used for normal contract Wasm blobs.
     "cdylib",

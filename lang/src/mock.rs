@@ -10,12 +10,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod contract_impl;
-mod interface_impl;
-mod utils;
+use std::marker::PhantomData;
 
-use proc_macro2::TokenStream as TokenStream2;
+pub trait ReturnDefault<T> {
+    fn return_default() -> Option<T>;
+}
 
-pub trait GenerateCode {
-    fn generate_code(&self) -> TokenStream2;
+pub struct DefaultReturner<T>(PhantomData<T>);
+
+impl<T> ReturnDefault<T> for DefaultReturner<T> {
+    default fn return_default() -> Option<T> {
+        None
+    }
+}
+
+impl<T> ReturnDefault<T> for DefaultReturner<T>
+where
+    T: Default,
+{
+    fn return_default() -> Option<T> {
+        Some(T::default())
+    }
 }

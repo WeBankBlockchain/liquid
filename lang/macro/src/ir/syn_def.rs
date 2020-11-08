@@ -248,6 +248,8 @@ pub struct Marker {
     pub paren_token: syn::token::Paren,
     /// The single identifier.
     pub ident: Ident,
+    /// The optional attribute value assigned to the identifier.
+    pub value: Option<syn::LitStr>,
 }
 
 impl Spanned for Marker {
@@ -305,6 +307,8 @@ pub struct ForeignFn {
     pub semi_token: Token![;],
     /// The span of the foreign method.
     pub span: Span,
+    /// The name of the mock context getter.
+    pub mock_context_getter: Option<Ident>,
 }
 
 impl Spanned for ForeignFn {
@@ -327,6 +331,8 @@ pub struct Interface {
     pub foreign_fns: BTreeMap<Ident, Vec<ForeignFn>>,
     /// The use declarations to import other symbols.
     pub imports: Vec<syn::ItemUse>,
+    /// The name of auto-generated interface struct.
+    pub interface_ident: Ident,
     /// The span of the interface.
     pub span: Span,
 }

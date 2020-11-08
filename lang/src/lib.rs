@@ -11,16 +11,20 @@
 // limitations under the License.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(incomplete_features)]
 #![feature(const_fn)]
 #![feature(associated_type_defaults)]
 #![feature(const_panic)]
 #![feature(min_const_generics)]
+#![feature(specialization)]
 
 mod dispatch_error;
 mod env_access;
 pub mod intrinsics;
 mod traits;
 
+#[cfg(feature = "std")]
+pub mod mock;
 #[cfg(test)]
 mod tests;
 

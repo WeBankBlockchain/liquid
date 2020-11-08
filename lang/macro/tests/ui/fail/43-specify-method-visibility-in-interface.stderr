@@ -1,0 +1,5 @@
+error: visibility modifier is not allowed for method declarations in interface
+ --> $DIR/43-specify-method-visibility-in-interface.rs:6:9
+  |
+6 |         pub fn bar() -> u32;
+  |         ^^^

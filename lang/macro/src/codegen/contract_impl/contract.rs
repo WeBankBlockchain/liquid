@@ -12,11 +12,13 @@
 
 use crate::{
     codegen::{
-        abi_gen::ABIGen,
-        dispatch::Dispatch,
-        events::{EventStructs, Events},
-        storage::Storage,
-        testable::Testable,
+        contract_impl::{
+            abi_gen::ABIGen,
+            dispatch::Dispatch,
+            events::{EventStructs, Events},
+            storage::Storage,
+            testable::Testable,
+        },
         utils, GenerateCode,
     },
     ir,
@@ -58,6 +60,7 @@ impl GenerateCode for ir::Contract {
 
 
                 #[cfg(not(test))]
+                #[allow(non_snake_case)]
                 pub type #storage_ident = __liquid_private::Storage;
 
                 #event_struct

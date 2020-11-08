@@ -1,0 +1,5 @@
+error: `struct` in interface must have no visibility modifier
+ --> $DIR/44-specify-struct-visibility-in-interface.rs:5:5
+  |
+5 |     pub struct Baz {
+  |     ^^^

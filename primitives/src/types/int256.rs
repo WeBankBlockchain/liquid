@@ -47,6 +47,16 @@ impl i256 {
         res[32 - bytes.len()..].copy_from_slice(&bytes);
         res
     }
+
+    pub fn from_signed_le_bytes(bytes: &[u8]) -> Self {
+        let value = num_bigint::BigInt::from_signed_bytes_le(bytes);
+        Self(value)
+    }
+
+    pub fn from_signed_be_bytes(bytes: &[u8]) -> Self {
+        let value = num_bigint::BigInt::from_signed_bytes_be(bytes);
+        Self(value)
+    }
 }
 
 impl Bounded for i256 {

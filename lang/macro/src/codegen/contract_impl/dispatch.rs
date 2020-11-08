@@ -12,12 +12,12 @@
 
 use crate::{
     codegen::{utils, GenerateCode},
-    ir::{Contract, FnArg, Function, FunctionKind},
+    ir::{Contract, Function, FunctionKind},
 };
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, quote_spanned};
-use syn::{punctuated::Punctuated, spanned::Spanned, Token};
+use syn::spanned::Spanned;
 
 pub struct Dispatch<'a> {
     contract: &'a Contract,
@@ -46,27 +46,6 @@ impl<'a> GenerateCode for Dispatch<'a> {
             };
         }
     }
-}
-
-fn generate_input_idents(
-    args: &Punctuated<FnArg, Token![,]>,
-) -> (Vec<&proc_macro2::Ident>, TokenStream2) {
-    let input_idents = args
-        .iter()
-        .skip(1)
-        .filter_map(|arg| match arg {
-            FnArg::Typed(ident_type) => Some(&ident_type.ident),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-
-    let pat_idents = if input_idents.is_empty() {
-        quote! { _ }
-    } else {
-        quote! { (#(#input_idents,)*) }
-    };
-
-    (input_idents, pat_idents)
 }
 
 impl<'a> Dispatch<'a> {
@@ -174,7 +153,12 @@ impl<'a> Dispatch<'a> {
 
         let sig = &func.sig;
         let fn_name = &sig.ident;
-        let (input_idents, pat_idents) = generate_input_idents(&sig.inputs);
+        let input_idents = utils::generate_input_idents(&sig.inputs, true);
+        let pat_idents = if input_idents.is_empty() {
+            quote! { _ }
+        } else {
+            quote! { (#(#input_idents,)*) }
+        };
         let attr = if is_getter {
             quote! { #[allow(deprecated)] }
         } else {
@@ -256,7 +240,12 @@ impl<'a> Dispatch<'a> {
         let sig = &constr.sig;
         let input_tys = utils::generate_input_tys(sig, true);
         let ident = &sig.ident;
-        let (input_idents, pat_idents) = generate_input_idents(&sig.inputs);
+        let input_idents = utils::generate_input_idents(&sig.inputs, true);
+        let pat_idents = if input_idents.is_empty() {
+            quote! { _ }
+        } else {
+            quote! { (#(#input_idents,)*) }
+        };
 
         quote! {
             #[no_mangle]
