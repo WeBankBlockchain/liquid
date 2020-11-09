@@ -54,10 +54,11 @@ fn generate_mock_common(foreign_fn: &ForeignFn, suffix: usize) -> TokenStream2 {
     let span = foreign_fn.span;
 
     let inputs = &sig.inputs;
-    let input_tys = codegen_utils::generate_input_tys(&sig, false);
-    let input_idents = codegen_utils::generate_input_idents(inputs, false);
+    let input_tys = codegen_utils::generate_input_tys(&sig);
+    let input_idents = codegen_utils::generate_input_idents(inputs);
     let ref_inputs = inputs
         .iter()
+        .skip(1)
         .map(|arg| match arg {
             FnArg::Typed(ident_type) => {
                 let ident = &ident_type.ident;
@@ -122,6 +123,8 @@ fn generate_mock_common(foreign_fn: &ForeignFn, suffix: usize) -> TokenStream2 {
     let returner = Ident::new(&format!("Returner{}", suffix), span);
     let expectation = Ident::new(&format!("Expectation{}", suffix), span);
 
+    let inputs = inputs.iter().skip(1);
+
     quote! {
         pub enum #matcher {
             Always,
@@ -162,7 +165,7 @@ fn generate_mock_common(foreign_fn: &ForeignFn, suffix: usize) -> TokenStream2 {
         }
 
         impl #expectation {
-            pub fn call(&mut self, #inputs) -> Option<#output_ty> {
+            pub fn call(&mut self, #(#inputs,)*) -> Option<#output_ty> {
                 match self.return_fn {
                     #returner::Default => {
                         let default_value = DefaultReturner::<#output_ty>::return_default();
@@ -204,7 +207,6 @@ fn generate_mock_common(foreign_fn: &ForeignFn, suffix: usize) -> TokenStream2 {
                 self.return_fn = #returner::Func(Box::new(f))
             }
 
-
             pub fn returns_const<T>(&mut self, return_value: T)
             where
                 T: Clone + Into<#output_ty> + 'static,
@@ -234,7 +236,7 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn, interface_ident: &Ident) -> Token
     let common = generate_mock_common(foreign_fn, 0);
 
     let inputs = &sig.inputs;
-    let input_idents = codegen_utils::generate_input_idents(inputs, false);
+    let input_idents = codegen_utils::generate_input_idents(inputs);
 
     let ref_input_idents = input_idents.iter().map(|ident| quote! {&#ident});
 
@@ -283,7 +285,7 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn, interface_ident: &Ident) -> Token
 
                 #(#attrs)*
                 #[allow(non_snake_case)]
-                pub fn #fn_ident(&self, #inputs) -> Option<#output_ty> {
+                pub fn #fn_ident(#inputs) -> Option<#output_ty> {
                     EXPECTATIONS.with(|expectations| {
                         for expectation in expectations.borrow_mut().iter_mut() {
                             if expectation.matches(#(#ref_input_idents,)*) {
@@ -332,8 +334,8 @@ fn generate_overloaded_fn(
         let span = foreign_fn.span;
 
         let inputs = &sig.inputs;
-        let input_tys = codegen_utils::generate_input_tys(&sig, false);
-        let input_idents = codegen_utils::generate_input_idents(inputs, false);
+        let input_tys = codegen_utils::generate_input_tys(&sig);
+        let input_idents = codegen_utils::generate_input_idents(inputs);
 
         let ref_input_idents = input_idents.iter().map(|ident| quote! {&#ident});
 
@@ -348,8 +350,21 @@ fn generate_overloaded_fn(
         };
 
         let common = generate_mock_common(foreign_fn, i);
+        let call_expectation = Ident::new(&format!("call_expectation{}", i), span);
         let expectation = Ident::new(&format!("Expectation{}", i), span);
         let expectations = Ident::new(&format!("EXPECTATIONS{}", i), span);
+
+        let impl_fn = if sig.is_mut() {
+            quote! {}
+        } else {
+            quote! {
+                impl Fn<(#(#input_tys,)*)> for #fn_ident {
+                    extern "rust-call" fn call(&self, args: (#(#input_tys,)*)) -> Self::Output {
+                        Self::#call_expectation(args)
+                    }
+                }
+            }
+        };
 
         quote! {
             #common
@@ -369,21 +384,8 @@ fn generate_overloaded_fn(
                 }
             }
 
-            impl FnOnce<(#(#input_tys,)*)> for #fn_ident {
-                type Output = Option<#output_ty>;
-                extern "rust-call" fn call_once(self, args: (#(#input_tys,)*)) -> Self::Output {
-                    self.call(args)
-                }
-            }
-
-            impl FnMut<(#(#input_tys,)*)> for #fn_ident {
-                extern "rust-call" fn call_mut(&mut self, args: (#(#input_tys,)*)) -> Self::Output {
-                    self.call(args)
-                }
-            }
-
-            impl Fn<(#(#input_tys,)*)> for #fn_ident {
-                extern "rust-call" fn call(&self, (#(#input_idents,)*): (#(#input_tys,)*)) -> Self::Output {
+            impl #fn_ident {
+                fn #call_expectation((#(#input_idents,)*): (#(#input_tys,)*)) -> Option<#output_ty> {
                     #expectations.with(|expectations| {
                         for expectation in expectations.borrow_mut().iter_mut() {
                             if expectation.matches(#(#ref_input_idents,)*) {
@@ -400,10 +402,29 @@ fn generate_overloaded_fn(
                     })
                 }
             }
+
+            impl FnOnce<(#(#input_tys,)*)> for #fn_ident {
+                type Output = Option<#output_ty>;
+                extern "rust-call" fn call_once(self, args: (#(#input_tys,)*)) -> Self::Output {
+                    Self::#call_expectation(args)
+                }
+            }
+
+            impl FnMut<(#(#input_tys,)*)> for #fn_ident {
+                extern "rust-call" fn call_mut(&mut self, args: (#(#input_tys,)*)) -> Self::Output {
+                    Self::#call_expectation(args)
+                }
+            }
+
+            #impl_fn
         }
     });
 
     quote! {
+        #[allow(non_camel_case_types)]
+        #[derive(Debug, Clone)]
+        pub struct #fn_ident;
+
         const _: () = {
             #(#overloaded_mocks)*
 
@@ -460,12 +481,6 @@ impl<'a> Mockable<'a> {
             overloaded_fns.into_iter().unzip();
 
         quote_spanned! { span =>
-            #(
-                #[allow(non_camel_case_types)]
-                #[derive(Debug, Clone)]
-                pub struct #overloaded_idents;
-            )*
-
             #[derive(Debug, Clone)]
             pub struct MockableInterface {
                 #(

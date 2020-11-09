@@ -74,4 +74,5 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/42-invalid-method-return-type-in-interface.rs");
     t.compile_fail("tests/ui/fail/43-specify-method-visibility-in-interface.rs");
     t.compile_fail("tests/ui/fail/44-specify-struct-visibility-in-interface.rs");
+    t.compile_fail("tests/ui/fail/45-no-receiver-in-interface.rs");
 }

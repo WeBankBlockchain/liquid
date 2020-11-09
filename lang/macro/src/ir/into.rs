@@ -166,7 +166,7 @@ impl TryFrom<(ir::ContractParams, syn::ItemMod)> for ir::Contract {
             functions.push(ir::Function{
                 attrs: getter.attrs,
                 kind: ir::FunctionKind::External(lang_utils::calculate_fn_id(ident)),
-                sig: ir::Signature::try_from((&getter.sig, false)).unwrap(),
+                sig: ir::Signature::try_from(&getter.sig).unwrap(),
                 body: *getter.block,
                 span: field.span(),
             });
@@ -321,56 +321,56 @@ impl TryFrom<syn::FnArg> for ir::FnArg {
     }
 }
 
-impl TryFrom<(&syn::Signature, bool)> for ir::Signature {
+impl TryFrom<&syn::Signature> for ir::Signature {
     type Error = Error;
 
-    fn try_from((sig, for_interface): (&syn::Signature, bool)) -> Result<Self> {
+    fn try_from(sig: &syn::Signature) -> Result<Self> {
         if sig.constness.is_some() {
             bail!(
                 sig.constness,
-                "`const` is not supported for functions in contract",
+                "`const` is not supported for methods in contract",
             )
         }
 
         if sig.asyncness.is_some() {
             bail!(
                 sig.asyncness,
-                "`async` is not supported for functions in contract",
+                "`async` is not supported for methods in contract",
             )
         }
 
         if sig.unsafety.is_some() {
             bail!(
                 sig.unsafety,
-                "`unsafe` is not supported for functions in contract",
+                "`unsafe` is not supported for methods in contract",
             )
         }
 
         if sig.abi.is_some() {
             bail! {
                 sig.abi,
-                "specifying ABI is not supported for functions in contract",
+                "specifying ABI is not supported for methods in contract",
             }
         }
 
         if !(sig.generics.params.is_empty() && sig.generics.where_clause.is_none()) {
             bail! {
                 sig.generics,
-                "generic is not supported for functions in contract",
+                "generic is not supported for methods in contract",
             }
         }
 
         if sig.variadic.is_some() {
             bail! {
                 sig.variadic,
-                "variadic functions are not allowed in liquid functions",
+                "variadic is not supported for methods in contract",
             }
         }
 
-        if !for_interface && sig.inputs.is_empty() {
+        if sig.inputs.is_empty() {
             bail!(
                 sig,
-                "`&self` or `&mut self` is mandatory for liquid functions",
+                "`&self` or `&mut self` is mandatory for contract methods",
             )
         }
 
@@ -382,25 +382,20 @@ impl TryFrom<(&syn::Signature, bool)> for ir::Signature {
             .collect::<Result<Punctuated<ir::FnArg, Token![,]>>>()?;
         let output = &sig.output;
 
-        if !for_interface {
-            if let ir::FnArg::Typed(ident_type) = &inputs[0] {
-                bail_span!(
-                    ident_type.span(),
-                    "first argument of liquid functions must be `&self` or `&mut self`",
-                )
-            }
+        if let ir::FnArg::Typed(ident_type) = &inputs[0] {
+            bail_span!(
+                ident_type.span(),
+                "first argument of contract methods must be `&self` or `&mut self`",
+            )
         }
 
-        for arg in inputs.iter().skip(if for_interface { 0 } else { 1 }) {
+        for arg in inputs.iter().skip(1) {
             if let ir::FnArg::Receiver(receiver) = arg {
                 bail_span!(receiver.span(), "unexpected `self` argument",)
             }
         }
 
-        let mut input_args_count = inputs.len();
-        if !for_interface {
-            input_args_count -= 1;
-        }
+        let input_args_count = inputs.len() - 1;
         if input_args_count > 16 {
             bail_span!(
                 inputs[1]
@@ -456,7 +451,7 @@ impl TryFrom<syn::ImplItemMethod> for ir::Function {
         }
 
         let span = method.span();
-        let sig = ir::Signature::try_from((&method.sig, false))?;
+        let sig = ir::Signature::try_from(&method.sig)?;
         let ident = &sig.ident;
 
         let kind = if ident == "new" {
@@ -864,7 +859,7 @@ impl TryFrom<&syn::ForeignItem> for ir::ForeignFn {
                     ),
                 }
 
-                let sig = ir::Signature::try_from((&foreign_fn.sig, true))?;
+                let sig = ir::Signature::try_from(&foreign_fn.sig)?;
                 let span = foreign_fn.span();
 
                 let mut markers =

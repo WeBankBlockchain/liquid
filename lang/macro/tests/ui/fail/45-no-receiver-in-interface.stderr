@@ -1,0 +1,5 @@
+error: `&self` or `&mut self` is mandatory for contract methods
+ --> $DIR/45-no-receiver-in-interface.rs:6:9
+  |
+6 |         fn bar() -> u8;
+  |         ^^^^^^^^^^^^^^

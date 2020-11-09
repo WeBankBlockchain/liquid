@@ -3,7 +3,7 @@ use liquid_lang as liquid;
 #[liquid::interface(name = "Bar")]
 mod foo {
     extern "liquid" {
-        fn foo();
+        fn foo(&self);
     }
 }
 

@@ -81,9 +81,9 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
     let fn_ident = &sig.ident;
 
     let inputs = &sig.inputs;
-    let input_tys = codegen_utils::generate_input_tys(&sig, false);
+    let input_tys = codegen_utils::generate_input_tys(&sig);
     let input_ty_checker = codegen_utils::generate_ty_checker(input_tys.as_slice());
-    let input_idents = codegen_utils::generate_input_idents(inputs, false);
+    let input_idents = codegen_utils::generate_input_idents(inputs);
 
     let output = &sig.output;
     let output_ty = match output {
@@ -99,10 +99,20 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
     let fn_name = fn_ident.to_string();
     let fn_name_bytes = fn_name.as_bytes();
     let fn_name_len = fn_name.len();
+
+    // Despite the following code seems strange and inefficient,
+    // but it can avoid redundant compiling error message...
+    let inputs = inputs.iter().skip(1);
+    let receiver = if sig.is_mut() {
+        quote_spanned!(span => &mut self)
+    } else {
+        quote_spanned!(span => &self)
+    };
+
     quote_spanned! { span =>
         #(#attrs)*
         #[allow(non_snake_case)]
-        pub fn #fn_ident(&self, #inputs) -> Option<#output_ty> {
+        pub fn #fn_ident(#receiver, #(#inputs,)*) -> Option<#output_ty> {
             #[allow(dead_code)]
             type Input = #input_ty_checker;
 
@@ -134,9 +144,9 @@ fn generate_overloaded_fn(fn_ident: &Ident, foreign_fns: &[ForeignFn]) -> TokenS
         let span = foreign_fn.span;
 
         let inputs = &sig.inputs;
-        let input_tys = codegen_utils::generate_input_tys(&sig, false);
+        let input_tys = codegen_utils::generate_input_tys(&sig);
         let input_ty_checker = codegen_utils::generate_ty_checker(input_tys.as_slice());
-        let input_idents = codegen_utils::generate_input_idents(inputs, false);
+        let input_idents = codegen_utils::generate_input_idents(inputs);
 
         let output = &sig.output;
         let output_ty = match output {
@@ -156,10 +166,24 @@ fn generate_overloaded_fn(fn_ident: &Ident, foreign_fns: &[ForeignFn]) -> TokenS
         let origin_fn_name = origin_fn_ident.to_string();
         let origin_fn_name_bytes = origin_fn_name.as_bytes();
         let origin_fn_name_len = origin_fn_name.len();
+
+        let inputs = inputs.iter().skip(1);
+        let impl_fn = if sig.is_mut() {
+            quote! {}
+        } else {
+            quote_spanned! { span =>
+                impl Fn<(#(#input_tys,)*)> for #origin_fn_ident {
+                    extern "rust-call" fn call(&self, (#(#input_idents,)*): (#(#input_tys,)*)) -> Self::Output {
+                        #fn_ident(&self.__liquid_address, #(#input_idents,)*)
+                    }
+                }
+            }
+        };
+
         quote_spanned! { span =>
             #[allow(non_snake_case)]
             #(#attrs)*
-            fn #fn_ident(__liquid_address: &liquid_primitives::types::Address, #inputs) -> Option<#output_ty> {
+            fn #fn_ident(__liquid_address: &liquid_primitives::types::Address, #(#inputs,)*) -> Option<#output_ty> {
                 #[allow(dead_code)]
                 type Input = #input_ty_checker;
 
@@ -185,22 +209,18 @@ fn generate_overloaded_fn(fn_ident: &Ident, foreign_fns: &[ForeignFn]) -> TokenS
             impl FnOnce<(#(#input_tys,)*)> for #origin_fn_ident {
                 type Output = Option<#output_ty>;
 
-                extern "rust-call" fn call_once(self, args: (#(#input_tys,)*)) -> Self::Output {
-                    self.call(args)
+                extern "rust-call" fn call_once(self, (#(#input_idents,)*): (#(#input_tys,)*)) -> Self::Output {
+                    #fn_ident(&self.__liquid_address, #(#input_idents,)*)
                 }
             }
 
             impl FnMut<(#(#input_tys,)*)> for #origin_fn_ident {
-                extern "rust-call" fn call_mut(&mut self, args: (#(#input_tys,)*)) -> Self::Output {
-                    self.call(args)
-                }
-            }
-
-            impl Fn<(#(#input_tys,)*)> for #origin_fn_ident {
-                extern "rust-call" fn call(&self, (#(#input_idents,)*): (#(#input_tys,)*)) -> Self::Output {
+                extern "rust-call" fn call_mut(&mut self, (#(#input_idents,)*): (#(#input_tys,)*)) -> Self::Output {
                     #fn_ident(&self.__liquid_address, #(#input_idents,)*)
                 }
             }
+
+            #impl_fn
         }
     });
 

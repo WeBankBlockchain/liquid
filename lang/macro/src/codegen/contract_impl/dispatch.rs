@@ -80,7 +80,7 @@ impl<'a> Dispatch<'a> {
         let fn_marker = quote! { FnMarker<[(); #fn_id]> };
         let sig = &func.sig;
 
-        let input_tys = utils::generate_input_tys(sig, true);
+        let input_tys = utils::generate_input_tys(sig);
         let input_ty_checker = utils::generate_ty_checker(input_tys.as_slice());
         let fn_input = quote_spanned! { sig.inputs.span() =>
             impl liquid_lang::FnInput for #fn_marker  {
@@ -153,7 +153,7 @@ impl<'a> Dispatch<'a> {
 
         let sig = &func.sig;
         let fn_name = &sig.ident;
-        let input_idents = utils::generate_input_idents(&sig.inputs, true);
+        let input_idents = utils::generate_input_idents(&sig.inputs);
         let pat_idents = if input_idents.is_empty() {
             quote! { _ }
         } else {
@@ -189,7 +189,7 @@ impl<'a> Dispatch<'a> {
         let constr = &self.contract.constructor;
         let sig = &constr.sig;
         let inputs = &sig.inputs;
-        let input_tys = utils::generate_input_tys(sig, true);
+        let input_tys = utils::generate_input_tys(sig);
         let marker = quote! { FnMarker<[(); 0]> };
         let input_ty_checker = utils::generate_ty_checker(input_tys.as_slice());
         quote_spanned! { inputs.span() =>
@@ -238,9 +238,9 @@ impl<'a> Dispatch<'a> {
     fn generate_entry_point(&self) -> TokenStream2 {
         let constr = &self.contract.constructor;
         let sig = &constr.sig;
-        let input_tys = utils::generate_input_tys(sig, true);
+        let input_tys = utils::generate_input_tys(sig);
         let ident = &sig.ident;
-        let input_idents = utils::generate_input_idents(&sig.inputs, true);
+        let input_idents = utils::generate_input_idents(&sig.inputs);
         let pat_idents = if input_idents.is_empty() {
             quote! { _ }
         } else {

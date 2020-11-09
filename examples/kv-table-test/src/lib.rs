@@ -7,15 +7,15 @@ use liquid_lang as liquid;
 #[liquid::interface(name = auto)]
 mod entry {
     extern "liquid" {
-        fn getInt(key: String) -> i256;
-        fn getUint(key: String) -> u256;
-        fn getAddress(key: String) -> address;
-        fn getString(key: String) -> String;
+        fn getInt(&self, key: String) -> i256;
+        fn getUint(&self, key: String) -> u256;
+        fn getAddress(&self, key: String) -> address;
+        fn getString(&self, key: String) -> String;
 
-        fn set(key: String, value: i256);
-        fn set(key: String, value: u256);
-        fn set(key: String, value: address);
-        fn set(key: String, value: String);
+        fn set(&mut self, key: String, value: i256);
+        fn set(&mut self, key: String, value: u256);
+        fn set(&mut self, key: String, value: address);
+        fn set(&mut self, key: String, value: String);
     }
 }
 
@@ -24,9 +24,9 @@ mod kv_table {
     use super::entry::*;
 
     extern "liquid" {
-        fn get(primary_key: String) -> (bool, Entry);
-        fn set(primary_key: String, entry: Entry) -> i256;
-        fn newEntry() -> Entry;
+        fn get(&self, primary_key: String) -> (bool, Entry);
+        fn set(&mut self, primary_key: String, entry: Entry) -> i256;
+        fn newEntry(&self) -> Entry;
     }
 }
 
@@ -35,8 +35,13 @@ mod kv_table_factory {
     use super::kv_table::*;
 
     extern "liquid" {
-        fn openTable(name: String) -> KvTable;
-        fn createTable(name: String, primary_key: String, fields: String) -> i256;
+        fn openTable(&self, name: String) -> KvTable;
+        fn createTable(
+            &mut self,
+            name: String,
+            primary_key: String,
+            fields: String,
+        ) -> i256;
     }
 }
 
@@ -87,8 +92,8 @@ mod kv_table_test {
         }
 
         pub fn set(&mut self, id: String, item_price: i256, item_name: String) -> i256 {
-            let table = self.table_factory.openTable(TABLE_NAME.clone()).unwrap();
-            let entry = table.newEntry().unwrap();
+            let mut table = self.table_factory.openTable(TABLE_NAME.clone()).unwrap();
+            let mut entry = table.newEntry().unwrap();
             (entry.set)(String::from("id"), id.clone());
             (entry.set)(String::from("item_price"), item_price);
             (entry.set)(String::from("item_name"), item_name);

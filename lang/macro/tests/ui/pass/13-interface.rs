@@ -5,10 +5,10 @@ use liquid_lang as liquid;
 #[liquid::interface(name = auto)]
 mod iface {
     extern "liquid" {
-        fn get(key: String) -> i256;
+        fn get(&self, key: String) -> i256;
 
-        fn set(key: String, value: address);
-        fn set(key: String, value: String);
+        fn set(&mut self, key: String, value: address);
+        fn set(&mut self, key: String, value: String);
     }
 }
 
@@ -33,7 +33,7 @@ mod noop {
         }
 
         pub fn noop(&self) {
-            let iface = Iface::at(Default::default());
+            let mut iface = Iface::at(Default::default());
 
             let _ = iface.get(String::from("noop"));
             (iface.set)(String::from("noop"), address::default());

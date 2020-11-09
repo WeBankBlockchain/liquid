@@ -25,10 +25,10 @@ pub fn generate_ty_checker(tys: &[&Type]) -> TokenStream2 {
     quote! { (#(#guards,)*) }
 }
 
-pub fn generate_input_tys(sig: &Signature, skip_first: bool) -> Vec<&syn::Type> {
+pub fn generate_input_tys(sig: &Signature) -> Vec<&syn::Type> {
     sig.inputs
         .iter()
-        .skip(if skip_first { 1 } else { 0 })
+        .skip(1)
         .map(|arg| match arg {
             FnArg::Typed(ident_type) => &ident_type.ty,
             _ => unreachable!(),
@@ -38,10 +38,9 @@ pub fn generate_input_tys(sig: &Signature, skip_first: bool) -> Vec<&syn::Type> 
 
 pub fn generate_input_idents(
     args: &Punctuated<FnArg, Token![,]>,
-    skip_first: bool,
 ) -> Vec<&proc_macro2::Ident> {
     args.iter()
-        .skip(if skip_first { 1 } else { 0 })
+        .skip(1)
         .filter_map(|arg| match arg {
             FnArg::Typed(ident_type) => Some(&ident_type.ident),
             _ => None,

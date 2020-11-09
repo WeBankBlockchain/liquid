@@ -1,4 +1,4 @@
-error: generic is not supported for functions in contract
+error: generic is not supported for methods in contract
   --> $DIR/15-generic-function.rs:12:20
    |
 12 |         pub fn noop<T>(&self, value: T) {}
