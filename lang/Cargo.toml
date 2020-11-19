@@ -1,26 +1,26 @@
 [package]
 name = "liquid_lang"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-liquid_macro = { version = "0.1.0", path = "../macro", default-features = false }
-liquid_abi_codec = { version = "0.1.0", path = "../abi-codec", default-features = false }
-liquid_primitives = { version = "0.1.0", path = "../primitives", default-features = false }
-liquid_core = { version = "0.1.0", path = "../core", default-features = false }
-liquid_prelude = { version = "0.1.0", path = "../prelude", default-features = false }
-liquid_lang_macro = { version = "0.1.0", path = "macro", default-features = false }
-liquid_lang_derive = { version = "0.1.0", path = "derive", default-features = false }
-liquid_abi_gen = { version = "0.1.0", path = "../abi-gen", default-features = false, optional = true }
+liquid_macro = { version = "0.2.0", path = "../macro", default-features = false }
+liquid_abi_codec = { version = "0.2.0", path = "../abi-codec", default-features = false }
+liquid_primitives = { version = "0.2.0", path = "../primitives", default-features = false }
+liquid_core = { version = "0.2.0", path = "../core", default-features = false }
+liquid_prelude = { version = "0.2.0", path = "../prelude", default-features = false }
+liquid_lang_macro = { version = "0.2.0", path = "macro", default-features = false }
+liquid_lang_derive = { version = "0.2.0", path = "derive", default-features = false }
+liquid_abi_gen = { version = "0.2.0", path = "../abi-gen", default-features = false, optional = true }
 
 [dev-dependencies]
 hex-literal = "0.2.1"
 pretty_assertions = "0.6.1"
 
-liquid_ty_mapping = { version = "0.1.0", path = "../ty_mapping", default-features = false }
+liquid_ty_mapping = { version = "0.2.0", path = "../ty_mapping", default-features = false }
 
 [features]
 default = ["std"]

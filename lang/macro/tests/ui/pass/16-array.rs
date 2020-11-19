@@ -16,7 +16,7 @@ impl Default for Null {
     }
 }
 
-#[liquid::contract(version = "0.1.0")]
+#[liquid::contract(version = "0.2.0")]
 mod noop {
     use super::Null;
     use liquid_core::storage;

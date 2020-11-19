@@ -4,7 +4,7 @@ use liquid_lang as liquid;
 
 /// This example is inspired by [Solidity by Example](https://solidity.readthedocs.io/en/latest/solidity-by-example.html).
 /// Voting with delegation.
-#[liquid::contract(version = "0.1.0")]
+#[liquid::contract(version = "0.2.0")]
 mod ballot {
     use liquid_lang::{InOut, State};
 

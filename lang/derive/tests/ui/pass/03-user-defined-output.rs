@@ -7,7 +7,7 @@ pub struct MyStruct {
     i: i32,
 }
 
-#[liquid::contract(version = "0.1.0")]
+#[liquid::contract(version = "0.2.0")]
 mod noop {
     use super::MyStruct;
 

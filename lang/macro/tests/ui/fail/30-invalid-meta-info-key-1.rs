@@ -1,6 +1,6 @@
 use liquid_lang as liquid;
 
-#[liquid::contract(version = "0.1.0", invalid_key = "whatever")]
+#[liquid::contract(version = "0.2.0", invalid_key = "whatever")]
 mod noop {
     #[liquid(storage)]
     struct Noop {}

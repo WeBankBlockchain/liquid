@@ -1,6 +1,6 @@
 use liquid_lang as liquid;
 
-#[liquid::contract(version = "0.1.0")]
+#[liquid::contract(version = "0.2.0")]
 mod noop {
     type MyInt = i32;
     type MyReturn = (bool, i32);
