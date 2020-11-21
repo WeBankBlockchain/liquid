@@ -1,0 +1,5 @@
+error: the attribute `mock_context_getter` should be assigned with a literal string
+ --> $DIR/46-invalid-mock-context-getter-1.rs:6:17
+  |
+6 |         #[liquid(mock_context_getter = something)]
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

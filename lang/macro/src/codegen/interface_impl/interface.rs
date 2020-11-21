@@ -43,7 +43,7 @@ impl GenerateCode for Interface {
                     #types
 
                     #[cfg(not(test))]
-                    #[cfg_attr(not(test), allow(dead_code))]
+                    #[allow(dead_code)]
                     pub mod interface {
                         use super::*;
                         #foreign_contract
@@ -56,14 +56,7 @@ impl GenerateCode for Interface {
                     }
                 }
 
-                #[cfg(not(test))]
-                #[allow(non_snake_case)]
                 pub type #interface_ident = __liquid_private::interface::Interface;
-
-
-                #[cfg(test)]
-                #[allow(non_snake_case)]
-                pub type #interface_ident = __liquid_private::interface::MockableInterface;
             }
         }
     }

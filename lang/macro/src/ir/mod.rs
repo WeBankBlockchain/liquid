@@ -21,7 +21,7 @@ pub use self::{
         NameValue, ParamName,
     },
     syn_def::{
-        Contract, ContractMetaInfo, FnArg, ForeignFn, ForeignStruct, Function,
+        AttrValue, Contract, ContractMetaInfo, FnArg, ForeignFn, ForeignStruct, Function,
         FunctionKind, IdentType, Interface, InterfaceMetaInfo, Item, ItemEvent, ItemImpl,
         ItemStorage, LiquidItem, Marker, MetaVersion, RustItem, Signature,
     },

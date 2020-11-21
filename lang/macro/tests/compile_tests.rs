@@ -30,6 +30,7 @@ fn compile_tests() {
     t.pass("tests/ui/pass/15-fixed-size-bytes.rs");
     t.pass("tests/ui/pass/16-array.rs");
     t.pass("tests/ui/pass/17-bytes.rs");
+    t.pass("tests/ui/pass/18-mock-context-getter.rs");
     t.compile_fail("tests/ui/fail/01-constructor-returns.rs");
     t.compile_fail("tests/ui/fail/02-missing-constructor.rs");
     t.compile_fail("tests/ui/fail/03-multiple-constructors.rs");
@@ -75,4 +76,8 @@ fn compile_tests() {
     t.compile_fail("tests/ui/fail/43-specify-method-visibility-in-interface.rs");
     t.compile_fail("tests/ui/fail/44-specify-struct-visibility-in-interface.rs");
     t.compile_fail("tests/ui/fail/45-no-receiver-in-interface.rs");
+    t.compile_fail("tests/ui/fail/46-invalid-mock-context-getter-1.rs");
+    t.compile_fail("tests/ui/fail/47-invalid-mock-context-getter-2.rs");
+    t.compile_fail("tests/ui/fail/48-invalid-mock-context-getter-3.rs");
+    t.compile_fail("tests/ui/fail/49-invalid-mock-context-getter-4.rs");
 }

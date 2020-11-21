@@ -27,15 +27,25 @@ where
     attrs.into_iter().filter(|attr| !is_liquid_attribute(attr))
 }
 
-pub fn filter_map_liquid_attributes<'a, I>(attrs: I) -> impl Iterator<Item = Marker>
+pub fn filter_map_liquid_attributes<'a, I>(attrs: I) -> Result<Vec<Marker>>
 where
     I: IntoIterator<Item = &'a syn::Attribute>,
 {
     use core::convert::TryFrom;
-    attrs
-        .into_iter()
-        .cloned()
-        .filter_map(|attr| Marker::try_from(attr).ok())
+
+    let mut markers = Vec::new();
+    for attr in attrs {
+        if is_liquid_attribute(attr) {
+            let marker = Marker::try_from(attr.clone());
+            if let Ok(marker) = marker {
+                markers.push(marker);
+            } else {
+                return Err(marker.unwrap_err());
+            }
+        }
+    }
+
+    Ok(markers)
 }
 
 pub type ContractItems = (

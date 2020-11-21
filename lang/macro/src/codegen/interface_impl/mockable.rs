@@ -32,7 +32,6 @@ impl<'a> GenerateCode for Mockable<'a> {
         let mockable = self.generate_foreign_contract_mock(interface_ident);
 
         quote! {
-            #[cfg(test)]
             mod __liquid_mockable {
                 use super::*;
                 use core::cell::RefCell;
@@ -43,8 +42,7 @@ impl<'a> GenerateCode for Mockable<'a> {
                 #mockable
             }
 
-            #[cfg(test)]
-            pub use __liquid_mockable::MockableInterface;
+            pub use __liquid_mockable::MockableInterface as Interface;
         }
     }
 }
@@ -296,7 +294,10 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn, interface_ident: &Ident) -> Token
                         panic!(
                             "no matched expectation is found for `{}({})` in `{}`",
                             stringify!(#fn_ident),
-                            stringify!(#inputs).replace(" : ", ": "),
+                            stringify!(#inputs)
+                                .replace(" : ", ": ")
+                                .replace("& self", "&self")
+                                .replace("& mut", "&mut"),
                             stringify!(#interface_ident),
                         );
                     })
@@ -396,7 +397,10 @@ fn generate_overloaded_fn(
                         panic!(
                             "no matched expectation is found for `{}({})` in `{}`",
                             stringify!(#fn_ident),
-                            stringify!(#inputs).replace(" : ", ": "),
+                            stringify!(#inputs)
+                                .replace(" : ", ": ")
+                                .replace("& self", "&self")
+                                .replace("& mut", "&mut"),
                             stringify!(#interface_ident)
                         );
                     })

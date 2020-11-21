@@ -14,7 +14,12 @@ use derive_more::From;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::ToTokens;
 use std::collections::BTreeMap;
-use syn::{punctuated::Punctuated, spanned::Spanned, Token};
+use syn::{
+    parse::{Parse, ParseStream},
+    punctuated::Punctuated,
+    spanned::Spanned,
+    Result, Token,
+};
 
 /// The major, minor and patch version of the version parameter.
 #[derive(Clone)]
@@ -229,6 +234,32 @@ impl ToTokens for IdentType {
     }
 }
 
+#[derive(Debug)]
+pub enum AttrValue {
+    LitStr(syn::LitStr),
+    Ident(syn::Ident),
+    None,
+}
+
+impl Parse for AttrValue {
+    fn parse(input: ParseStream) -> Result<Self> {
+        if input.peek(syn::Ident) {
+            let ident = input.parse::<syn::Ident>()?;
+            return Ok(Self::Ident(ident));
+        }
+
+        if input.peek(syn::LitStr) {
+            let lit_str = input.parse::<syn::LitStr>()?;
+            return Ok(Self::LitStr(lit_str));
+        }
+
+        Err(input.error(
+            "invalid value of an liquid attribute, identifier or a literal string \
+             required",
+        ))
+    }
+}
+
 /// markers use to indicate certain liquid specific properties.
 ///
 /// # Note
@@ -243,13 +274,14 @@ impl ToTokens for IdentType {
 /// #[liquid(storage)]
 /// struct MyStorage { ... }
 /// ```
+#[derive(Debug)]
 pub struct Marker {
     /// The parentheses around the single identifier.
     pub paren_token: syn::token::Paren,
     /// The single identifier.
     pub ident: Ident,
     /// The optional attribute value assigned to the identifier.
-    pub value: Option<syn::LitStr>,
+    pub value: AttrValue,
 }
 
 impl Spanned for Marker {

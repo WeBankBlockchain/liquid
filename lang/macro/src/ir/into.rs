@@ -82,7 +82,7 @@ impl Parse for ir::Marker {
             Ok(ir::Marker {
                 paren_token,
                 ident,
-                value: None,
+                value: ir::AttrValue::None,
             })
         } else {
             let ident_str = ident.to_string();
@@ -98,11 +98,11 @@ impl Parse for ir::Marker {
             }
 
             let _ = content.parse::<Token![=]>()?;
-            let value = content.parse::<syn::LitStr>()?;
+            let value = content.parse::<ir::AttrValue>()?;
             Ok(ir::Marker {
                 paren_token,
                 ident,
-                value: Some(value),
+                value,
             })
         }
     }
@@ -112,9 +112,6 @@ impl TryFrom<syn::Attribute> for ir::Marker {
     type Error = Error;
 
     fn try_from(attr: syn::Attribute) -> Result<Self> {
-        if !attr.path.is_ident("liquid") {
-            bail!(attr, "encountered non-liquid attribute")
-        }
         syn::parse2::<Self>(attr.tokens)
     }
 }
@@ -687,11 +684,10 @@ impl TryFrom<syn::ItemStruct> for ir::ItemEvent {
                     fields.push(field.clone());
                     let index = fields.len() - 1;
 
-                    let is_topic = field
-                        .attrs
-                        .iter()
-                        .filter_map(|attr| ir::Marker::try_from(attr.clone()).ok())
-                        .any(|marker| marker.ident == "indexed");
+                    let is_topic =
+                        ir_utils::filter_map_liquid_attributes(field.attrs.iter())?
+                            .iter()
+                            .any(|marker| marker.ident == "indexed");
                     if is_topic {
                         topic_count += 1;
                         if topic_count > 3 {
@@ -741,8 +737,7 @@ impl TryFrom<syn::Item> for ir::Item {
                 let is_event;
                 {
                     let markers =
-                        ir_utils::filter_map_liquid_attributes(&item_struct.attrs)
-                            .collect::<Vec<_>>();
+                        ir_utils::filter_map_liquid_attributes(&item_struct.attrs)?;
                     is_contract_storage =
                         markers.iter().any(|marker| marker.ident == "storage");
                     is_event = markers.iter().any(|marker| marker.ident == "event");
@@ -768,9 +763,10 @@ impl TryFrom<syn::Item> for ir::Item {
             syn::Item::Impl(item_impl) => {
                 let is_contract_impl;
                 {
-                    let mut markers =
-                        ir_utils::filter_map_liquid_attributes(&item_impl.attrs);
-                    is_contract_impl = markers.any(|marker| marker.ident == "methods");
+                    let markers =
+                        ir_utils::filter_map_liquid_attributes(&item_impl.attrs)?;
+                    is_contract_impl =
+                        markers.iter().any(|marker| marker.ident == "methods");
                 }
 
                 if is_contract_impl {
@@ -862,14 +858,15 @@ impl TryFrom<&syn::ForeignItem> for ir::ForeignFn {
                 let sig = ir::Signature::try_from(&foreign_fn.sig)?;
                 let span = foreign_fn.span();
 
-                let mut markers =
-                    ir_utils::filter_map_liquid_attributes(&foreign_fn.attrs);
-                let mock_context_getter = if let Some(marker) =
-                    markers.find(|marker| marker.ident == "mock_context_getter")
+                let markers = ir_utils::filter_map_liquid_attributes(&foreign_fn.attrs)?;
+
+                let mock_context_getter = if let Some(marker) = markers
+                    .iter()
+                    .find(|marker| marker.ident == "mock_context_getter")
                 {
                     let value = match &marker.value {
-                        Some(value) => value,
-                        None => bail_span!(
+                        ir::AttrValue::LitStr(value) => value,
+                        _ => bail_span!(
                             marker.span(),
                             "the attribute `mock_context_getter` should be assigned \
                              with a literal string"
@@ -877,7 +874,7 @@ impl TryFrom<&syn::ForeignItem> for ir::ForeignFn {
                     };
 
                     let getter = syn::parse_str::<syn::Ident>(&value.value());
-                    if getter.is_ok() {
+                    if getter.is_err() {
                         bail_span!(
                             value.span(),
                             "invalid identifier for mock context getter"

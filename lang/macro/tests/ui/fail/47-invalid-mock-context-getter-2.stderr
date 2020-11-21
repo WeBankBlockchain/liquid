@@ -1,0 +1,5 @@
+error: invalid identifier for mock context getter
+ --> $DIR/47-invalid-mock-context-getter-2.rs:6:40
+  |
+6 |         #[liquid(mock_context_getter = "!@#$")]
+  |                                        ^^^^^^
