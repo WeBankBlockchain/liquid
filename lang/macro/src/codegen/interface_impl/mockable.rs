@@ -42,7 +42,7 @@ impl<'a> GenerateCode for Mockable<'a> {
                 #mockable
             }
 
-            pub use __liquid_mockable::MockableInterface as Interface;
+            pub use __liquid_mockable::Interface;
         }
     }
 }
@@ -198,19 +198,19 @@ fn generate_mock_common(foreign_fn: &ForeignFn, suffix: usize) -> TokenStream2 {
                 self
             }
 
-            pub fn returns<F>(&mut self, f: F)
-            where
-                F: FnMut(#(#input_tys,)*) -> #output_ty + 'static,
-            {
-                self.return_fn = #returner::Func(Box::new(f))
-            }
-
-            pub fn returns_const<T>(&mut self, return_value: T)
+            pub fn returns<T>(&mut self, return_value: T)
             where
                 T: Clone + Into<#output_ty> + 'static,
             {
                 self.return_fn =
                     #returner::Func(Box::new(move |#(#useless_params,)*| return_value.clone().into()));
+            }
+
+            pub fn returns_fn<F>(&mut self, f: F)
+            where
+                F: FnMut(#(#input_tys,)*) -> #output_ty + 'static,
+            {
+                self.return_fn = #returner::Func(Box::new(f))
             }
 
             pub fn throws(&mut self) {
@@ -235,8 +235,10 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn, interface_ident: &Ident) -> Token
 
     let inputs = &sig.inputs;
     let input_idents = codegen_utils::generate_input_idents(inputs);
+    let no_self_inputs = inputs.iter().skip(1);
 
     let ref_input_idents = input_idents.iter().map(|ident| quote! {&#ident});
+    let is_mut = sig.is_mut();
 
     let output = &sig.output;
     let output_ty = match output {
@@ -275,18 +277,23 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn, interface_ident: &Ident) -> Token
                 }
             }
 
-            impl MockableInterface {
+            impl Interface {
                 #[allow(non_snake_case)]
                 pub fn #mock_context_getter() -> Context {
                     Context {}
                 }
+            }
 
+            impl InterfaceImpl {
                 #(#attrs)*
                 #[allow(non_snake_case)]
-                pub fn #fn_ident(#inputs) -> Option<#output_ty> {
+                pub fn #fn_ident(&self, #(#no_self_inputs,)*) -> Option<#output_ty> {
                     EXPECTATIONS.with(|expectations| {
                         for expectation in expectations.borrow_mut().iter_mut() {
                             if expectation.matches(#(#ref_input_idents,)*) {
+                                if #is_mut {
+                                    liquid_core::storage::mutable_call_happens();
+                                }
                                 return expectation.call(#(#input_idents,)*);
                             }
                         }
@@ -339,6 +346,7 @@ fn generate_overloaded_fn(
         let input_idents = codegen_utils::generate_input_idents(inputs);
 
         let ref_input_idents = input_idents.iter().map(|ident| quote! {&#ident});
+        let is_mut = sig.is_mut();
 
         let output = &sig.output;
         let output_ty = match output {
@@ -354,18 +362,6 @@ fn generate_overloaded_fn(
         let call_expectation = Ident::new(&format!("call_expectation{}", i), span);
         let expectation = Ident::new(&format!("Expectation{}", i), span);
         let expectations = Ident::new(&format!("EXPECTATIONS{}", i), span);
-
-        let impl_fn = if sig.is_mut() {
-            quote! {}
-        } else {
-            quote! {
-                impl Fn<(#(#input_tys,)*)> for #fn_ident {
-                    extern "rust-call" fn call(&self, args: (#(#input_tys,)*)) -> Self::Output {
-                        Self::#call_expectation(args)
-                    }
-                }
-            }
-        };
 
         quote! {
             #common
@@ -390,6 +386,9 @@ fn generate_overloaded_fn(
                     #expectations.with(|expectations| {
                         for expectation in expectations.borrow_mut().iter_mut() {
                             if expectation.matches(#(#ref_input_idents,)*) {
+                                if #is_mut {
+                                    liquid_core::storage::mutable_call_happens();
+                                }
                                 return expectation.call(#(#input_idents,)*);
                             }
                         }
@@ -420,7 +419,11 @@ fn generate_overloaded_fn(
                 }
             }
 
-            #impl_fn
+            impl Fn<(#(#input_tys,)*)> for #fn_ident {
+                extern "rust-call" fn call(&self, args: (#(#input_tys,)*)) -> Self::Output {
+                    Self::#call_expectation(args)
+                }
+            }
         }
     });
 
@@ -454,7 +457,7 @@ fn generate_overloaded_fn(
                 }
             }
 
-            impl MockableInterface {
+            impl Interface {
                 #[allow(non_snake_case)]
                 pub fn #mock_context_getter() -> Context {
                     Context {}
@@ -486,32 +489,18 @@ impl<'a> Mockable<'a> {
 
         quote_spanned! { span =>
             #[derive(Debug, Clone)]
-            pub struct MockableInterface {
+            pub struct InterfaceImpl {
                 #(
                     pub #overloaded_idents: #overloaded_idents,
                 )*
             }
 
-            impl MockableInterface {
+            #[derive(Debug, Clone)]
+            pub struct Interface(InterfaceImpl);
+
+            impl Interface {
                 pub fn at(_: liquid_primitives::types::Address) -> Self {
-                    Self {
-                        #(
-                            #overloaded_idents: #overloaded_idents {},
-                        )*
-                    }
-                }
-            }
-
-            impl From<liquid_primitives::types::Address> for MockableInterface {
-                fn from(addr: liquid_primitives::types::Address) -> Self {
-                    Self::at(addr)
-                }
-            }
-
-            impl scale::Decode for MockableInterface {
-                fn decode<I: scale::Input>(value: &mut I) -> Result<Self, scale::Error> {
-                    let _ = <() as scale::Decode>::decode(value)?;
-                    Ok(Self {
+                    Self(InterfaceImpl {
                         #(
                             #overloaded_idents: #overloaded_idents {},
                         )*
@@ -519,9 +508,33 @@ impl<'a> Mockable<'a> {
                 }
             }
 
-            impl scale::Encode for MockableInterface {
+            impl From<liquid_primitives::types::Address> for Interface {
+                fn from(addr: liquid_primitives::types::Address) -> Interface {
+                    Self::at(addr)
+                }
+            }
+
+            impl scale::Decode for Interface {
+                fn decode<I: scale::Input>(value: &mut I) -> Result<Self, scale::Error> {
+                    let _ = <() as scale::Decode>::decode(value)?;
+                    Ok(Self(InterfaceImpl {
+                        #(
+                            #overloaded_idents: #overloaded_idents {},
+                        )*
+                    }))
+                }
+            }
+
+            impl scale::Encode for Interface {
                 fn encode(&self) -> Vec<u8> {
                     ().encode()
+                }
+            }
+
+            impl std::ops::Deref for Interface {
+                type Target = InterfaceImpl;
+                fn deref(&self) -> &Self::Target {
+                    &self.0
                 }
             }
 

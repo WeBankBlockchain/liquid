@@ -1,4 +1,4 @@
-error: identifiers starting with `__liquid` are forbidden in contract
+error: identifiers starting with `__liquid` or `__LIQUID` are forbidden in contract
   --> $DIR/05-forbidden-ident.rs:12:12
    |
 12 |         fn __liquid_noop(&self) {}

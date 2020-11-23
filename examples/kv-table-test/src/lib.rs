@@ -25,6 +25,7 @@ mod kv_table {
 
     extern "liquid" {
         fn get(&self, primary_key: String) -> (bool, Entry);
+        #[liquid(mock_context_getter = "liquid_is_fun")]
         fn set(&mut self, primary_key: String, entry: Entry) -> i256;
         fn newEntry(&self) -> Entry;
     }
@@ -92,8 +93,8 @@ mod kv_table_test {
         }
 
         pub fn set(&mut self, id: String, item_price: i256, item_name: String) -> i256 {
-            let mut table = self.table_factory.openTable(TABLE_NAME.clone()).unwrap();
-            let mut entry = table.newEntry().unwrap();
+            let table = self.table_factory.openTable(TABLE_NAME.clone()).unwrap();
+            let entry = table.newEntry().unwrap();
             (entry.set)(String::from("id"), id.clone());
             (entry.set)(String::from("item_price"), item_price);
             (entry.set)(String::from("item_name"), item_name);
@@ -116,28 +117,28 @@ mod kv_table_test {
         fn get_works() {
             // EXPECTATIONS SETUP
             let create_table_ctx = KvTableFactory::createTable_context();
-            create_table_ctx.expect().returns_const(0);
+            create_table_ctx.expect().returns(0);
 
             let open_table_ctx = KvTableFactory::openTable_context();
             open_table_ctx
                 .expect()
-                .returns_const(KvTable::at(Default::default()));
+                .returns(KvTable::at(Default::default()));
 
             let get_ctx = KvTable::get_context();
             get_ctx
                 .expect()
                 .when(predicate::eq(String::from("cat")))
-                .returns_const((true, Entry::at(Default::default())));
+                .returns((true, Entry::at(Default::default())));
             get_ctx
                 .expect()
                 .when_fn(|primary_key| primary_key == "dog")
                 .throws();
 
             let get_int_ctx = Entry::getInt_context();
-            get_int_ctx.expect().returns_const(2500);
+            get_int_ctx.expect().returns(2500);
 
             let get_string_ctx = Entry::getString_context();
-            get_string_ctx.expect().returns_const("dounai");
+            get_string_ctx.expect().returns("dounai");
 
             // TESTS BEGIN
             let contract = KvTableTest::new();
@@ -164,27 +165,27 @@ mod kv_table_test {
 
             // EXPECTATIONS SETUP
             let create_table_ctx = KvTableFactory::createTable_context();
-            create_table_ctx.expect().returns_const(0);
+            create_table_ctx.expect().returns(0);
 
             let open_table_ctx = KvTableFactory::openTable_context();
             open_table_ctx
                 .expect()
-                .returns_const(KvTable::at(Default::default()));
+                .returns(KvTable::at(Default::default()));
 
             let new_entry_ctx = KvTable::newEntry_context();
             new_entry_ctx
                 .expect()
-                .returns_const(Entry::at(Default::default()));
+                .returns(Entry::at(Default::default()));
 
             let entry_set_ctx = Entry::set_context();
             entry_set_ctx
                 .expect::<(String, String)>()
-                .returns(|key, value| {
+                .returns_fn(|key, value| {
                     ENTRY.lock().unwrap().insert(key, value.into_bytes());
                 });
             entry_set_ctx
                 .expect::<(String, i256)>()
-                .returns(|key, value| {
+                .returns_fn(|key, value| {
                     ENTRY
                         .lock()
                         .unwrap()
@@ -195,21 +196,21 @@ mod kv_table_test {
             get_ctx
                 .expect()
                 .when(predicate::eq(String::from("dog")))
-                .returns_const((true, Entry::at(Default::default())));
+                .returns((true, Entry::at(Default::default())));
 
             let get_int_ctx = Entry::getInt_context();
-            get_int_ctx.expect().returns(|key| {
+            get_int_ctx.expect().returns_fn(|key| {
                 i256::from_signed_be_bytes(ENTRY.lock().unwrap().get(&key).unwrap())
             });
 
             let get_string_ctx = Entry::getString_context();
-            get_string_ctx.expect().returns(|key| {
+            get_string_ctx.expect().returns_fn(|key| {
                 String::from_utf8(ENTRY.lock().unwrap().get(&key).unwrap().clone())
                     .unwrap()
             });
 
-            let kv_table_set_ctx = KvTable::set_context();
-            kv_table_set_ctx.expect().returns_const(0);
+            let kv_table_set_ctx = KvTable::liquid_is_fun();
+            kv_table_set_ctx.expect().returns(0);
 
             // TESTS BEGIN
             let mut contract = KvTableTest::new();

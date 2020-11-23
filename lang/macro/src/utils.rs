@@ -10,24 +10,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use proc_macro2::{Ident, TokenStream as TokenStream2, TokenTree};
+use proc_macro2::{TokenStream as TokenStream2, TokenTree};
 use std::string::ToString;
 use syn::Error;
 
-pub fn check_idents<P, E>(input: TokenStream2, pred: P, or_err: E) -> Result<(), Error>
-where
-    P: Copy + Fn(&Ident) -> bool,
-    E: Copy + Fn(&Ident) -> Error,
-{
+pub fn check_idents(input: TokenStream2) -> Result<(), Error> {
     for token in input.into_iter() {
         match token {
             TokenTree::Ident(ident) => {
-                if !pred(&ident) {
-                    return Err(or_err(&ident));
+                if ident.to_string().starts_with("__liquid")
+                    || ident.to_string().starts_with("__LIQUID")
+                {
+                    return Err(format_err_span!(
+                        ident.span(),
+                        "identifiers starting with `__liquid` or `__LIQUID` are \
+                         forbidden in contract"
+                    ));
                 }
             }
             TokenTree::Group(group) => {
-                check_idents(group.stream(), pred, or_err)?;
+                check_idents(group.stream())?;
             }
             _ => (),
         }

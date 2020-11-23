@@ -93,19 +93,13 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
     let fn_name_bytes = fn_name.as_bytes();
     let fn_name_len = fn_name.len();
 
-    // Despite the following code seems strange and inefficient,
-    // but it can avoid redundant compiling error message...
     let inputs = inputs.iter().skip(1);
-    let receiver = if sig.is_mut() {
-        quote_spanned!(span => &mut self)
-    } else {
-        quote_spanned!(span => &self)
-    };
+    let is_mut = sig.is_mut();
 
     quote_spanned! { span =>
         #(#attrs)*
         #[allow(non_snake_case)]
-        pub fn #fn_ident(#receiver, #(#inputs,)*) -> Option<#output_ty> {
+        pub fn #fn_ident(&self, #(#inputs,)*) -> Option<#output_ty> {
             #[allow(dead_code)]
             type Input = #input_ty_checker;
 
@@ -125,6 +119,9 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
 
             let mut encoded = #selector_ident.to_vec();
             encoded.extend(<Input as liquid_abi_codec::Encode>::encode(&(#(#input_idents,)*)));
+            if #is_mut {
+                liquid_core::storage::mutable_call_happens();
+            }
             liquid_core::env::call::<#output_ty>(&self.__liquid_address, &encoded).ok()
         }
     }
@@ -161,17 +158,7 @@ fn generate_overloaded_fn(fn_ident: &Ident, foreign_fns: &[ForeignFn]) -> TokenS
         let origin_fn_name_len = origin_fn_name.len();
 
         let inputs = inputs.iter().skip(1);
-        let impl_fn = if sig.is_mut() {
-            quote! {}
-        } else {
-            quote_spanned! { span =>
-                impl Fn<(#(#input_tys,)*)> for #origin_fn_ident {
-                    extern "rust-call" fn call(&self, (#(#input_idents,)*): (#(#input_tys,)*)) -> Self::Output {
-                        #fn_ident(&self.__liquid_address, #(#input_idents,)*)
-                    }
-                }
-            }
-        };
+        let is_mut = sig.is_mut();
 
         quote_spanned! { span =>
             #[allow(non_snake_case)]
@@ -196,6 +183,9 @@ fn generate_overloaded_fn(fn_ident: &Ident, foreign_fns: &[ForeignFn]) -> TokenS
 
                 let mut encoded = #selector_ident.to_vec();
                 encoded.extend(<Input as liquid_abi_codec::Encode>::encode(&(#(#input_idents,)*)));
+                if #is_mut {
+                    liquid_core::storage::mutable_call_happens();
+                }
                 liquid_core::env::call::<#output_ty>(&__liquid_address, &encoded).ok()
             }
 
@@ -203,30 +193,46 @@ fn generate_overloaded_fn(fn_ident: &Ident, foreign_fns: &[ForeignFn]) -> TokenS
                 type Output = Option<#output_ty>;
 
                 extern "rust-call" fn call_once(self, (#(#input_idents,)*): (#(#input_tys,)*)) -> Self::Output {
-                    #fn_ident(&self.__liquid_address, #(#input_idents,)*)
+                    #fn_ident(unsafe {
+                        &*self.__liquid_address
+                    }, #(#input_idents,)*)
                 }
             }
 
             impl FnMut<(#(#input_tys,)*)> for #origin_fn_ident {
                 extern "rust-call" fn call_mut(&mut self, (#(#input_idents,)*): (#(#input_tys,)*)) -> Self::Output {
-                    #fn_ident(&self.__liquid_address, #(#input_idents,)*)
+                    #fn_ident(unsafe {
+                        &*self.__liquid_address
+                    }, #(#input_idents,)*)
                 }
             }
 
-            #impl_fn
+            impl Fn<(#(#input_tys,)*)> for #origin_fn_ident {
+                extern "rust-call" fn call(&self, (#(#input_idents,)*): (#(#input_tys,)*)) -> Self::Output {
+                    #fn_ident(unsafe {
+                        &*self.__liquid_address
+                    }, #(#input_idents,)*)
+                }
+            }
         }
     });
 
     quote! {
         #[allow(non_camel_case_types)]
         pub struct #fn_ident {
-            __liquid_address: liquid_primitives::types::Address,
+            __liquid_address: *const liquid_primitives::types::Address,
         }
 
-        impl From<liquid_primitives::types::Address> for #fn_ident {
-            fn from(__liquid_address: liquid_primitives::types::Address) -> Self {
+        impl #fn_ident {
+            pub fn init(&mut self, addr: *const liquid_primitives::types::Address) {
+                self.__liquid_address = addr;
+            }
+        }
+
+        impl Default for #fn_ident {
+            fn default() -> Self {
                 Self {
-                    __liquid_address,
+                    __liquid_address: core::ptr::null(),
                 }
             }
         }
@@ -277,21 +283,38 @@ impl Interface {
             overloaded_fns.into_iter().unzip();
 
         quote_spanned! { span =>
-            pub struct Interface {
+            pub struct InterfaceImpl {
                 __liquid_address: liquid_primitives::types::Address,
+                __liquid_marker: core::marker::PhantomPinned,
                 #(
                     pub #overloaded_idents: #overloaded_idents,
                 )*
             }
 
+            pub struct Interface(core::pin::Pin<liquid_prelude::boxed::Box<InterfaceImpl>>);
+
             impl Interface {
                 pub fn at(addr: liquid_primitives::types::Address) -> Self {
-                    Self {
+                    let iface = InterfaceImpl {
                         __liquid_address: addr,
+                        __liquid_marker: core::marker::PhantomPinned,
                         #(
-                            #overloaded_idents: addr.into(),
+                            #overloaded_idents: Default::default(),
+                        )*
+                    };
+
+                    #[allow(unused_mut)]
+                    let mut boxed = liquid_prelude::boxed::Box::pin(iface);
+                    #[allow(unused_variables)]
+                    let addr_ptr: *const liquid_primitives::types::Address = &boxed.as_ref().__liquid_address;
+                    #[allow(unused_unsafe)]
+                    unsafe {
+                        #(
+                            boxed.as_mut().get_unchecked_mut().#overloaded_idents.init(addr_ptr);
                         )*
                     }
+
+                    Self(boxed)
                 }
             }
 
@@ -303,19 +326,14 @@ impl Interface {
 
             impl scale::Decode for Interface {
                 fn decode<I: scale::Input>(value: &mut I) -> Result<Self, scale::Error> {
-                    let __liquid_address = liquid_primitives::types::Address::decode(value)?;
-                    Ok(Self {
-                        __liquid_address,
-                        #(
-                            #overloaded_idents: __liquid_address.into(),
-                        )*
-                    })
+                    let addr = liquid_primitives::types::Address::decode(value)?;
+                    Ok(Self::at(addr))
                 }
             }
 
             impl scale::Encode for Interface {
                 fn encode(&self) -> Vec<u8> {
-                    self.__liquid_address.encode()
+                    self.0.__liquid_address.encode()
                 }
             }
 
@@ -323,7 +341,7 @@ impl Interface {
 
             impl Into<liquid_primitives::types::Address> for Interface {
                 fn into(self) -> liquid_primitives::types::Address {
-                    self.__liquid_address
+                    self.0.__liquid_address
                 }
             }
 
@@ -336,7 +354,7 @@ impl Interface {
 
             impl liquid_abi_codec::MediateEncode for Interface {
                 fn encode(&self) -> liquid_abi_codec::Mediate {
-                    self.__liquid_address.encode()
+                    self.0.__liquid_address.encode()
                 }
             }
 
@@ -346,12 +364,7 @@ impl Interface {
                     offset: usize
                 ) -> Result<liquid_abi_codec::DecodeResult<Self>, liquid_primitives::Error> {
                     let decode_result = <liquid_primitives::types::Address as liquid_abi_codec::MediateDecode>::decode(slices, offset)?;
-                    let value = Self {
-                        __liquid_address: decode_result.value,
-                        #(
-                            #overloaded_idents: decode_result.value.into(),
-                        )*
-                    };
+                    let value = Self::at(decode_result.value);
                     Ok(liquid_abi_codec::DecodeResult {
                         value,
                         new_offset: decode_result.new_offset
@@ -364,8 +377,15 @@ impl Interface {
             impl liquid_lang::You_Should_Use_An_Valid_Input_Type for Interface {}
             impl liquid_lang::You_Should_Use_An_Valid_Field_Data_Type for Interface {}
 
-            impl Interface {
+            impl InterfaceImpl {
                 #(#trivial_fns)*
+            }
+
+            impl core::ops::Deref for Interface {
+                type Target = InterfaceImpl;
+                fn deref(&self) -> &Self::Target {
+                    &self.0
+                }
             }
         }
     }

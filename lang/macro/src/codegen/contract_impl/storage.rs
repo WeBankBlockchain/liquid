@@ -143,16 +143,49 @@ impl<'a> Storage<'a> {
         } else {
             quote_spanned! {span => pub}
         };
-        let attrs = utils::filter_non_liquid_attributes(function.attrs.iter());
-        let ident = &function.sig.ident;
-        let inputs = &function.sig.inputs;
-        let output = &function.sig.output;
+        let attrs = utils::filter_non_liquid_attributes(function.attrs.iter())
+            .collect::<Vec<_>>();
+        let sig = &function.sig;
+        let ident = &sig.ident;
+        let inputs = &sig.inputs;
+        let output = &sig.output;
         let body = &function.body;
+        let stmts = &body.stmts;
+        let is_mut = sig.is_mut();
 
-        quote_spanned! { span =>
-            #(#attrs)*
-            #vis fn #ident(#inputs) #output
-                #body
+        if is_mut {
+            quote_spanned! { span =>
+                #[cfg(not(test))]
+                #(#attrs)*
+                #vis fn #ident(#inputs) #output
+                    #body
+
+                #[cfg(test)]
+                #(#attrs)*
+                #vis fn #ident(#inputs) #output {
+                    let result = (move || {
+                        #(#stmts)*
+                    })();
+                    liquid_core::storage::reset_mutable_call_records();
+                    result
+                }
+            }
+        } else {
+            quote_spanned! { span =>
+                #(#attrs)*
+                #vis fn #ident(#inputs) #output {
+                    let result = (move || {
+                        #(#stmts)*
+                    })();
+                    if liquid_core::storage::has_mutable_call_happens() {
+                        liquid_core::env::revert(&String::from(
+                            "attempt to call mutable external interfaces in an immutable \
+                             transaction, all writes will be discarded",
+                        ));
+                    }
+                    result
+                }
+            }
         }
     }
 

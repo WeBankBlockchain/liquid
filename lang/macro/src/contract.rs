@@ -23,16 +23,7 @@ pub fn generate(attr: TokenStream2, input: TokenStream2) -> TokenStream2 {
 }
 
 fn generate_impl(attr: TokenStream2, input: TokenStream2) -> Result<TokenStream2> {
-    check_idents(
-        input.clone(),
-        move |ident| !ident.to_string().starts_with("__liquid"),
-        move |ident| {
-            format_err!(
-                ident,
-                "identifiers starting with `__liquid` are forbidden in contract"
-            )
-        },
-    )?;
+    check_idents(input.clone())?;
 
     let params = syn::parse2::<ir::ContractParams>(attr)?;
     let item_mod = syn::parse2::<syn::ItemMod>(input)?;
