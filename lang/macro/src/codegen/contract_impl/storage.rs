@@ -166,7 +166,7 @@ impl<'a> Storage<'a> {
                     let result = (move || {
                         #(#stmts)*
                     })();
-                    liquid_core::storage::reset_mutable_call_records();
+                    liquid_core::storage::reset_mutable_call_flag();
                     result
                 }
             }

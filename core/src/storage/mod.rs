@@ -38,7 +38,7 @@ mod mutable_call_flag {
         MUTABLE_CALL_HAPPENS.with(|flag| *flag.borrow_mut() = true);
     }
 
-    pub fn reset_mutable_call_records() {
+    pub fn reset_mutable_call_flag() {
         MUTABLE_CALL_HAPPENS.with(|flag| *flag.borrow_mut() = false);
     }
 
@@ -60,7 +60,7 @@ mod mutable_call_flag {
         *MUTABLE_CALL_HAPPENS.lock() = true;
     }
 
-    pub fn reset_mutable_call_records() {
+    pub fn reset_mutable_call_flag() {
         *MUTABLE_CALL_HAPPENS.lock() = false;
     }
 
