@@ -207,7 +207,7 @@ mod ballot {
 
         fn deploy_contract() -> Ballot {
             let accounts = test::default_accounts();
-            test::push_execution_context(accounts.alice);
+            test::set_caller(accounts.alice);
 
             let proposal_names = vec![
                 "play with cat".to_string(),
@@ -247,7 +247,7 @@ mod ballot {
             let mut ballot = deploy_contract();
 
             // Another account who wants to distribute right to vote
-            test::push_execution_context(accounts.bob);
+            test::set_caller(accounts.bob);
             ballot.give_right_to_vote(accounts.charlie);
         }
 
@@ -259,7 +259,7 @@ mod ballot {
             let voter = accounts.bob;
 
             ballot.give_right_to_vote(voter);
-            test::push_execution_context(voter);
+            test::set_caller(voter);
             ballot.vote(0);
             test::pop_execution_context();
             ballot.give_right_to_vote(voter);
@@ -273,7 +273,7 @@ mod ballot {
             let voter = accounts.bob;
 
             ballot.give_right_to_vote(voter);
-            test::push_execution_context(voter);
+            test::set_caller(voter);
             test::pop_execution_context();
             ballot.give_right_to_vote(voter);
         }
@@ -307,7 +307,7 @@ mod ballot {
             ballot.give_right_to_vote(bob);
             ballot.give_right_to_vote(charlie);
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             ballot.delegate(charlie);
             assert_eq!(ballot.voters[&bob].delegate, charlie);
             assert_eq!(ballot.voters[&bob].voted, true);
@@ -322,12 +322,12 @@ mod ballot {
             let charlie = accounts.charlie;
             ballot.give_right_to_vote(bob);
             ballot.give_right_to_vote(charlie);
-            test::push_execution_context(charlie);
+            test::set_caller(charlie);
             ballot.vote(0);
             test::pop_execution_context();
             assert_eq!(ballot.proposals[0].vote_count, 1);
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             ballot.delegate(charlie);
             assert_eq!(ballot.voters[&bob].delegate, charlie);
             assert_eq!(ballot.voters[&bob].voted, true);
@@ -343,7 +343,7 @@ mod ballot {
             let bob = accounts.bob;
             ballot.give_right_to_vote(bob);
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             ballot.delegate(bob);
         }
 
@@ -355,7 +355,7 @@ mod ballot {
             let bob = accounts.bob;
             ballot.give_right_to_vote(bob);
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             let charlie = accounts.charlie;
             ballot.delegate(charlie);
         }
@@ -370,7 +370,7 @@ mod ballot {
             ballot.give_right_to_vote(bob);
             ballot.give_right_to_vote(charlie);
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             ballot.vote(0);
             ballot.delegate(charlie);
         }
@@ -385,11 +385,11 @@ mod ballot {
             ballot.give_right_to_vote(bob);
             ballot.give_right_to_vote(charlie);
 
-            test::push_execution_context(charlie);
+            test::set_caller(charlie);
             ballot.delegate(bob);
             test::pop_execution_context();
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             ballot.delegate(charlie);
         }
 
@@ -404,15 +404,15 @@ mod ballot {
             ballot.give_right_to_vote(charlie);
             ballot.give_right_to_vote(david);
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             ballot.vote(0);
             test::pop_execution_context();
 
-            test::push_execution_context(charlie);
+            test::set_caller(charlie);
             ballot.vote(0);
             test::pop_execution_context();
 
-            test::push_execution_context(david);
+            test::set_caller(david);
             ballot.vote(1);
             test::pop_execution_context();
 

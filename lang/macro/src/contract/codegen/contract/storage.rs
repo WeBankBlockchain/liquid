@@ -16,7 +16,7 @@ use crate::{
     utils as lang_utils,
 };
 use derive_more::From;
-use proc_macro2::{Span, TokenStream as TokenStream2};
+use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::{quote, quote_spanned};
 use syn::{punctuated::Punctuated, spanned::Spanned, Token};
 

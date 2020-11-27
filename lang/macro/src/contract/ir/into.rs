@@ -85,6 +85,18 @@ impl Parse for ir::Marker {
                 ident,
                 value: AttrValue::None,
             })
+        } else if ident.to_string() == "asset" {
+            let attributes_content;
+            syn::parenthesized!(attributes_content in content);
+            let fields = attributes_content
+                .parse_terminated::<ir::AssetAttribute, Token![,]>(
+                    ir::AssetAttribute::parse,
+                )?;
+            Ok(ir::Marker {
+                paren_token,
+                ident,
+                value: ir::AttrValue::Fields(fields.iter().cloned().collect::<Vec<_>>()),
+            })
         } else {
             let ident_str = ident.to_string();
             if SINGLE_MARKER
@@ -97,7 +109,7 @@ impl Parse for ir::Marker {
                     ident_str,
                 )
             }
-
+            println!("++++ir::Marker ident_str={:?}", ident_str);
             let _ = content.parse::<Token![=]>()?;
             let value = content.parse::<AttrValue>()?;
             Ok(ir::Marker {
@@ -147,7 +159,7 @@ impl TryFrom<(ir::ContractParams, syn::ItemMod)> for ir::Contract {
             });
 
         let span = item_mod.span();
-        let (storage, events, mut functions, constants) =
+        let (storage, events, assets, mut functions, mut constants) =
             ir_utils::split_items(liquid_items, span)?;
         storage.public_fields.iter().for_each(|index| {
             let field = &storage.fields.named[*index];
@@ -168,6 +180,32 @@ impl TryFrom<(ir::ContractParams, syn::ItemMod)> for ir::Contract {
                 body: *getter.block,
                 span: field.span(),
             });
+        });
+        let assets_names = assets
+            .iter()
+            .map(|asset| asset.ident.to_string())
+            .collect::<Vec<String>>()
+            .join(",");
+        let supports_asset_constant = syn::parse2::<syn::ImplItemConst>(quote! {
+        const SUPPORTS_ASSET : &'static str = #assets_names;
+        })
+        .unwrap();
+        constants.push(supports_asset_constant);
+        let supports_asset_name = Ident::new(lang_utils::SUPPORTS_ASSET_NAME, span);
+        let supports_asset_fn = syn::parse2::<syn::ItemFn>(quote! {
+            pub fn #supports_asset_name(&self, asset: String) -> bool {
+                Self::SUPPORTS_ASSET.contains(&asset)
+            }
+        })
+        .unwrap();
+        functions.push(ir::Function {
+            attrs: supports_asset_fn.attrs,
+            kind: ir::FunctionKind::External(lang_utils::calculate_fn_id(
+                &lang_utils::SUPPORTS_ASSET_SIGNATURE,
+            )),
+            sig: ir::Signature::try_from(&supports_asset_fn.sig).unwrap(),
+            body: *supports_asset_fn.block,
+            span,
         });
 
         let (mut constructor, mut external_func_count) = (None, 0);
@@ -205,6 +243,7 @@ impl TryFrom<(ir::ContractParams, syn::ItemMod)> for ir::Contract {
             meta_info,
             storage,
             events,
+            assets,
             constructor,
             functions,
             constants,
@@ -654,6 +693,92 @@ impl TryFrom<syn::ItemStruct> for ir::ItemStorage {
     }
 }
 
+impl TryFrom<syn::ItemStruct> for ir::ItemAsset {
+    type Error = Error;
+    fn try_from(item_struct: syn::ItemStruct) -> Result<Self> {
+        if item_struct.vis != syn::Visibility::Inherited {
+            bail!(
+                item_struct.vis,
+                "visibility modifiers are not allowed for `#[liquid(asset)]` struct",
+            )
+        }
+
+        if item_struct.generics.type_params().count() > 0 {
+            bail!(
+                item_struct.generics,
+                "generics are not allowed for `#[liquid(asset)]` struct"
+            )
+        }
+        let span = item_struct.span();
+        match item_struct.fields {
+            syn::Fields::Named(_) => bail!(
+                item_struct,
+                "user defined fields not allowed for `#[liquid(asset)]`"
+            ),
+            syn::Fields::Unnamed(_) => bail!(
+                item_struct,
+                "tuple-struct is not allowed for `#[liquid(asset)]`"
+            ),
+            syn::Fields::Unit => (),
+        };
+        let markers = ir_utils::filter_map_liquid_attributes(&item_struct.attrs)?;
+
+        if markers.len() > 1 {
+            bail!(
+                item_struct,
+                "`#[liquid(asset)]` is mutually exclusive with other attributes"
+            )
+        }
+        let mut asset_meta = ir::AssetMetaInfo::default();
+        if let ir::AttrValue::Fields(fields) = &markers[0].value {
+            for field in fields {
+                match field {
+                    ir::AssetAttribute::Issuer {
+                        issuer_token: _,
+                        eq_token: _,
+                        value,
+                    } => asset_meta.issuer = value.value(),
+                    ir::AssetAttribute::TotalSupply {
+                        total_token: _,
+                        eq_token: _,
+                        value,
+                    } => asset_meta.total_supply = value.base10_parse()?,
+                    // ir::AssetAttribute::Destroyable {
+                    //     destroyable_token:_,
+                    //     eq_token:_,
+                    //     value,
+                    // } => asset_meta.destroyable = value.value,
+                    ir::AssetAttribute::Fungible {
+                        fungible_token: _,
+                        eq_token: _,
+                        value,
+                    } => asset_meta.fungible = value.value,
+                    ir::AssetAttribute::Description {
+                        description_token: _,
+                        eq_token: _,
+                        value,
+                    } => asset_meta.description = value.value(),
+                }
+            }
+        } else {
+            bail!(item_struct, "`#[liquid(asset)]` with mismatch attributes")
+        }
+        // FIXME: delete debug output
+        // println!("ItemAsset {:#?}", asset_meta);
+        Ok(ir::ItemAsset {
+            attrs: item_struct.attrs,
+            struct_token: item_struct.struct_token,
+            ident: item_struct.ident,
+            span,
+            total_supply: asset_meta.total_supply,
+            issuer: asset_meta.issuer,
+            // destroyable: asset_meta.destroyable,
+            fungible: asset_meta.fungible,
+            description: asset_meta.description,
+        })
+    }
+}
+
 impl TryFrom<syn::ItemStruct> for ir::ItemEvent {
     type Error = Error;
     fn try_from(item_struct: syn::ItemStruct) -> Result<Self> {
@@ -742,31 +867,39 @@ impl TryFrom<syn::Item> for ir::Item {
     fn try_from(item: syn::Item) -> Result<Self> {
         match item.clone() {
             syn::Item::Struct(item_struct) => {
-                let is_contract_storage;
-                let is_event;
-                {
-                    let markers =
-                        ir_utils::filter_map_liquid_attributes(&item_struct.attrs)?;
-                    is_contract_storage =
-                        markers.iter().any(|marker| marker.ident == "storage");
-                    is_event = markers.iter().any(|marker| marker.ident == "event");
-                }
-
-                match (is_contract_storage, is_event) {
-                    (true, true) => bail!(
+                let markers = ir_utils::filter_map_liquid_attributes(&item_struct.attrs)?;
+                // FIXME: delete debug output
+                println!(
+                    "###marker attrs.len={} name={} marker.len={}",
+                    item_struct.attrs.len(),
+                    item_struct.ident,
+                    markers.len()
+                );
+                if markers.len() > 1 {
+                    bail!(
                         item_struct,
                         "a struct can not be marked as `liquid(event)` and \
                          `liquid(storage)` simultaneously"
-                    ),
-                    (true, false) => ir::ItemStorage::try_from(item_struct)
+                    )
+                }
+
+                if markers[0].ident.to_string() == "storage" {
+                    return ir::ItemStorage::try_from(item_struct)
                         .map(Into::into)
                         .map(Box::new)
-                        .map(ir::Item::Liquid),
-                    (false, true) => ir::ItemEvent::try_from(item_struct)
+                        .map(ir::Item::Liquid);
+                } else if markers[0].ident.to_string() == "event" {
+                    return ir::ItemEvent::try_from(item_struct)
                         .map(Into::into)
                         .map(Box::new)
-                        .map(ir::Item::Liquid),
-                    _ => Ok(ir::Item::Rust(Box::new(item.into()))),
+                        .map(ir::Item::Liquid);
+                } else if markers[0].ident.to_string() == "asset" {
+                    return ir::ItemAsset::try_from(item_struct)
+                        .map(Into::into)
+                        .map(Box::new)
+                        .map(ir::Item::Liquid);
+                } else {
+                    Ok(ir::Item::Rust(Box::new(item.into())))
                 }
             }
             syn::Item::Impl(item_impl) => {

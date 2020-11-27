@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use super::{Function, ItemEvent, ItemStorage, LiquidItem, Marker};
+use super::{Function, ItemAsset, ItemEvent, ItemStorage, LiquidItem, Marker};
 use crate::utils as lang_utils;
 use proc_macro2::Span;
 use syn::{spanned::Spanned, Result};
@@ -39,6 +39,7 @@ where
 pub type ContractItems = (
     ItemStorage,
     Vec<ItemEvent>,
+    Vec<ItemAsset>,
     Vec<Function>,
     Vec<syn::ImplItemConst>,
 );
@@ -67,6 +68,11 @@ pub fn split_items(items: Vec<LiquidItem>, span: Span) -> Result<ContractItems> 
             ))
         }
     };
+    let (assets, others): (Vec<_>, Vec<_>) =
+        others.into_iter().partition_map(|item| match item {
+            LiquidItem::Asset(asset) => Either::Left(asset),
+            other => Either::Right(other),
+        });
 
     let (events, impl_blocks): (Vec<_>, Vec<_>) =
         others.into_iter().partition_map(|item| match item {
@@ -92,5 +98,5 @@ pub fn split_items(items: Vec<LiquidItem>, span: Span) -> Result<ContractItems> 
 
     let functions = functions.into_iter().flatten().collect();
     let constants = constants.into_iter().flatten().collect();
-    Ok((storage, events, functions, constants))
+    Ok((storage, events, assets, functions, constants))
 }

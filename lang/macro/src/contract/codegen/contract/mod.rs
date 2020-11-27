@@ -11,13 +11,15 @@
 // limitations under the License.
 
 mod abi_gen;
+mod assets;
 mod dispatch;
 mod events;
 mod storage;
 mod testable;
 
-use crate::{contract::ir, common::GenerateCode, utils};
+use crate::{common::GenerateCode, contract::ir, utils};
 use abi_gen::ABIGen;
+use assets::Assets;
 use dispatch::Dispatch;
 use events::{EventStructs, Events};
 use proc_macro2::TokenStream as TokenStream2;
@@ -32,6 +34,7 @@ impl GenerateCode for ir::Contract {
         let types = utils::generate_primitive_types();
         let storage = Storage::from(self).generate_code();
         let events = Events::from(self).generate_code();
+        let assets = Assets::from(self).generate_code();
         let event_struct = EventStructs::from(self).generate_code();
         let dispatch = Dispatch::from(self).generate_code();
         let testable = Testable::from(self).generate_code();
@@ -51,6 +54,7 @@ impl GenerateCode for ir::Contract {
                     use super::*;
 
                     #storage
+                    #assets
                     #events
                     #dispatch
                     #testable

@@ -11,12 +11,13 @@
 // limitations under the License.
 
 use crate::{
+    common::GenerateCode,
     contract::{
         codegen::utils,
         ir::{Contract, Function, FunctionKind},
     },
-    common::GenerateCode,
 };
+
 use derive_more::From;
 use proc_macro2::{Ident, TokenStream as TokenStream2};
 use quote::{quote, quote_spanned};
@@ -260,6 +261,12 @@ impl<'a> Dispatch<'a> {
         let input_tys = utils::generate_input_tys(sig);
         let ident = &sig.ident;
         let input_idents = utils::generate_input_idents(&sig.inputs);
+        let asset_idents: Vec<Ident> = self
+            .contract
+            .assets
+            .iter()
+            .map(|asset| asset.ident.clone())
+            .collect();
         let pat_idents = if input_idents.is_empty() {
             quote! { _ }
         } else {
@@ -297,6 +304,7 @@ impl<'a> Dispatch<'a> {
                 } else {
                     liquid_lang::env::revert(&String::from("could not read input"));
                 }
+                #(#asset_idents::register();)*
             }
 
             #[no_mangle]

@@ -17,14 +17,19 @@ pub struct ExecContext {
     ///
     /// Might be user or another contract.
     pub caller: Address,
+    pub callee: Address,
 }
 
 impl ExecContext {
-    pub fn new(caller: Address) -> Self {
-        Self { caller }
+    pub fn new(caller: Address, callee: Address) -> Self {
+        Self { caller, callee }
     }
 
     pub fn caller(&self) -> Address {
         self.caller
+    }
+
+    pub fn self_address(&self) -> Address {
+        self.callee
     }
 }

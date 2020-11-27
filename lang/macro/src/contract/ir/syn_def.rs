@@ -51,6 +51,7 @@ pub enum Item {
 pub enum LiquidItem {
     Storage(ItemStorage),
     Event(ItemEvent),
+    Asset(ItemAsset),
     Impl(ItemImpl),
 }
 
@@ -85,6 +86,128 @@ impl Spanned for ItemStorage {
     /// Returns the span of the original `struct` definition.
     fn span(&self) -> Span {
         self.span
+    }
+}
+
+mod kw {
+    syn::custom_keyword!(issuer);
+    syn::custom_keyword!(total);
+    // syn::custom_keyword!(destroyable);
+    syn::custom_keyword!(fungible);
+    syn::custom_keyword!(description);
+}
+
+#[derive(Debug, Clone)]
+pub enum AssetAttribute {
+    Issuer {
+        issuer_token: kw::issuer,
+        eq_token: Token![=],
+        value: syn::LitStr,
+    },
+    TotalSupply {
+        total_token: kw::total,
+        eq_token: Token![=],
+        value: syn::LitInt,
+    },
+    // Destroyable {
+    //     destroyable_token: kw::destroyable,
+    //     eq_token: Token![=],
+    //     value: syn::LitBool,
+    // },
+    Fungible {
+        fungible_token: kw::fungible,
+        eq_token: Token![=],
+        value: syn::LitBool,
+    },
+    Description {
+        description_token: kw::description,
+        eq_token: Token![=],
+        value: syn::LitStr,
+    },
+}
+
+impl Parse for AssetAttribute {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let lookahead = input.lookahead1();
+        if lookahead.peek(kw::issuer) {
+            Ok(AssetAttribute::Issuer {
+                issuer_token: input.parse::<kw::issuer>()?,
+                eq_token: input.parse()?,
+                value: input.parse()?,
+            })
+        } else if lookahead.peek(kw::total) {
+            Ok(AssetAttribute::TotalSupply {
+                total_token: input.parse::<kw::total>()?,
+                eq_token: input.parse()?,
+                value: input.parse()?,
+            })
+        // } else if lookahead.peek(kw::destroyable) {
+        //     Ok(AssetAttribute::Destroyable {
+        //         destroyable_token: input.parse::<kw::destroyable>()?,
+        //         eq_token: input.parse()?,
+        //         value: input.parse()?,
+        //     })
+        } else if lookahead.peek(kw::description) {
+            Ok(AssetAttribute::Description {
+                description_token: input.parse::<kw::description>()?,
+                eq_token: input.parse()?,
+                value: input.parse()?,
+            })
+        } else if lookahead.peek(kw::fungible) {
+            Ok(AssetAttribute::Fungible {
+                fungible_token: input.parse::<kw::fungible>()?,
+                eq_token: input.parse()?,
+                value: input.parse()?,
+            })
+        } else {
+            Err(lookahead.error())
+        }
+    }
+}
+
+/// The state struct of the contract.
+pub struct ItemAsset {
+    /// Outer attributes of the storage struct.
+    pub attrs: Vec<syn::Attribute>,
+    /// The `struct` token.
+    pub struct_token: Token![struct],
+    /// The name of the storage struct.
+    pub ident: Ident,
+    /// Span of the storage struct.
+    pub span: Span,
+    /// total supply
+    pub total_supply: u64,
+    pub issuer: String,
+    // pub destroyable: bool,
+    pub fungible: bool,
+    pub description: String,
+}
+
+impl Spanned for ItemAsset {
+    /// Returns the span of the original `struct` definition.
+    fn span(&self) -> Span {
+        self.span
+    }
+}
+
+#[derive(Debug)]
+pub struct AssetMetaInfo{
+    pub total_supply: u64,
+    pub issuer: String,
+    // pub destroyable: bool,
+    pub fungible: bool,
+    pub description: String,
+}
+
+impl AssetMetaInfo{
+    pub fn default() -> Self {
+        AssetMetaInfo{
+            total_supply : u64::MAX,
+            issuer: String::new(),
+            // destroyable: true,
+            fungible: true,
+            description: String::new(),
+        }
     }
 }
 
@@ -235,6 +358,33 @@ impl ToTokens for IdentType {
     }
 }
 
+#[derive(Debug)]
+pub enum AttrValue {
+    LitStr(syn::LitStr),
+    Ident(syn::Ident),
+    Fields(Vec<AssetAttribute>),
+    None,
+}
+
+impl Parse for AttrValue {
+    fn parse(input: ParseStream) -> Result<Self> {
+        if input.peek(syn::Ident) {
+            let ident = input.parse::<syn::Ident>()?;
+            return Ok(Self::Ident(ident));
+        }
+
+        if input.peek(syn::LitStr) {
+            let lit_str = input.parse::<syn::LitStr>()?;
+            return Ok(Self::LitStr(lit_str));
+        }
+
+        Err(input.error(
+            "invalid value of an liquid attribute, identifier or a literal string \
+             required",
+        ))
+    }
+}
+
 /// markers use to indicate certain liquid specific properties.
 ///
 /// # Note
@@ -277,6 +427,8 @@ pub struct Contract {
     pub storage: ItemStorage,
     /// The contract events.
     pub events: Vec<ItemEvent>,
+    /// The contract assets.
+    pub assets: Vec<ItemAsset>,
     /// Constructor function.
     pub constructor: Function,
     /// External and normal functions of the contract.

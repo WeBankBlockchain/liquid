@@ -12,6 +12,7 @@
 
 use crate::lang_core::env::{calldata::CallData, error::Result};
 use cfg_if::cfg_if;
+use liquid_prelude::{string::String, vec::Vec};
 use liquid_primitives::{
     types::{timestamp, Address},
     Topics,
@@ -45,6 +46,49 @@ pub trait Env {
     fn get_block_number(&mut self) -> u64;
 
     fn get_address(&mut self) -> Address;
+    fn get_external_code_size(&self, account: &Address) -> u32;
+    fn register_asset(
+        &mut self,
+        asset_name: &[u8],
+        issuer: &Address,
+        fungible: bool,
+        total: u64,
+        description: &[u8],
+    ) -> bool;
+    fn issue_fungible_asset(
+        &mut self,
+        to: &Address,
+        asset_name: &[u8],
+        amount: u64,
+    ) -> bool;
+    fn issue_not_fungible_asset(
+        &mut self,
+        to: &Address,
+        asset_name: &[u8],
+        uri: &[u8],
+    ) -> u64;
+    fn transfer_asset(
+        &mut self,
+        to: &Address,
+        asset_name: &[u8],
+        amount_or_id: u64,
+        from_self: bool,
+    ) -> bool;
+
+    fn get_asset_balance(&self, to: &Address, asset_name: &[u8]) -> u64;
+
+    fn get_not_fungible_asset_ids(
+        &mut self,
+        account: &Address,
+        asset_name: &[u8],
+    ) -> Vec<u64>;
+
+    fn get_not_fungible_asset_info(
+        &mut self,
+        account: &Address,
+        asset_name: &[u8],
+        asset_id: u64,
+    ) -> String;
 
     cfg_if! {
         if #[cfg(feature = "solidity-compatible")] {

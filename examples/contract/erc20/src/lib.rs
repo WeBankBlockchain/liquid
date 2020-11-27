@@ -120,7 +120,7 @@ mod erc20 {
             let accounts = test::default_accounts();
             let alice = accounts.alice;
 
-            test::push_execution_context(alice);
+            test::set_caller(alice);
             let contract = Erc20::new(100);
             assert_eq!(contract.total_supply, 100);
             assert_eq!(contract.balances.len(), 1);
@@ -133,7 +133,7 @@ mod erc20 {
             let alice = accounts.alice;
             let bob = accounts.bob;
 
-            test::push_execution_context(alice);
+            test::set_caller(alice);
             let contract = Erc20::new(100);
             assert_eq!(contract.balance_of(alice), 100);
             assert_eq!(contract.balance_of(bob), 0);
@@ -145,7 +145,7 @@ mod erc20 {
             let alice = accounts.alice;
             let bob = accounts.bob;
 
-            test::push_execution_context(alice);
+            test::set_caller(alice);
             let mut contract = Erc20::new(100);
 
             assert_eq!(contract.balance_of(bob), 0);
@@ -185,7 +185,7 @@ mod erc20 {
             let alice = accounts.alice;
             let bob = accounts.bob;
 
-            test::push_execution_context(alice);
+            test::set_caller(alice);
             let mut contract = Erc20::new(100);
 
             assert_eq!(contract.balance_of(bob), 0);
@@ -201,15 +201,15 @@ mod erc20 {
             let bob = accounts.bob;
             let charlie = accounts.charlie;
 
-            test::push_execution_context(alice);
+            test::set_caller(alice);
             let mut contract = Erc20::new(100);
             test::pop_execution_context();
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             assert_eq!(contract.transfer_from(alice, charlie, 10), false);
             test::pop_execution_context();
 
-            test::push_execution_context(alice);
+            test::set_caller(alice);
             assert_eq!(contract.approve(bob, 10), true);
             test::pop_execution_context();
 
@@ -237,7 +237,7 @@ mod erc20 {
             );
             assert_eq!(approval_event.decode_data::<u128>(), 10);
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             assert_eq!(contract.transfer_from(alice, charlie, 10), true);
             assert_eq!(contract.balance_of(alice), 90);
             assert_eq!(contract.balance_of(charlie), 10);

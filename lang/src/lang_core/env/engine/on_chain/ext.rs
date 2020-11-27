@@ -58,14 +58,64 @@ mod sys {
         pub fn getReturnDataSize() -> u32;
 
         pub fn getReturnData(result_offset: u32);
-
         pub fn getAddress(result_offset: u32);
+        pub fn getExternalCodeSize(address_offset: u32) ->u32;
+        pub fn registerAsset(
+            asset_name_offset: u32,
+            asset_name_length: u32,
+            address_offset: u32,
+            fungible: u32,
+            total: u64,
+            description: u32,
+            description_length: u32,
+        ) -> u32;
+        pub fn issueFungibleAsset(
+            address_offset: u32,
+            asset_name_offset: u32,
+            asset_name_length: u32,
+            amount: u64,
+        ) -> i32;
+        pub fn issueNotFungibleAsset(
+            address_offset: u32,
+            asset_name_offset: u32,
+            asset_name_length: u32,
+            uri_offset: u32,
+            uri_length: u32,
+        ) -> u64;
+        pub fn transferAsset(
+            address_offset: u32,
+            asset_name_offset: u32,
+            asset_name_length: u32,
+            amount_or_id: u64,
+            from_self: u32,
+        ) -> u32;
+        pub fn getAssetBalance(
+            address_offset: u32,
+            asset_name_offset: u32,
+            asset_name_length: u32,
+        ) -> u64;
+        pub fn getNotFungibleAssetIDs(
+            address_offset: u32,
+            asset_name_offset: u32,
+            asset_name_length: u32,
+            result_offset: u32,
+            result_length: u32,
+        ) -> u32;
+        pub fn getNotFungibleAssetInfo(
+            address_offset: u32,
+            asset_name_offset: u32,
+            asset_name_length: u32,
+            asset_id: u64,
+            result_offset: u32,
+            result_length: u32,
+        ) -> u32;
     }
 
     #[link(wasm_import_module = "debug")]
     /// For debug using, unnecessary to implement them in environment API.
     extern "C" {
         pub fn print32(i: i32);
+        pub fn print64(u: u64);
 
         pub fn printMem(data_offset: u32, data_length: u32);
     }
@@ -183,6 +233,18 @@ pub fn get_tx_origin(result_offset: &mut [u8]) {
     }
 }
 
+pub fn get_address(result_offset: &mut [u8]) {
+    unsafe {
+        sys::getAddress(result_offset.as_mut_ptr() as u32);
+    }
+}
+
+pub fn get_external_code_size(account: &[u8]) -> u32 {
+    unsafe {
+        sys::getExternalCodeSize(account.as_ptr() as u32)
+    }
+}
+
 pub fn get_block_timestamp() -> u64 {
     unsafe { sys::getBlockTimestamp() }
 }
@@ -211,15 +273,134 @@ pub fn get_return_data(result: &mut [u8]) {
     }
 }
 
-pub fn get_address(result: &mut [u8]) {
+pub fn register_asset(
+    asset_name: &[u8],
+    issuer: &[u8],
+    fungible: bool,
+    total: u64,
+    description: &[u8],
+) -> bool {
     unsafe {
-        sys::getAddress(result.as_ptr() as u32);
+        match sys::registerAsset(
+            asset_name.as_ptr() as u32,
+            asset_name.len() as u32,
+            issuer.as_ptr() as u32,
+            fungible as u32,
+            total,
+            description.as_ptr() as u32,
+            description.len() as u32,
+        ) {
+            0 => false,
+            _ => true,
+        }
+    }
+}
+
+pub fn issue_fungible_asset(to: &[u8], asset_name: &[u8], amount: u64) -> bool {
+    unsafe {
+        let ret = match sys::issueFungibleAsset(
+            to.as_ptr() as u32,
+            asset_name.as_ptr() as u32,
+            asset_name.len() as u32,
+            amount,
+        ) {
+            0 => false,
+            _ => true,
+        };
+        ret
+    }
+}
+
+pub fn issue_not_fungible_asset(to: &[u8], asset_name: &[u8], uri: &[u8]) -> u64 {
+    unsafe {
+        sys::issueNotFungibleAsset(
+            to.as_ptr() as u32,
+            asset_name.as_ptr() as u32,
+            asset_name.len() as u32,
+            uri.as_ptr() as u32,
+            uri.len() as u32,
+        )
+    }
+}
+
+pub fn transfer_asset(
+    to: &[u8],
+    asset_name: &[u8],
+    amount_or_id: u64,
+    from_self: bool,
+) -> bool {
+    unsafe {
+        match sys::transferAsset(
+            to.as_ptr() as u32,
+            asset_name.as_ptr() as u32,
+            asset_name.len() as u32,
+            amount_or_id,
+            from_self as u32,
+        ) {
+            0 => false,
+            _ => true,
+        }
+    }
+}
+
+pub fn get_asset_balance(account: &[u8], asset_name: &[u8]) -> u64 {
+    unsafe {
+        sys::getAssetBalance(
+            account.as_ptr() as u32,
+            asset_name.as_ptr() as u32,
+            asset_name.len() as u32,
+        )
+    }
+}
+
+pub fn get_not_fungible_asset_ids(
+    account: &[u8],
+    asset_name: &[u8],
+    asset_ids: &mut [u8],
+) -> Result<u32> {
+    let size = unsafe {
+        sys::getNotFungibleAssetIDs(
+            account.as_ptr() as u32,
+            asset_name.as_ptr() as u32,
+            asset_name.len() as u32,
+            asset_ids.as_mut_ptr() as u32,
+            asset_ids.len() as u32,
+        )
+    };
+
+    match size {
+        0 => Err(EnvError::UnableToReadFromStorage),
+        _ => Ok(size),
+    }
+}
+
+pub fn get_not_fungible_asset_info(
+    account: &[u8],
+    asset_name: &[u8],
+    asset_id: u64,
+    result: &mut [u8],
+) -> u32 {
+    unsafe {
+        sys::getNotFungibleAssetInfo(
+            account.as_ptr() as u32,
+            asset_name.as_ptr() as u32,
+            asset_name.len() as u32,
+            asset_id,
+            result.as_mut_ptr() as u32,
+            result.len() as u32,
+        )
     }
 }
 
 pub fn print32(i: i32) {
     unsafe {
         sys::print32(i);
+    }
+}
+
+pub fn print64(i: u64) {
+    unsafe {
+        sys::print64(i);
     }
 }
 

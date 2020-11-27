@@ -20,7 +20,7 @@ use liquid_prelude::str::FromStr;
 seq!(N in 1..=32 {
     #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, scale::Decode, scale::Encode)]
     #[cfg_attr(feature = "std", derive(Debug))]
-    pub struct Bytes#N(pub [u8; (N as usize)]);
+    pub struct Bytes#N(pub [u8; N as usize]);
 
     impl Bytes#N {
         pub const LEN: usize = (N as usize);
@@ -98,7 +98,7 @@ seq!(N in 1..=32 {
         type Output = Self;
 
         fn bitand(self, rhs: Self) -> Self::Output {
-            let mut buf = [0u8; (N as usize)];
+            let mut buf = [0u8; N as usize];
             for (i, b) in buf.iter_mut().enumerate().take(N as usize) {
                 *b = self.0[i] & rhs.0[i];
             }
@@ -110,7 +110,7 @@ seq!(N in 1..=32 {
         type Output = Self;
 
         fn bitor(self, rhs: Self) -> Self::Output {
-            let mut buf = [0u8; (N as usize)];
+            let mut buf = [0u8; N as usize];
             for (i, b) in buf.iter_mut().enumerate().take(N as usize) {
                 *b = self.0[i] | rhs.0[i];
             }
@@ -122,7 +122,7 @@ seq!(N in 1..=32 {
         type Output = Self;
 
         fn bitxor(self, rhs: Self) -> Self::Output {
-            let mut buf = [0u8; (N as usize)];
+            let mut buf = [0u8; N as usize];
             for (i, b) in buf.iter_mut().enumerate().take(N as usize) {
                 *b = self.0[i] ^ rhs.0[i];
             }
@@ -139,14 +139,14 @@ seq!(N in 1..=32 {
                 return Err("the string is unable to be converted to fix-sized bytes".into());
             }
 
-            let mut ret = [0u8; (N as usize)];
+            let mut ret = [0u8; N as usize];
             ret[..bytes.len()].copy_from_slice(bytes);
             Ok(Self(ret))
         }
     }
 
-    impl From<[u8; (N as usize)]> for Bytes#N {
-        fn from(bytes: [u8; (N as usize)]) -> Self {
+    impl From<[u8; N as usize]> for Bytes#N {
+        fn from(bytes: [u8; N as usize]) -> Self {
             Self(bytes)
         }
     }

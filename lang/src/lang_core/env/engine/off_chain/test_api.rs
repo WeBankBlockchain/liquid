@@ -22,9 +22,23 @@ use liquid_primitives::types::address::*;
 ///
 /// Together with [`pop_execution_context`] this can be used to emulated
 /// nested calls.
-pub fn push_execution_context(caller: Address) {
+pub fn set_caller(caller: Address) {
     <EnvInstance as OnInstance>::on_instance(|instance| {
-        instance.exec_contexts.push(ExecContext::new(caller))
+        instance.exec_contexts.push(ExecContext::new(caller, Default::default()))
+    });
+}
+
+/// Pushes a contract execution context.
+///
+/// This is the data behind a single instance of a contract call.
+///
+/// # Note
+///
+/// Together with [`pop_execution_context`] this can be used to emulated
+/// nested calls.
+pub fn set_caller_callee(caller: Address, callee: Address) {
+    <EnvInstance as OnInstance>::on_instance(|instance| {
+        instance.exec_contexts.push(ExecContext::new(caller, callee))
     });
 }
 
@@ -32,7 +46,7 @@ pub fn push_execution_context(caller: Address) {
 ///
 /// # Note
 ///
-/// Together with [`push_execution_context`] this can be used to emulated
+/// Together with [`set_caller`] this can be used to emulated
 /// nested calls.
 pub fn pop_execution_context() {
     <EnvInstance as OnInstance>::on_instance(|instance| {

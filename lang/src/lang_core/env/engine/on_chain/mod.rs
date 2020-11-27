@@ -22,6 +22,10 @@ use crate::env::{
     CallMode,
 };
 use cfg_if::cfg_if;
+use core::convert::TryInto;
+use core::mem;
+use liquid_abi_codec::Decode;
+use liquid_prelude::{string::String, vec::Vec};
 use liquid_primitives::{types::address::*, Topics};
 
 /// The on-chain environment
@@ -281,5 +285,93 @@ impl Env for EnvInstance {
 
     fn get_block_number(&mut self) -> u64 {
         ext::get_block_number() as u64
+    }
+    fn get_external_code_size(&self, account: &Address) -> u32 {
+        ext::get_external_code_size(&account.0)
+    }
+    fn register_asset(
+        &mut self,
+        asset_name: &[u8],
+        issuer: &Address,
+        fungible: bool,
+        total: u64,
+        description: &[u8],
+    ) -> bool {
+        ext::register_asset(asset_name, &issuer.0, fungible, total, description)
+    }
+
+    fn issue_fungible_asset(
+        &mut self,
+        to: &Address,
+        asset_name: &[u8],
+        amount: u64,
+    ) -> bool {
+        ext::issue_fungible_asset(&to.0, asset_name, amount)
+    }
+
+    fn issue_not_fungible_asset(
+        &mut self,
+        to: &Address,
+        asset_name: &[u8],
+        uri: &[u8],
+    ) -> u64 {
+        ext::issue_not_fungible_asset(&to.0, asset_name, uri)
+    }
+
+    fn transfer_asset(
+        &mut self,
+        to: &Address,
+        asset_name: &[u8],
+        amount_or_id: u64,
+        from_self: bool,
+    ) -> bool {
+        ext::transfer_asset(&to.0, asset_name, amount_or_id, from_self)
+    }
+
+    fn get_asset_balance(&self, to: &Address, asset_name: &[u8]) -> u64 {
+        ext::get_asset_balance(&to.0, asset_name)
+    }
+
+    fn get_not_fungible_asset_info(
+        &mut self,
+        account: &Address,
+        asset_name: &[u8],
+        asset_id: u64,
+    ) -> String {
+        let size = ext::get_not_fungible_asset_info(
+            &account.0,
+            asset_name,
+            asset_id,
+            &mut self.buffer[..],
+        );
+        if size <= 0 {
+            return String::new();
+        }
+        self.buffer.resize(size as usize);
+        String::from_utf8(self.buffer[..].to_vec()).unwrap()
+    }
+
+    fn get_not_fungible_asset_ids(
+        &mut self,
+        account: &Address,
+        asset_name: &[u8],
+    ) -> Vec<u64> {
+        let mut ret = Vec::new();
+        if let Ok(size) =
+            ext::get_not_fungible_asset_ids(&account.0, asset_name, &mut self.buffer[..])
+        {
+            self.buffer.resize(size as usize);
+            let mut start: usize = 0;
+            while start < size as usize {
+                ret.push(u64::from_le_bytes(
+                    self.buffer[start..start + mem::size_of::<u64>()]
+                        .try_into()
+                        .unwrap(),
+                ));
+                ext::print64(*ret.last().unwrap());
+                start += mem::size_of::<u64>();
+            }
+        }
+        ret
     }
 }

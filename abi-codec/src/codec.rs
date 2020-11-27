@@ -502,7 +502,7 @@ macro_rules! impl_tuple {
             fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
                 let size = input.remaining_len();
                 if size & (WORD_SIZE - 1) > 0 {
-                    return Err("Invalid data size, 
+                    return Err("Invalid data size,
                     which should be multiples of WORD_SIZE".into());
                 }
 
@@ -520,7 +520,7 @@ macro_rules! impl_tuple {
             fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
                 let size = input.remaining_len();
                 if size & (WORD_SIZE - 1) > 0 {
-                    return Err("Invalid data size, 
+                    return Err("Invalid data size,
                     which should be multiples of WORD_SIZE".into());
                 }
 
@@ -745,7 +745,7 @@ seq!(N in 1..=32 {
     impl MediateDecode for Bytes#N {
         fn decode(slices: &[Word], offset: usize) -> Result<DecodeResult<Self>, Error> {
             let slice = peek(slices, offset)?;
-            let mut buf = [0u8; (N as usize)];
+            let mut buf = [0u8; N as usize];
             buf.copy_from_slice(&slice[..(N as usize)]);
             Ok(DecodeResult { value: Self(buf), new_offset: offset + 1 })
         }
