@@ -1,0 +1,7 @@
+error: a struct can not be marked as `liquid(event)` and `liquid(storage)` simultaneously
+ --> $DIR/26-event-storage-simultaneously.rs:5:5
+  |
+5 | /     #[liquid(event)]
+6 | |     #[liquid(storage)]
+7 | |     struct Noop {}
+  | |__________________^

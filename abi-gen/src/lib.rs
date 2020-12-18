@@ -15,6 +15,8 @@
 mod traits;
 pub use traits::*;
 
+use cfg_if::cfg_if;
+use derive_more::From;
 use serde::Serialize;
 
 pub struct ContractABI {
@@ -24,37 +26,62 @@ pub struct ContractABI {
 }
 
 #[derive(Serialize)]
-pub struct ParamABI {
-    #[serde(skip_serializing_if = "::std::vec::Vec::is_empty")]
-    pub components: Vec<ParamABI>,
-    pub name: String,
+pub struct TrivialABI {
     #[serde(rename = "type")]
     pub ty: String,
+    #[cfg_attr(
+        not(feature = "solidity-compatible"),
+        serde(skip_serializing_if = "::std::string::String::is_empty")
+    )]
+    pub name: String,
 }
 
-impl ParamABI {
-    pub fn new(components: Vec<ParamABI>, name: String, ty: String) -> Self {
-        Self {
-            components,
-            name,
-            ty,
-        }
+impl TrivialABI {
+    pub fn new(ty: String, name: String) -> Self {
+        TrivialABI { ty, name }
     }
+}
 
-    pub fn empty() -> Self {
-        Self {
-            components: Default::default(),
-            name: Default::default(),
-            ty: Default::default(),
-        }
-    }
+#[derive(Serialize)]
+pub struct CompositeABI {
+    #[serde(flatten)]
+    trivial: TrivialABI,
+    #[serde(skip_serializing_if = "::std::vec::Vec::is_empty")]
+    components: Vec<ParamABI>,
+}
+
+#[derive(Serialize)]
+pub struct OptionABI {
+    #[serde(flatten)]
+    trivial: TrivialABI,
+    some: Box<ParamABI>,
+}
+
+#[derive(Serialize)]
+pub struct ResultABI {
+    #[serde(flatten)]
+    trivial: TrivialABI,
+    ok: Box<ParamABI>,
+    err: Box<ParamABI>,
+}
+
+#[derive(Serialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ParamABI {
+    Opt(OptionABI),
+    Res(ResultABI),
+    Composite(CompositeABI),
+    Trivial(TrivialABI),
 }
 
 #[derive(Serialize)]
 #[allow(non_snake_case)]
 pub struct ConstructorABI {
     inputs: Vec<ParamABI>,
+    #[cfg(feature = "solidity-compatible")]
     payable: bool,
+    #[cfg(feature = "solidity-compatible")]
     stateMutability: String,
     #[serde(rename = "type")]
     ty: String,
@@ -62,13 +89,24 @@ pub struct ConstructorABI {
 
 impl ConstructorABI {
     pub fn new_builder() -> ConstructorABIBuilder {
-        ConstructorABIBuilder {
-            abi: Self {
-                inputs: Vec::new(),
-                payable: false,
-                stateMutability: "nonpayable".to_owned(),
-                ty: "constructor".to_owned(),
-            },
+        cfg_if! {
+            if #[cfg(feature = "solidity-compatible")] {
+                ConstructorABIBuilder {
+                    abi: Self {
+                        inputs: Vec::new(),
+                        payable: false,
+                        stateMutability: "nonpayable".to_owned(),
+                        ty: "constructor".to_owned(),
+                    },
+                }
+            } else {
+                ConstructorABIBuilder {
+                    abi: Self {
+                        inputs: Vec::new(),
+                        ty: "constructor".to_owned(),
+                    },
+                }
+            }
         }
     }
 }
@@ -78,8 +116,8 @@ pub struct ConstructorABIBuilder {
 }
 
 impl ConstructorABIBuilder {
-    pub fn input(mut self, components: Vec<ParamABI>, name: String, ty: String) -> Self {
-        self.abi.inputs.push(ParamABI::new(components, name, ty));
+    pub fn input(mut self, param_abi: ParamABI) -> Self {
+        self.abi.inputs.push(param_abi);
         self
     }
 
@@ -95,28 +133,49 @@ pub struct ExternalFnABI {
     inputs: Vec<ParamABI>,
     name: String,
     outputs: Vec<ParamABI>,
+    #[cfg(feature = "solidity-compatible")]
     payable: bool,
+    #[cfg(feature = "solidity-compatible")]
     stateMutability: String,
     #[serde(rename = "type")]
     ty: String,
 }
 
 impl ExternalFnABI {
-    pub fn new_builder(
-        name: String,
-        state_mutability: String,
-        constant: bool,
-    ) -> ExternalFnABIBuilder {
-        ExternalFnABIBuilder {
-            abi: Self {
-                constant,
-                inputs: Vec::new(),
-                name,
-                outputs: Vec::new(),
-                payable: false,
-                stateMutability: state_mutability,
-                ty: "function".to_owned(),
-            },
+    cfg_if! {
+        if #[cfg(feature = "solidity-compatible")] {
+            pub fn new_builder(
+                name: String,
+                state_mutability: String,
+                constant: bool,
+            ) -> ExternalFnABIBuilder {
+                ExternalFnABIBuilder {
+                    abi: Self {
+                        constant,
+                        inputs: Vec::new(),
+                        name,
+                        outputs: Vec::new(),
+                        payable: false,
+                        stateMutability: state_mutability,
+                        ty: "function".to_owned(),
+                    },
+                }
+            }
+        } else {
+            pub fn new_builder(
+                name: String,
+                constant: bool,
+            ) -> ExternalFnABIBuilder {
+                ExternalFnABIBuilder {
+                    abi: Self {
+                        constant,
+                        inputs: Vec::new(),
+                        name,
+                        outputs: Vec::new(),
+                        ty: "function".to_owned(),
+                    },
+                }
+            }
         }
     }
 }
@@ -126,20 +185,12 @@ pub struct ExternalFnABIBuilder {
 }
 
 impl ExternalFnABIBuilder {
-    pub fn input(&mut self, components: Vec<ParamABI>, name: String, ty: String) {
-        // If type of the input is `()`, just skip it.
-        if !ty.is_empty() {
-            self.abi.inputs.push(ParamABI::new(components, name, ty));
-        }
+    pub fn input(&mut self, param_abi: ParamABI) {
+        self.abi.inputs.push(param_abi);
     }
 
-    pub fn output(&mut self, components: Vec<ParamABI>, ty: String) {
-        // If type of the input is `()`, just skip it.
-        if !ty.is_empty() {
-            self.abi
-                .outputs
-                .push(ParamABI::new(components, "".to_owned(), ty));
-        }
+    pub fn output(&mut self, param_abi: ParamABI) {
+        self.abi.outputs.push(param_abi);
     }
 
     pub fn done(self) -> ExternalFnABI {

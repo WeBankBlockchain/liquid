@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 proc-macro2 = "1.0.18"
+quote = "1.0.7"
 
 [dev-dependencies]
 trybuild = "1.0.30"
@@ -18,3 +19,4 @@ proc-macro = true
 [features]
 default = ["std"]
 std = []
+collaboration = []

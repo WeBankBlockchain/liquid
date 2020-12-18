@@ -18,18 +18,101 @@
 #![feature(min_const_generics)]
 #![feature(specialization)]
 
+mod core;
 mod dispatch_error;
 mod env_access;
 pub mod intrinsics;
-mod traits;
-
 #[cfg(feature = "std")]
 pub mod mock;
-#[cfg(test)]
-mod tests;
+mod traits;
 
 pub use dispatch_error::{DispatchError, DispatchResult, DispatchRetInfo};
 pub use env_access::EnvAccess;
-pub use liquid_lang_derive::{InOut, State};
-pub use liquid_lang_macro::{contract, interface};
 pub use traits::*;
+
+pub mod storage {
+    pub use super::core::storage::*;
+}
+
+pub mod env {
+    pub use super::core::env::*;
+}
+
+pub mod precompiled {
+    pub use super::core::precompiled::*;
+}
+
+use cfg_if::cfg_if;
+
+cfg_if! {
+    if #[cfg(all(feature = "contract", feature = "collaboration"))] {
+        compile_error! {
+            "compilation feature `contract` and `collaboration` can not be \
+             enabled simultaneously"
+        }
+    } else if #[cfg(all(feature = "collaboration", feature = "solidity-compatible"))] {
+        compile_error! {
+            "compilation feature `collaboration` and `solidity-compatible` can not be \
+             enabled simultaneously"
+        }
+    } else if #[cfg(all(feature = "solidity-compatible", feature = "solidity-interface"))]{
+        compile_error! {
+            "it's unnecessary to enable `solidity-interface` feature when \
+             `solidity-compatible` is enabled"
+        }
+    } else if #[cfg(feature = "collaboration")] {
+        pub struct ContractId<T>
+        where
+            T: You_Should_Use_An_Valid_Contract_Type
+        {
+            pub __liquid_index: u32,
+            pub __liquid_marker: ::core::marker::PhantomData<fn() -> T>,
+        }
+
+        impl<T> scale::Encode for ContractId<T>
+        where
+            T: You_Should_Use_An_Valid_Contract_Type
+        {
+            fn encode(&self) -> Vec<u8> {
+                <u32 as scale::Encode>::encode(&self.__liquid_index)
+            }
+        }
+
+        impl<T> scale::Decode for ContractId<T>
+        where
+            T: You_Should_Use_An_Valid_Contract_Type
+        {
+            fn decode<I: scale::Input>(value: &mut I) -> Result<Self, scale::Error> {
+                let __liquid_index = <u32 as scale::Decode>::decode(value)?;
+                Ok(Self {
+                    __liquid_index,
+                    __liquid_marker: Default::default()
+                })
+            }
+        }
+
+        impl<T> You_Should_Use_An_Valid_Field_Type for ContractId<T>
+        where
+            T: You_Should_Use_An_Valid_Contract_Type
+        {
+        }
+
+        impl<T> You_Should_Use_An_Valid_Input_Type for ContractId<T>
+        where
+            T: You_Should_Use_An_Valid_Contract_Type
+        {
+        }
+
+        impl<T> You_Should_Use_An_Valid_Return_Type for ContractId<T>
+        where
+            T: You_Should_Use_An_Valid_Contract_Type
+        {
+        }
+
+        pub use liquid_lang_macro::{collaboration, InOut};
+    } else if #[cfg(all(feature = "contract", feature = "solidity-compatible"))] {
+        pub use liquid_lang_macro::{contract, interface, InOut, State};
+    } else if #[cfg(all(feature = "contract", not(feature = "solidity-compatible")))] {
+        pub use liquid_lang_macro::{contract, interface, InOut};
+    }
+}

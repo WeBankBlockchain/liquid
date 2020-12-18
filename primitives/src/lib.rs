@@ -20,6 +20,9 @@ extern crate lazy_static;
 #[macro_use]
 extern crate num_derive;
 
+use cfg_if::cfg_if;
+use liquid_prelude::vec::Vec;
+
 pub mod hash;
 pub mod types;
 
@@ -54,7 +57,20 @@ impl std::fmt::Display for Error {
     }
 }
 
-use liquid_prelude::vec::Vec;
 pub trait Topics {
     fn topics(&self) -> Vec<types::Hash>;
+}
+
+cfg_if! {
+    if #[cfg(feature = "contract")] {
+        #[allow(non_camel_case_types)]
+        pub struct __LIQUID_GETTER_INDEX_PLACEHOLDER;
+
+        #[cfg(not(feature = "solidity-compatible"))]
+        impl scale::Decode for __LIQUID_GETTER_INDEX_PLACEHOLDER {
+            fn decode<I: scale::Input>(_: &mut I) -> Result<Self, scale::Error> {
+                Ok(Self {})
+            }
+        }
+    }
 }

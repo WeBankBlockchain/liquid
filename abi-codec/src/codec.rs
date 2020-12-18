@@ -642,17 +642,14 @@ impl TypeInfo for () {
     }
 }
 
-impl Encode for ((),) {
-    #[inline(always)]
-    fn encode(&self) -> Vec<u8> {
-        Vec::new()
-    }
-}
+use liquid_primitives::__LIQUID_GETTER_INDEX_PLACEHOLDER;
 
-impl Decode for ((),) {
+impl Decode for (__LIQUID_GETTER_INDEX_PLACEHOLDER,) {
     #[inline(always)]
-    fn decode<I: Input>(_: &mut I) -> Result<((),), Error> {
-        Ok(((),))
+    fn decode<I: Input>(
+        _: &mut I,
+    ) -> Result<(__LIQUID_GETTER_INDEX_PLACEHOLDER,), Error> {
+        Ok((__LIQUID_GETTER_INDEX_PLACEHOLDER {},))
     }
 }
 

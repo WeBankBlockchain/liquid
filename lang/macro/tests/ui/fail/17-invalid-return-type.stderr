@@ -1,5 +1,0 @@
-error[E0277]: the trait bound `I: You_Should_Use_An_Valid_Return_Type` is not satisfied
-  --> $DIR/17-invalid-return-type.rs:17:28
-   |
-17 |         pub fn noop(&self) -> I {}
-   |                            ^^^^ the trait `You_Should_Use_An_Valid_Return_Type` is not implemented for `I`

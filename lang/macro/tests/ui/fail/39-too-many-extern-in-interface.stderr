@@ -1,7 +1,0 @@
-error: the number of `extern` blocks in interface module should not exceed 1
-  --> $DIR/39-too-many-extern-in-interface.rs:9:5
-   |
-9  | /     extern "liquid" {
-10 | |         fn baz(&self);
-11 | |     }
-   | |_____^

@@ -18,3 +18,4 @@ std = [
     "liquid_macro/std",
     "liquid_primitives/std",
 ]
+contract = []

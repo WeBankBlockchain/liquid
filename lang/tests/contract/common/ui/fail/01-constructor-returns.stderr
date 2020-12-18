@@ -1,0 +1,5 @@
+error: contract constructor should not have return value
+  --> $DIR/01-constructor-returns.rs:10:31
+   |
+10 |         pub fn new(&mut self) -> Self {}
+   |                               ^^^^^^^

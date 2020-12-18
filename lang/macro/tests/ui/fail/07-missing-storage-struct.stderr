@@ -1,5 +1,0 @@
-error: no #[liquid(storage)] struct found in this contract
- --> $DIR/07-missing-storage-struct.rs:4:1
-  |
-4 | mod noop {}
-  | ^^^^^^^^^^^

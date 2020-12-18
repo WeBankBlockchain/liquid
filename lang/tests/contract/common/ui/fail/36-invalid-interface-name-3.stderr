@@ -1,0 +1,5 @@
+error: invalid interface name, please specified name as `auto` or a literal string
+ --> $DIR/36-invalid-interface-name-3.rs:3:21
+  |
+3 | #[liquid::interface(name = inherited)]
+  |                     ^^^^
