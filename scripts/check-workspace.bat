@@ -9,12 +9,12 @@ set results=()
 set results[0].name=check_all_features
 set results[0].result=0
 for %%c in %all_crates% do (
-    cargo +nightly check --verbose --all-features --manifest-path %%c\Cargo.toml
+    cargo +nightly check --verbose --features "contract" --manifest-path %%c\Cargo.toml
     if !errorlevel! neq 0 (
         set results[0].result=1
     )
 
-    cargo +nightly check --verbose --no-default-features --manifest-path %%c\Cargo.toml --target=wasm32-unknown-unknown
+    cargo +nightly check --verbose --no-default-features --features "contract" --manifest-path %%c\Cargo.toml --target=wasm32-unknown-unknown
     if !errorlevel! neq 0 (
         set results[0].result=1
     )

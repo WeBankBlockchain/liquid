@@ -102,6 +102,28 @@ impl From<[u8; ADDRESS_LENGTH]> for Address {
     }
 }
 
+#[allow(dead_code)]
+pub struct AddressIter {
+    ptr: core::ptr::NonNull<Address>,
+    end: *const Address,
+}
+
+impl<'a> IntoIterator for &'a Address {
+    type Item = &'a Address;
+    type IntoIter = core::slice::Iter<'a, Address>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        unsafe {
+            let ptr: *const Address = self;
+            let iter = AddressIter {
+                ptr: core::ptr::NonNull::new_unchecked(ptr as *mut Address),
+                end: ptr.add(1),
+            };
+            core::mem::transmute::<AddressIter, Self::IntoIter>(iter)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

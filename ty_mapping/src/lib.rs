@@ -14,6 +14,7 @@
 #![feature(const_fn)]
 #![allow(incomplete_features)]
 #![feature(min_const_generics)]
+#![feature(specialization)]
 
 mod traits;
 

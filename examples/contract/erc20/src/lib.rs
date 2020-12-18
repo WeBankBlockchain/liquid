@@ -2,7 +2,7 @@
 
 use liquid_lang as liquid;
 
-#[liquid::contract(version = "0.2.0")]
+#[liquid::contract]
 mod erc20 {
     type Balance = u128;
     use liquid_core::storage;

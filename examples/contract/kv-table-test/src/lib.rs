@@ -46,7 +46,7 @@ mod kv_table_factory {
     }
 }
 
-#[liquid::contract(version = "0.2.0")]
+#[liquid::contract]
 mod kv_table_test {
     use super::{kv_table_factory::*, *};
     use liquid_core::storage;

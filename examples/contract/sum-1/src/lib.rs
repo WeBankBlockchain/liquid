@@ -2,7 +2,7 @@
 
 use liquid_lang as liquid;
 
-#[liquid::contract(version = "0.2.0")]
+#[liquid::contract]
 mod sum_1 {
     use liquid_core::storage;
 

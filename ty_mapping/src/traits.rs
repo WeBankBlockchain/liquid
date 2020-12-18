@@ -37,12 +37,6 @@ macro_rules! mapping_type_to_sol {
                 extend(stringify!($mapped_ty).as_bytes());
         }
     };
-    ($origin_ty:ty) => {
-        impl MappingToSolidityType for $origin_ty {
-            const MAPPED_TYPE_NAME: [u8; MAX_LENGTH_OF_MAPPED_TYPE_NAME] =
-                [0u8; MAX_LENGTH_OF_MAPPED_TYPE_NAME];
-        }
-    };
 }
 
 mapping_type_to_sol!(u8, uint8);
@@ -61,9 +55,8 @@ mapping_type_to_sol!(bool, bool);
 mapping_type_to_sol!(String, string);
 mapping_type_to_sol!(Address, address);
 mapping_type_to_sol!(Bytes, bytes);
-mapping_type_to_sol!(());
 seq!(N in 1..=32 {
-    mapping_type_to_sol!(Bytes#N, Bytes#N);
+    mapping_type_to_sol!(Bytes#N, bytes#N);
 });
 
 pub const fn concat<T, E>() -> [u8; MAX_LENGTH_OF_MAPPED_TYPE_NAME]
@@ -243,6 +236,17 @@ seq!(N in 0..16 {
     impl_type_mapping_for_tuples!(#(T#N,)*);
 });
 
+impl MappingToSolidityType for () {
+    const MAPPED_TYPE_NAME: [u8; MAX_LENGTH_OF_MAPPED_TYPE_NAME] =
+        [0u8; MAX_LENGTH_OF_MAPPED_TYPE_NAME];
+}
+
+#[cfg(feature = "contract")]
+impl MappingToSolidityType for liquid_primitives::__LIQUID_GETTER_INDEX_PLACEHOLDER {
+    const MAPPED_TYPE_NAME: [u8; MAX_LENGTH_OF_MAPPED_TYPE_NAME] =
+        [0u8; MAX_LENGTH_OF_MAPPED_TYPE_NAME];
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -275,7 +279,7 @@ mod tests {
         seq!(N in 1..=32 {
             assert_eq!(
                 map_to_solidity_type::<Bytes#N>(),
-                stringify!(Bytes#N)
+                stringify!(bytes#N)
             );
         });
     }
@@ -303,7 +307,7 @@ mod tests {
         seq!(N in 1..=32 {
             assert_eq!(
                 map_to_solidity_type::<Vec<Bytes#N>>(),
-                stringify!(Bytes#N[]).replace(" ", ""),
+                stringify!(bytes#N[]).replace(" ", ""),
             );
         });
     }
@@ -331,7 +335,7 @@ mod tests {
         seq!(N in 1..=32 {
             assert_eq!(
                 map_to_solidity_type::<[Bytes#N; (N as usize)]>(),
-                stringify!(Bytes#N[N]).replace(" ", "").replace("u64", ""),
+                stringify!(bytes#N[N]).replace(" ", "").replace("u64", ""),
             );
         });
     }
@@ -353,5 +357,13 @@ mod tests {
     #[test]
     fn test_len() {
         assert_eq!(len::<(u8, String)>(), 12);
+    }
+
+    #[test]
+    fn test_composite() {
+        assert_eq!(
+            composite::<(), 10>(&[b'g', b'e', b't', b't', b'u', b'p', b'l', b'e']),
+            [b'g', b'e', b't', b't', b'u', b'p', b'l', b'e', b'(', b')']
+        );
     }
 }

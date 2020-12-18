@@ -5,7 +5,6 @@ members = [
     "prelude",
     "primitives",
     "alloc",
-    "core",
     "lang",
     "ty_mapping",
     "macro",

@@ -10,148 +10,271 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{ExternalFnABIBuilder, ParamABI};
+use crate::*;
+use cfg_if::cfg_if;
 use liquid_macro::seq;
 use liquid_prelude::{string::String, vec::Vec};
 use liquid_primitives::types::*;
 
-pub trait GenerateComponents<T = ()> {
-    fn generate_components() -> Vec<ParamABI> {
-        Vec::new()
-    }
-}
+pub trait GenerateParamABI {
+    fn generate_ty_name() -> String;
 
-pub trait TyName {
-    fn ty_name() -> String;
+    fn generate_param_abi(name: String) -> ParamABI;
 }
 
 pub trait GenerateOutputs {
     fn generate_outputs(builder: &mut ExternalFnABIBuilder);
 }
 
-macro_rules! impl_primitive_tys {
+macro_rules! impl_for_primitive_tys {
     ($( $t:ty, )*) => {
         $(
-            impl GenerateComponents for $t {}
-
-            impl TyName for $t {
-                fn ty_name() -> String {
-                    std::str::from_utf8(&<$t as liquid_ty_mapping::MappingToSolidityType>::MAPPED_TYPE_NAME)
+            impl GenerateParamABI for $t {
+                fn generate_ty_name() -> String {
+                    std::str::from_utf8(
+                        &<Self as liquid_ty_mapping::MappingToSolidityType>::MAPPED_TYPE_NAME,
+                    )
                     .unwrap()
-                    .trim_end_matches(char::from(0)).into()
+                    .trim_end_matches(char::from(0))
+                    .into()
+                }
+
+                fn generate_param_abi(name: String) -> ParamABI {
+                    TrivialABI::new(Self::generate_ty_name(), name).into()
+                }
+            }
+
+            impl GenerateOutputs for $t
+            {
+                fn generate_outputs(builder: &mut ExternalFnABIBuilder) {
+                    let param_abi = <Self as GenerateParamABI>::generate_param_abi("".into());
+                    builder.output(param_abi);
                 }
             }
         )*
     };
 }
 
-impl_primitive_tys!(
-    bool,
-    u8,
-    u16,
-    u32,
-    u64,
-    u128,
-    u256,
-    i8,
-    i16,
-    i32,
-    i64,
-    i128,
-    i256,
-    String,
-    Address,
+impl_for_primitive_tys!(
+    bool, u8, u16, u32, u64, u128, u256, i8, i16, i32, i64, i128, i256, String, Address,
     Bytes,
-    (),
 );
 
 seq!(N in 1..=32 {
-    impl_primitive_tys!(#(Bytes#N,)*);
+    impl_for_primitive_tys!(#(Bytes#N,)*);
 });
 
-impl<T> TyName for Vec<T>
+impl<T> GenerateParamABI for Vec<T>
 where
-    T: TyName,
+    T: GenerateParamABI,
 {
-    fn ty_name() -> String {
-        let mut sub_ty = <T as TyName>::ty_name();
+    fn generate_ty_name() -> String {
+        let mut sub_ty = <T as GenerateParamABI>::generate_ty_name();
         sub_ty.push_str("[]");
         sub_ty
     }
-}
 
-impl<T> GenerateComponents for Vec<T>
-where
-    T: GenerateComponents,
-{
-    fn generate_components() -> Vec<ParamABI> {
-        <T as GenerateComponents>::generate_components()
+    fn generate_param_abi(name: String) -> ParamABI {
+        let param_abi = <T as GenerateParamABI>::generate_param_abi(name.clone());
+        let components = match param_abi {
+            ParamABI::Composite(composite_abi) => composite_abi.components,
+            _ => Vec::new(),
+        };
+
+        CompositeABI {
+            trivial: TrivialABI {
+                name,
+                ty: Self::generate_ty_name(),
+            },
+            components,
+        }
+        .into()
     }
 }
 
-impl<T, const N: usize> TyName for [T; N]
+impl<T> GenerateOutputs for Vec<T>
 where
-    T: TyName,
+    T: GenerateParamABI,
 {
-    fn ty_name() -> String {
-        let mut sub_ty = <T as TyName>::ty_name();
+    fn generate_outputs(builder: &mut ExternalFnABIBuilder) {
+        let param_abi = <Self as GenerateParamABI>::generate_param_abi("".into());
+        builder.output(param_abi);
+    }
+}
+
+impl<T, const N: usize> GenerateParamABI for [T; N]
+where
+    T: GenerateParamABI,
+{
+    fn generate_ty_name() -> String {
+        let mut sub_ty = <T as GenerateParamABI>::generate_ty_name();
         sub_ty.push_str(&format!("[{}]", N));
         sub_ty
     }
-}
 
-impl<T, const N: usize> GenerateComponents for [T; N]
-where
-    T: GenerateComponents,
-{
-    fn generate_components() -> Vec<ParamABI> {
-        <T as GenerateComponents>::generate_components()
+    fn generate_param_abi(name: String) -> ParamABI {
+        let param_abi = <T as GenerateParamABI>::generate_param_abi(name.clone());
+        let components = match param_abi {
+            ParamABI::Composite(composite_abi) => composite_abi.components,
+            _ => Vec::new(),
+        };
+
+        CompositeABI {
+            trivial: TrivialABI {
+                name,
+                ty: Self::generate_ty_name(),
+            },
+            components,
+        }
+        .into()
     }
 }
 
-impl<T> GenerateOutputs for T
+impl<T, const N: usize> GenerateOutputs for [T; N]
 where
-    T: TyName + GenerateComponents,
+    T: GenerateParamABI,
 {
     fn generate_outputs(builder: &mut ExternalFnABIBuilder) {
-        builder.output(
-            <T as GenerateComponents>::generate_components(),
-            <T as TyName>::ty_name(),
-        );
+        let param_abi = <Self as GenerateParamABI>::generate_param_abi("".into());
+        builder.output(param_abi);
     }
 }
 
-macro_rules! impl_for_tuple {
+macro_rules! impl_generate_outputs_for_tuple {
     ($first:tt,) => {
         impl<$first> GenerateOutputs for ($first,)
         where
-            $first: GenerateOutputs,
+            $first: GenerateParamABI
         {
-            fn generate_outputs(
-                builder: &mut ExternalFnABIBuilder,
-            ) {
-                <$first as GenerateOutputs>::generate_outputs(builder);
+            fn generate_outputs(builder: &mut ExternalFnABIBuilder) {
+                builder.output(
+                    {
+                        let param_abi = <$first as GenerateParamABI>::generate_param_abi("".into());
+                        param_abi.into()
+                    }
+                );
             }
         }
     };
     ($first:tt, $($rest:tt,)+) => {
-        impl<$first, $($rest),+> GenerateOutputs for ($first, $($rest),+)
+        impl<$first, $($rest,)+> GenerateOutputs for ($first, $($rest,)+)
         where
-            $first: GenerateOutputs,
-            $($rest: GenerateOutputs),*
+            $first: GenerateParamABI,
+            $(
+                $rest: GenerateParamABI,
+            )*
         {
             fn generate_outputs(builder: &mut ExternalFnABIBuilder) {
-                <$first as GenerateOutputs>::generate_outputs(builder);
+                builder.output(
+                    {
+                        let param_abi = <$first as GenerateParamABI>::generate_param_abi("".into());
+                        param_abi.into()
+                    }
+                );
                 $(
-                    <$rest as GenerateOutputs>::generate_outputs(builder);
-                )*
+                    builder.output(
+                        {
+                            let param_abi = <$rest as GenerateParamABI>::generate_param_abi("".into());
+                            param_abi.into()
+                        }
+                    );
+                )+
             }
         }
-
-        impl_for_tuple!($($rest,)+);
     }
 }
 
 seq!(N in 0..16 {
-    impl_for_tuple!(#(T#N,)*);
+    impl_generate_outputs_for_tuple!(#(T#N,)*);
 });
+
+cfg_if! {
+    if #[cfg(not(feature = "solidity-compatible"))] {
+        impl<T> GenerateParamABI for Option<T>
+        where
+            T: GenerateParamABI
+        {
+            fn generate_ty_name() -> String {
+                String::from("option")
+            }
+
+            fn generate_param_abi(name: String) -> ParamABI {
+                OptionABI {
+                    trivial: TrivialABI::new(Self::generate_ty_name(), name),
+                    some: Box::new(<T as GenerateParamABI>::generate_param_abi("".into()).into())
+                }
+                .into()
+            }
+        }
+
+        impl<T, E> GenerateParamABI for Result<T, E>
+        where
+            T: GenerateParamABI,
+            E: GenerateParamABI,
+        {
+            fn generate_ty_name() -> String {
+                String::from("result")
+            }
+
+            fn generate_param_abi(name: String) -> ParamABI {
+                ResultABI {
+                    trivial: TrivialABI::new(Self::generate_ty_name(), name),
+                    ok: Box::new(<T as GenerateParamABI>::generate_param_abi("".into()).into()),
+                    err: Box::new(<E as GenerateParamABI>::generate_param_abi("".into()).into()),
+                }
+                .into()
+            }
+        }
+
+        macro_rules! impl_generate_param_abi_for_tuple {
+            ($first:tt,) => {
+                impl<$first> GenerateParamABI for ($first,)
+                where
+                    $first: GenerateParamABI
+                {
+                    fn generate_ty_name() -> String {
+                        String::from("tuple")
+                    }
+
+                    fn generate_param_abi(name: String) -> ParamABI {
+                        let param_abis = vec![<$first as GenerateParamABI>::generate_param_abi("".to_owned())];
+                        CompositeABI {
+                            trivial: TrivialABI::new(Self::generate_ty_name(), name),
+                            components: param_abis,
+                        }
+                        .into()
+                    }
+                }
+            };
+            ($first:tt, $($rest:tt,)+) => {
+                impl<$first, $($rest),+> GenerateParamABI for ($first, $($rest),+)
+                where
+                    $first: GenerateParamABI,
+                    $($rest: GenerateParamABI),*
+                {
+                    fn generate_ty_name() -> String {
+                        String::from("tuple")
+                    }
+
+                    fn generate_param_abi(name: String) -> ParamABI {
+                        let mut param_abis = vec![<$first as GenerateParamABI>::generate_param_abi("".to_owned())];
+                        $(
+                            param_abis.push(<$rest as GenerateParamABI>::generate_param_abi("".to_owned()));
+                        )+
+                        CompositeABI {
+                            trivial: TrivialABI::new(Self::generate_ty_name(), name),
+                            components: param_abis,
+                        }
+                        .into()
+                    }
+                }
+
+                impl_generate_param_abi_for_tuple!($($rest,)+);
+            }
+        }
+
+        seq!(N in 0..16 {
+            impl_generate_param_abi_for_tuple!(#(T#N,)*);
+        });
+    }
+}

@@ -10,54 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use core::iter::FromIterator;
+use crate::utils::*;
 use proc_macro2::{
-    token_stream::IntoIter as TokenIter, Delimiter, Group, Ident, Literal, Punct,
-    Spacing, Span, TokenStream as TokenStream2, TokenTree,
+    token_stream::IntoIter as TokenIter, Delimiter, Ident, Span,
+    TokenStream as TokenStream2, TokenTree,
 };
-
-pub struct SyntaxError {
-    message: String,
-    span: Span,
-}
-
-impl SyntaxError {
-    pub fn new(message: String, token: &TokenTree) -> Self {
-        Self {
-            message,
-            span: token.span(),
-        }
-    }
-
-    pub fn into_compile_error(self) -> TokenStream2 {
-        let token_stream = [
-            TokenTree::Ident(Ident::new("compile_error", self.span)),
-            TokenTree::Punct({
-                let mut punct = Punct::new('!', Spacing::Alone);
-                punct.set_span(self.span);
-                punct
-            }),
-            TokenTree::Group({
-                let mut group = Group::new(
-                    Delimiter::Brace,
-                    TokenStream2::from_iter(
-                        [TokenTree::Literal({
-                            let mut string = Literal::string(&self.message);
-                            string.set_span(self.span);
-                            string
-                        })]
-                        .to_vec(),
-                    ),
-                );
-                group.set_span(self.span);
-                group
-            }),
-        ];
-        TokenStream2::from_iter(token_stream.to_vec())
-    }
-}
-
-pub type Result<T> = core::result::Result<T, SyntaxError>;
 
 fn next_token(iter: &mut TokenIter) -> Result<TokenTree> {
     iter.next().ok_or_else(|| SyntaxError {

@@ -2,7 +2,7 @@
 
 use liquid_lang as liquid;
 
-#[liquid::contract(version = "0.2.0")]
+#[liquid::contract]
 mod hello_world {
     use liquid_core::storage;
 
