@@ -1,0 +1,5 @@
+error: crate-level visibility or visibility level restricted to some path is not supported for methods in contract
+  --> $DIR/09-invalid-visibility.rs:12:9
+   |
+12 |         pub(crate) fn noop(&self) {}
+   |         ^^^^^^^^^^

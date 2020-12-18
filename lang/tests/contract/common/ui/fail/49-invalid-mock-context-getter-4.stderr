@@ -1,0 +1,5 @@
+error: the values of `mock_context_getter` attribute among declarations of overriding function `foo` is not consistent
+ --> $DIR/49-invalid-mock-context-getter-4.rs:6:9
+  |
+6 |         fn foo(&self);
+  |         ^^^^^^^^^^^^^^

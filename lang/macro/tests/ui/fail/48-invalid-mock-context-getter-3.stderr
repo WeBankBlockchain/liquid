@@ -1,6 +1,0 @@
-error: the values of `mock_context_getter` attribute among declarations of overloaded function `foo` is not consistent
- --> $DIR/48-invalid-mock-context-getter-3.rs:6:9
-  |
-6 | /         #[liquid(mock_context_getter = "another_getter")]
-7 | |         fn foo(&self);
-  | |______________________^

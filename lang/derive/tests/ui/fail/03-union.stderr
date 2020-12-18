@@ -1,5 +1,0 @@
-error: unions are not supported to derive from `InOut` or `State`
- --> $DIR/03-union.rs:6:1
-  |
-6 | union MyUnion {
-  | ^^^^^

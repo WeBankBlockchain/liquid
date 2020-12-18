@@ -1,0 +1,5 @@
+error: `&self` or `&mut self` is mandatory first parameter for all contract methods
+  --> $DIR/24-invalid-receiver-1.rs:10:20
+   |
+10 |         pub fn new(mut self) {}
+   |                    ^^^^^^^^

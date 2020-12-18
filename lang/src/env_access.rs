@@ -10,17 +10,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use liquid_core::env;
+use crate::core::env::api;
 use liquid_primitives::types::Address;
 
 pub struct EnvAccess;
 
 impl EnvAccess {
     pub fn get_caller(self) -> Address {
-        env::get_caller()
+        api::get_caller()
     }
 
     pub fn get_tx_origin(self) -> Address {
-        env::get_tx_origin()
+        api::get_tx_origin()
     }
 }

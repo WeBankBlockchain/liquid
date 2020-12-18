@@ -1,0 +1,5 @@
+error[E0277]: the trait bound `bool: You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage` is not satisfied
+ --> $DIR/23-not-use-container.rs:7:12
+  |
+7 |         b: bool,
+  |            ^^^^ the trait `You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage` is not implemented for `bool`

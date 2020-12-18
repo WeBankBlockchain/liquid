@@ -10,7 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use proc_macro2::{TokenStream as TokenStream2, TokenTree};
+use proc_macro2::{Ident, Span, TokenStream as TokenStream2, TokenTree};
+use quote::quote;
 use std::string::ToString;
 use syn::Error;
 
@@ -24,7 +25,7 @@ pub fn check_idents(input: TokenStream2) -> Result<(), Error> {
                     return Err(format_err_span!(
                         ident.span(),
                         "identifiers starting with `__liquid` or `__LIQUID` are \
-                         forbidden in contract"
+                         forbidden"
                     ));
                 }
             }
@@ -47,4 +48,45 @@ where
     // **DO NOT** attempt to change the return type of this function.
     u32::from_be_bytes([ident_hash[0], ident_hash[1], ident_hash[2], ident_hash[3]])
         as usize
+}
+
+pub fn is_liquid_attribute(attr: &syn::Attribute) -> bool {
+    attr.path.is_ident("liquid")
+}
+
+pub fn filter_non_liquid_attributes<'a, I>(
+    attrs: I,
+) -> impl Iterator<Item = &'a syn::Attribute>
+where
+    I: IntoIterator<Item = &'a syn::Attribute>,
+{
+    attrs.into_iter().filter(|attr| !is_liquid_attribute(attr))
+}
+
+pub fn generate_primitive_types() -> TokenStream2 {
+    let mut fixed_size_bytes = quote! {};
+    for i in 1..=32 {
+        let old_ident = Ident::new(&format!("Bytes{}", i), Span::call_site());
+        let new_ident = Ident::new(&format!("bytes{}", i), Span::call_site());
+        fixed_size_bytes.extend(quote! {
+            #[allow(non_camel_case_types)]
+            pub type #new_ident = liquid_primitives::types::#old_ident;
+        });
+    }
+
+    quote! {
+        #[allow(non_camel_case_types)]
+        pub type address = liquid_primitives::types::Address;
+        #[allow(non_camel_case_types)]
+        pub type bytes = liquid_primitives::types::Bytes;
+        #[allow(non_camel_case_types)]
+        pub type byte = liquid_primitives::types::Byte;
+
+        #fixed_size_bytes
+
+        pub use liquid_primitives::types::u256;
+        pub use liquid_primitives::types::i256;
+        pub use liquid_prelude::string::String;
+        pub type Vec<T> = liquid_prelude::vec::Vec<T>;
+    }
 }

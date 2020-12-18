@@ -1,0 +1,5 @@
+error: unions are not supported
+ --> $DIR/01-union.rs:6:5
+  |
+6 | pub union MyUnion {
+  |     ^^^^^
