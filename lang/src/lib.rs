@@ -18,10 +18,10 @@
 #![feature(min_const_generics)]
 #![feature(specialization)]
 
-mod core;
 mod dispatch_error;
 mod env_access;
 pub mod intrinsics;
+mod lang_core;
 #[cfg(feature = "std")]
 pub mod mock;
 mod traits;
@@ -31,15 +31,15 @@ pub use env_access::EnvAccess;
 pub use traits::*;
 
 pub mod storage {
-    pub use super::core::storage::*;
+    pub use super::lang_core::storage::*;
 }
 
 pub mod env {
-    pub use super::core::env::*;
+    pub use super::lang_core::env::*;
 }
 
 pub mod precompiled {
-    pub use super::core::precompiled::*;
+    pub use super::lang_core::precompiled::*;
 }
 
 use cfg_if::cfg_if;
@@ -69,6 +69,21 @@ cfg_if! {
             pub __liquid_marker: ::core::marker::PhantomData<fn() -> T>,
         }
 
+        impl<T> Copy for ContractId<T>
+        where
+            T: You_Should_Use_An_Valid_Contract_Type
+        {
+        }
+
+        impl<T> Clone for ContractId<T>
+        where
+        T: You_Should_Use_An_Valid_Contract_Type
+        {
+            fn clone(&self) -> ContractId<T> {
+                *self
+            }
+        }
+
         impl<T> scale::Encode for ContractId<T>
         where
             T: You_Should_Use_An_Valid_Contract_Type
@@ -91,6 +106,15 @@ cfg_if! {
             }
         }
 
+        impl<T> ::core::cmp::PartialEq for ContractId<T>
+        where
+            T: You_Should_Use_An_Valid_Contract_Type
+        {
+            fn eq(&self, other: &Self) -> bool {
+                self.__liquid_index == other.__liquid_index
+            }
+        }
+
         impl<T> You_Should_Use_An_Valid_Field_Type for ContractId<T>
         where
             T: You_Should_Use_An_Valid_Contract_Type
@@ -108,6 +132,18 @@ cfg_if! {
             T: You_Should_Use_An_Valid_Contract_Type
         {
         }
+
+        #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Default, scale::Encode, scale::Decode)]
+        #[allow(non_camel_case_types)]
+        pub struct Contract_Constructing_Is_Forbidden(pub bool);
+
+        impl Clone for Contract_Constructing_Is_Forbidden {
+            fn clone(&self) -> Self {
+                Self(true)
+            }
+        }
+
+        impl You_Should_Use_An_Valid_Field_Type for Contract_Constructing_Is_Forbidden {}
 
         pub use liquid_lang_macro::{collaboration, InOut};
     } else if #[cfg(all(feature = "contract", feature = "solidity-compatible"))] {

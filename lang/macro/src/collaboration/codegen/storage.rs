@@ -32,6 +32,7 @@ impl<'a> GenerateCode for Storage<'a> {
                 #storage_struct
             }
             pub use __liquid_storage::Storage;
+            pub use __liquid_storage::__liquid_acquire_storage_instance;
         }
     }
 }
@@ -70,7 +71,7 @@ impl<'a> Storage<'a> {
 
         quote! {
             pub struct Storage {
-                __liquid_authorizers: liquid_prelude::vec::Vec<address>,
+                pub __liquid_authorizers: liquid_prelude::collections::BTreeSet<address>,
                 #(#fields)*
             }
 
@@ -89,12 +90,23 @@ impl<'a> Storage<'a> {
                 fn new() -> Self {
                     Self {
                         __liquid_authorizers: {
-                            let mut addrs = liquid_prelude::vec::Vec::with_capacity(1);
-                            addrs.push(liquid_lang::env::get_caller());
+                            let mut addrs = liquid_prelude::collections::BTreeSet::new();
+                            addrs.insert(liquid_lang::env::get_caller());
                             addrs
                         },
                         #(#bind_stats)*
                     }
+                }
+            }
+
+            pub fn __liquid_acquire_storage_instance() -> &'static mut Storage {
+                use liquid_lang::storage::New;
+                use spin::Once;
+                static mut STORAGE_INSTANCE: Once<Storage> = Once::INIT;
+
+                unsafe {
+                    STORAGE_INSTANCE.call_once(Storage::new);
+                    STORAGE_INSTANCE.get_mut().unwrap()
                 }
             }
         }

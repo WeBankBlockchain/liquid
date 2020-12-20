@@ -1,0 +1,5 @@
+error: no `#[liquid(contract)]` struct found in this collaboration
+ --> $DIR/02-no-contract.rs:4:1
+  |
+4 | mod noop {}
+  | ^^^^^^^^^^^

@@ -28,8 +28,8 @@ pub struct Dispatch<'a> {
 impl<'a> GenerateCode for Dispatch<'a> {
     fn generate_code(&self) -> TokenStream2 {
         let marker = self.generate_right_marker();
-        let traits = self.generate_right_traits();
-        let impls = self.generate_impls();
+        let right_traits = self.generate_right_traits();
+        let contract_traits = self.generate_contract_traits();
         let dispatch = self.generate_dispatch();
         let entry_point = self.generate_entry_point();
 
@@ -37,8 +37,8 @@ impl<'a> GenerateCode for Dispatch<'a> {
             #[cfg(not(test))]
             const _: () = {
                 #marker
-                #impls
-                #traits
+                #right_traits
+                #contract_traits
                 #dispatch
                 #entry_point
             };
@@ -49,7 +49,7 @@ impl<'a> GenerateCode for Dispatch<'a> {
 impl<'a> Dispatch<'a> {
     fn generate_right_marker(&self) -> TokenStream2 {
         quote! {
-            pub struct RightMarker<S> {
+            pub struct Marker<S> {
                 marker: core::marker::PhantomData<fn() -> S>,
             }
         }
@@ -65,8 +65,23 @@ impl<'a> Dispatch<'a> {
         [hash[0], hash[1], hash[2], hash[3]]
     }
 
+    fn generate_contract_selector(contract: &ItemContract) -> [u8; 4] {
+        let contract_name = &contract.ident;
+        let hash = liquid_primitives::hash::hash(
+            format!("{}", contract_name.to_string()).as_bytes(),
+        );
+        [hash[0], hash[1], hash[2], hash[3]]
+    }
+
     fn generate_right_id(right: &Right) -> u32 {
         let selector = Self::generate_right_selector(right);
+        let mut buf = [0u8; 4];
+        buf.copy_from_slice(&selector[..4]);
+        u32::from_be_bytes(buf)
+    }
+
+    fn generate_contract_id(contract: &ItemContract) -> u32 {
+        let selector = Self::generate_contract_selector(contract);
         let mut buf = [0u8; 4];
         buf.copy_from_slice(&selector[..4]);
         u32::from_be_bytes(buf)
@@ -87,9 +102,20 @@ impl<'a> Dispatch<'a> {
         }
     }
 
+    fn generate_contract_traits(&self) -> TokenStream2 {
+        let contracts = &self.collaboration.contracts;
+        let traits = contracts
+            .iter()
+            .map(|item_contract| self.generate_contract_trait(item_contract));
+
+        quote! {
+            #(#traits)*
+        }
+    }
+
     fn generate_right_trait(&self, right: &Right) -> TokenStream2 {
         let right_id = Self::generate_right_id(right);
-        let right_marker = quote! { RightMarker::<[(); #right_id as usize]> };
+        let right_marker = quote! { Marker::<[(); #right_id as usize]> };
         let sig = &right.sig;
 
         let input_tys = utils::generate_input_tys(sig);
@@ -143,7 +169,36 @@ impl<'a> Dispatch<'a> {
         }
     }
 
-    fn generate_dispatch_fragment(&self, item_rights: &ItemRights) -> TokenStream2 {
+    fn generate_contract_trait(&self, contract: &ItemContract) -> TokenStream2 {
+        let contract_id = Self::generate_contract_id(contract);
+        let contract_marker = quote! { Marker::<[(); #contract_id as usize]> };
+
+        let fields_ty = contract.fields.named.iter().map(|field| &field.ty);
+        let contract_input = quote! {
+            impl liquid_lang::FnInput for #contract_marker {
+                type Input = (#(#fields_ty,)*);
+            }
+        };
+
+        let selector = Self::generate_contract_selector(contract);
+        let contract_selector = {
+            quote! {
+                impl liquid_lang::FnSelector for #contract_marker {
+                    const SELECTOR: liquid_primitives::Selector = [#(#selector,)*];
+                }
+            }
+        };
+
+        quote! {
+            #contract_input
+            #contract_selector
+        }
+    }
+
+    fn generate_rights_dispatch_fragment(
+        &self,
+        item_rights: &ItemRights,
+    ) -> TokenStream2 {
         use heck::SnakeCase;
 
         let ident = &item_rights.ty;
@@ -154,7 +209,7 @@ impl<'a> Dispatch<'a> {
         let rights = &item_rights.rights;
         let fragments = rights.iter().map(|right| {
             let right_id = Self::generate_right_id(right);
-            let right_marker = quote! { RightMarker::<[(); #right_id as usize]> };
+            let right_marker = quote! { Marker::<[(); #right_id as usize]> };
             let sig = &right.sig;
             let right_name = &sig.ident;
             let input_idents = utils::generate_input_idents(&sig.inputs);
@@ -164,35 +219,30 @@ impl<'a> Dispatch<'a> {
                 quote! { (id, (#(#input_idents,)*)) }
             };
 
-            let mut_tag = if sig.is_mut() {
-                quote! { mut }
+            let (ref_ty, get_ty) = if sig.is_mut() {
+                (quote! { mut }, quote! { get_mut })
             } else {
-                quote! {}
+                (quote! { }, quote! { get })
             };
 
-            let execute =  if sig.is_self_ref() {
+            let execute = if sig.is_self_ref() {
                 quote! {
-                    let contract = &#mut_tag storage.#field_name.get_mut(&id).unwrap().0;
+                    let contract = &#ref_ty storage.#field_name.#get_ty(&id).unwrap().0;
                     contract.#right_name(#(#input_idents,)*)
                 }
             } else {
                 quote! {
-                    use scale::{Encode, Decode};
-
-                    let #mut_tag contract = storage.#field_name.remove(&id).unwrap().0;
-                    let encoded = contract.encode();
-                    let result = contract.#right_name(#(#input_idents,)*);
-                    storage.#field_name.insert(&id, (
-                        <#ident as Decode>::decode(&mut encoded.as_slice()).unwrap(),
-                        true
-                    ));
-                    result
+                    let (contract, abolished) = storage.#field_name.get_mut(&id).unwrap();
+                    *abolished = true;
+                    let encoded = <#ident as scale::Encode>::encode(contract);
+                    let cloned = <#ident as scale::Decode>::decode(&mut encoded.as_slice()).unwrap();
+                    cloned.#right_name(#(#input_idents,)*)
                 }
             };
 
             let flush = if !sig.is_self_ref() || sig.is_mut() {
                 quote! {
-                    <Storage as liquid_lang::storage::Flush>::flush(&mut storage);
+                    <Storage as liquid_lang::storage::Flush>::flush(storage);
                 }
             } else {
                 quote! {}
@@ -230,70 +280,56 @@ impl<'a> Dispatch<'a> {
         }
     }
 
-    fn generate_impls(&self) -> TokenStream2 {
-        let all_item_rights = &self.collaboration.all_item_rights;
-        let impls = all_item_rights.iter().map(|item_rights| {
-            let ident = &item_rights.ty;
-            let rights = &item_rights.rights;
-            let fns = rights.iter().map(|right| {
-                let attrs = filter_non_liquid_attributes(&right.attrs);
-                let sig = &right.sig;
-                let fn_ident = &sig.ident;
-                let inputs = &sig.inputs;
-                let output = &sig.output;
-                let body = &right.body;
-
-                quote_spanned! { right.span =>
-                    #(#attrs)*
-                    fn #fn_ident (#inputs) #output
-                    #body
-                }
-            });
-
-            quote! {
-                impl #ident {
-                    #(#fns)*
-                }
-            }
-        });
-
-        let contracts = &self.collaboration.contracts;
-        let envs = contracts.iter().map(|contract| {
-            let ident = &contract.ident;
-
-            quote! {
-                impl #ident {
-                    #[allow(unused)]
-                    pub fn env(&self) -> liquid_lang::EnvAccess {
-                        liquid_lang::EnvAccess {}
-                    }
-                }
-            }
-        });
-
+    fn generate_contract_dispatch_fragment(
+        &self,
+        item_contract: &ItemContract,
+    ) -> TokenStream2 {
+        let contract_ident = &item_contract.ident;
+        let contract_id = Self::generate_contract_id(item_contract);
+        let contract_marker = quote! { Marker::<[(); #contract_id as usize]> };
+        let input_idents = item_contract
+            .fields
+            .named
+            .iter()
+            .map(|field| &field.ident)
+            .collect::<Vec<_>>();
         quote! {
-            #(#impls)*
-            #(#envs)*
+            if selector == <#contract_marker as liquid_lang::FnSelector>::SELECTOR {
+                let (#(#input_idents,)*) = <<#contract_marker as liquid_lang::FnInput>::Input as scale::Decode>::decode(&mut data.as_slice())
+                    .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+                let contract_id = liquid_macro::create! (#contract_ident => #(#input_idents,)*);
+                <Storage as liquid_lang::storage::Flush>::flush(storage);
+                liquid_lang::env::finish(&contract_id);
+
+                return Ok(());
+            }
         }
     }
 
     fn generate_dispatch(&self) -> TokenStream2 {
         let all_item_rights = &self.collaboration.all_item_rights;
-        let fragments = all_item_rights
+        let item_contracts = &self.collaboration.contracts;
+        let rights_fragments = all_item_rights
             .iter()
-            .map(|item_rights| self.generate_dispatch_fragment(item_rights));
+            .map(|item_rights| self.generate_rights_dispatch_fragment(item_rights));
+        let contract_fragments = item_contracts
+            .iter()
+            .map(|item_contract| self.generate_contract_dispatch_fragment(item_contract));
 
         quote! {
             impl Storage {
                 pub fn dispatch() -> liquid_lang::DispatchResult {
-                    let mut storage = <Storage as liquid_lang::storage::New>::new();
+                    let storage = __liquid_acquire_storage_instance();
                     let call_data = liquid_lang::env::get_call_data(liquid_lang::env::CallMode::Call)
                         .map_err(|_| liquid_lang::DispatchError::CouldNotReadInput)?;
                     let selector = call_data.selector;
                     let data = call_data.data;
 
                     #(
-                        #fragments
+                        #rights_fragments
+                    )*
+                    #(
+                        #contract_fragments
                     )*
 
                     Err(liquid_lang::DispatchError::UnknownSelector)
@@ -356,7 +392,6 @@ impl<'a> Dispatch<'a> {
             fn deploy() {
                 use liquid_prelude::string::ToString;
 
-                let mut storage = <Storage as liquid_lang::storage::New>::new();
                 let self_addr = liquid_lang::env::get_address().to_string();
                 let cns = liquid_lang::precompiled::CNS::new();
 

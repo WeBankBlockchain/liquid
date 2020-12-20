@@ -10,6 +10,8 @@ edition = "2018"
 proc-macro2 = "1.0.18"
 quote = "1.0.7"
 
+liquid_prelude = { version = "0.2.0", path = "../prelude", default-features = false }
+
 [dev-dependencies]
 trybuild = "1.0.30"
 
@@ -18,5 +20,7 @@ proc-macro = true
 
 [features]
 default = ["std"]
-std = []
+std = [
+    "liquid_prelude/std"
+]
 collaboration = []

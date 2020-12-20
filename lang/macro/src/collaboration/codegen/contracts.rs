@@ -19,7 +19,8 @@ use crate::{
     utils::filter_non_liquid_attributes,
 };
 use derive_more::From;
-use proc_macro2::TokenStream as TokenStream2;
+use heck::SnakeCase;
+use proc_macro2::{Ident, Literal, Span, TokenStream as TokenStream2};
 use quote::{quote, quote_spanned};
 use syn::spanned::Spanned;
 
@@ -63,6 +64,7 @@ impl<'a> Contracts<'a> {
                 #[derive(liquid_lang::InOut)]
                 pub struct #ident {
                     #(#fields)*
+                    __liquid_forbids_constructing_contract: liquid_lang::Contract_Constructing_Is_Forbidden,
                 }
             }
         });
@@ -98,10 +100,8 @@ impl<'a> Contracts<'a> {
                         }
                     }
                     Some(SelectWith::Obj(ast)) => {
-                        let mut path_visitor = PathVisitor::new(
-                            Some(quote! { self.#field_ident }),
-                            &ast.arena,
-                        );
+                        let mut path_visitor =
+                            PathVisitor::new(Some(quote! { self.#field_ident }), &ast.arena);
                         let stmts = path_visitor.eval(ast.root);
                         quote_spanned! { field_ident.span() =>
                             #stmts
@@ -110,18 +110,96 @@ impl<'a> Contracts<'a> {
                 }
             });
 
+            let ident_str = ident.to_string();
+            let field_ident = Ident::new(
+                &format!("__liquid_{}", ident_str.to_snake_case()),
+                Span::call_site(),
+            );
+
+            let no_signers_error = format!("no available signers to sign this `{}` contract", ident_str);
+            let unauthorized_error = format!("signing of contract `{}` is not permitted", ident_str);
+            let fetch_error = format!(
+                "unable to fetch `{}` contract, it's inexistent or abolished",
+                ident_str
+            );
+
             quote! {
                 impl liquid_lang::AcquireSigners for #ident {
-                    fn acquire_signers(&self) -> liquid_prelude::vec::Vec<address> {
+                    fn acquire_signers(&self) -> liquid_prelude::collections::BTreeSet::<address> {
                         use liquid_lang::Can_Not_Select_Any_Account_Address_From_It;
 
-                        let mut addresses = Vec::new();
-                        #(addresses.extend((#selectors).acquire_addrs());)*
-                        addresses
+                        #[allow(unused_mut)]
+                        let mut signers = liquid_prelude::collections::BTreeSet::new();
+                        #(signers.extend((#selectors).acquire_addrs());)*
+                        signers
                     }
                 }
 
                 impl liquid_lang::You_Should_Use_An_Valid_Contract_Type for #ident {}
+
+                impl #ident {
+                    const __LIQUID_UNAUTHORIZED_CREATE_ERROR: &'static str = #unauthorized_error;
+                    const __LIQUID_NO_AVAILABLE_SIGNERS_ERROR: &'static str = #no_signers_error;
+                }
+
+                impl __LiquidFetch<#ident> for liquid_lang::ContractId<#ident> {
+                    fn fetch(&self) -> &#ident {
+                        let storage = __liquid_acquire_storage_instance();
+                        match storage.#field_ident.get(&self.__liquid_index) {
+                            Some((contract, abolished)) => if *abolished {
+                                liquid_lang::env::revert(&#fetch_error.to_owned());
+                                unreachable!();
+                            } else {
+                                contract
+                            },
+                            _ => {
+                                liquid_lang::env::revert(&#fetch_error.to_owned());
+                                unreachable!();
+                            }
+                        }
+                    }
+
+                    fn fetch_mut(&self) -> &mut #ident {
+                        let storage = __liquid_acquire_storage_instance();
+                        match storage.#field_ident.get_mut(&self.__liquid_index) {
+                            Some((contract, abolished)) => if *abolished {
+                                liquid_lang::env::revert(&#fetch_error.to_owned());
+                                unreachable!();
+                            } else {
+                                contract
+                            },
+                            _ => {
+                                liquid_lang::env::revert(&#fetch_error.to_owned());
+                                unreachable!();
+                            }
+                        }
+                    }
+
+                    fn fetch_exclusive(&self) -> #ident {
+                        let storage = __liquid_acquire_storage_instance();
+                        match storage.#field_ident.get_mut(&self.__liquid_index) {
+                            Some((contract, abolished)) => if *abolished {
+                                liquid_lang::env::revert(&#fetch_error.to_owned());
+                                unreachable!();
+                            } else {
+                                *abolished = true;
+                                let encoded = <#ident as scale::Encode>::encode(contract);
+                                <#ident as scale::Decode>::decode(&mut encoded.as_slice()).unwrap()
+                            },
+                            _ => {
+                                liquid_lang::env::revert(&#fetch_error.to_owned());
+                                unreachable!();
+                            }
+                        }
+                    }
+                }
+
+                impl liquid_lang::This_Contract_Type_Is_Not_Exist for #ident {
+                    fn fetch<'a>() -> &'a mut liquid_lang::storage::Mapping<u32, (Self, bool)> {
+                        let storage = __liquid_acquire_storage_instance();
+                        &mut storage.#field_ident
+                    }
+                }
             }
         });
 

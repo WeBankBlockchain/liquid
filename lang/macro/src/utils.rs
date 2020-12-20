@@ -24,8 +24,8 @@ pub fn check_idents(input: TokenStream2) -> Result<(), Error> {
                 {
                     return Err(format_err_span!(
                         ident.span(),
-                        "identifiers starting with `__liquid` or `__LIQUID` are \
-                         forbidden"
+                        "identifiers starting with `__liquid`, `__Liquid` or `__LIQUID` \
+                         are forbidden"
                     ));
                 }
             }
@@ -86,6 +86,7 @@ pub fn generate_primitive_types() -> TokenStream2 {
 
         pub use liquid_primitives::types::u256;
         pub use liquid_primitives::types::i256;
+        pub use liquid_primitives::types::timestamp;
         pub use liquid_prelude::string::String;
         pub type Vec<T> = liquid_prelude::vec::Vec<T>;
     }

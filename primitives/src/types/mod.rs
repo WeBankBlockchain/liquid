@@ -23,3 +23,5 @@ pub use fixed_size_bytes::*;
 pub use hash::Hash;
 pub use int256::i256;
 pub use uint256::u256;
+#[allow(non_camel_case_types)]
+pub type timestamp = u64;

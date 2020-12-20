@@ -214,7 +214,7 @@ impl<'a> Dispatch<'a> {
             quote_spanned! {ty.span() => <#ty as liquid_lang::You_Should_Use_An_Valid_Input_Type>::T}
         });
         quote! {
-            #[allow(non_snake_case)]
+            #[allow(non_camel_case_types)]
             struct __LIQUID_CONSTRUCTOR_INPUT_TY_CHECKER(#(#guards,)*);
         }
     }

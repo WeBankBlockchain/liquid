@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::core::env;
+use crate::lang_core::env;
 use liquid_prelude::string::String;
 
 pub fn require<Q>(expr: bool, msg: Q)

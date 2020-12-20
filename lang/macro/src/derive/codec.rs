@@ -73,6 +73,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
                     Span::call_site(),
                 );
                 field_checkers.push(quote_spanned! { ty.span() =>
+                    #[allow(non_camel_case_types)]
                     struct #field_checker(<#ty as liquid_lang::You_Should_Use_An_Valid_Field_Type>::T);
                 })
             }
@@ -118,6 +119,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
                                     );
                                     let ty = &field.ty;
                                     field_checkers.push(quote_spanned! { ty.span() =>
+                                        #[allow(non_camel_case_types)]
                                         struct #field_checker(<#ty as liquid_lang::You_Should_Use_An_Valid_Field_Type>::T);
                                     });
 
@@ -136,6 +138,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
                                 );
                                 let ty = &field.ty;
                                 field_checkers.push(quote_spanned! { ty.span() =>
+                                    #[allow(non_camel_case_types)]
                                     struct #field_checker(<#ty as liquid_lang::You_Should_Use_An_Valid_Field_Type>::T);
                                 });
 
@@ -215,8 +218,6 @@ fn generate_encode_shadow_struct(
 
         impl scale::Encode for #ident {
             fn encode(&self) -> __std::Vec<u8> {
-                use scale::Encode;
-
                 let encode_shadow: EncodeShadow::<'_> = self.into();
                 encode_shadow.encode()
             }
@@ -296,8 +297,6 @@ fn generate_encode_shadow_enum<'a>(
 
         impl scale::Encode for #ident {
             fn encode(&self) -> __std::Vec<u8> {
-                use scale::Encode;
-
                 let encode_shadow: EncodeShadow::<'_> = self.into();
                 encode_shadow.encode()
             }
@@ -325,9 +324,7 @@ fn generate_decode_shadow_struct(
         }
 
         impl scale::Decode for #ident {
-            fn decode<I: scale::Input>(value: &mut I) -> Result<Self, scale::Error> {
-                use scale::Decode;
-
+            fn decode<I: scale::Input>(value: &mut I) -> ::core::result::Result<Self, scale::Error> {
                 let origin = <DecodeShadow as scale::Decode>::decode(value)?;
                 Ok(Self {
                     #(#assigns)*
@@ -360,17 +357,24 @@ fn generate_decode_shadow_enum<'a>(
             },
         };
 
-        let arms = if variant.unnamed {
+        let arms = if variant.is_unit {
+            debug_assert!(field_names.is_empty());
             quote! {
-                DecodeShadow::#variant_ident{#(#field_names,)*} => Ok(#ident::#variant_ident (
-                    #(#field_names,)*
-                )),
+                DecodeShadow::#variant_ident{} => Ok(#ident::#variant_ident),
             }
         } else {
-            quote! {
-                DecodeShadow::#variant_ident{#(#field_names,)*} => Ok(#ident::#variant_ident {
-                    #(#field_names,)*
-                }),
+            if variant.unnamed {
+                quote! {
+                    DecodeShadow::#variant_ident{#(#field_names,)*} => Ok(#ident::#variant_ident (
+                        #(#field_names,)*
+                    )),
+                }
+            } else {
+                quote! {
+                    DecodeShadow::#variant_ident{#(#field_names,)*} => Ok(#ident::#variant_ident {
+                        #(#field_names,)*
+                    }),
+                }
             }
         };
         (new_variants, arms)
@@ -383,9 +387,7 @@ fn generate_decode_shadow_enum<'a>(
         }
 
         impl scale::Decode for #ident {
-            fn decode<I: scale::Input>(value: &mut I) -> Result<Self, scale::Error> {
-                use scale::Decode;
-
+            fn decode<I: scale::Input>(value: &mut I) -> ::core::result::Result<Self, scale::Error> {
                 let origin = <DecodeShadow as scale::Decode>::decode(value)?;
                 match origin {
                     #(#arms)*

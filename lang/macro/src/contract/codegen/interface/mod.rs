@@ -59,6 +59,7 @@ impl GenerateCode for Interface {
                 #(#foreign_structs)*
 
                 mod __liquid_private {
+                    #[allow(unused_imports)]
                     use super::*;
 
                     #types
