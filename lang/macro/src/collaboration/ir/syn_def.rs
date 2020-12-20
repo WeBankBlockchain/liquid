@@ -38,6 +38,16 @@ pub enum SelectFrom {
     Argument(Ident),
 }
 
+impl Spanned for SelectFrom {
+    /// Returns the span of the original `struct` definition.
+    fn span(&self) -> Span {
+        match self {
+            Self::This(ident) => ident.span(),
+            Self::Argument(ident) => ident.span(),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub enum SelectWith {
     Func(syn::ExprPath),

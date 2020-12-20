@@ -40,7 +40,9 @@ impl GenerateCode for Collaboration {
 
         quote! {
             mod #ident {
+                #[allow(unused_imports)]
                 use liquid_lang::{intrinsics::*, ContractId};
+                #[allow(unused_imports)]
                 use liquid_macro::create;
                 #types
                 trait __LiquidFetch<T> {

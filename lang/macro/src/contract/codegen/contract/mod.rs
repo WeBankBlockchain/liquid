@@ -40,10 +40,12 @@ impl GenerateCode for ir::Contract {
 
         quote! {
             mod #ident {
+                #[allow(unused_imports)]
                 use liquid_lang::intrinsics::*;
                 #types
 
                 mod __liquid_private {
+                    #[allow(unused_imports)]
                     use super::*;
 
                     #storage

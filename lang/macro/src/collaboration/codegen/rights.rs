@@ -11,7 +11,10 @@
 // limitations under the License.
 
 use crate::{
-    collaboration::{codegen::utils, ir::*},
+    collaboration::{
+        codegen::{path_visitor::PathVisitor, utils},
+        ir::*,
+    },
     traits::GenerateCode,
     utils::filter_non_liquid_attributes,
 };
@@ -32,6 +35,35 @@ impl<'a> GenerateCode for Rights<'a> {
             let contract_ident = &item_rights.ty;
             let rights = &item_rights.rights;
             let fns = rights.iter().map(|right| {
+                let owners = &right.owners;
+                let selectors = owners.iter().map(|owner| {
+                    let from = &owner.from;
+                    let with = &owner.with;
+                    let span = from.span();
+                    let ident = match from {
+                        SelectFrom::This(ident) => quote! { self.#ident },
+                        SelectFrom::Argument(ident) => quote! { #ident },
+                    };
+
+                    match with {
+                        None => {
+                            quote_spanned! { span => &#ident }
+                        }
+                        Some(SelectWith::Func(path)) => {
+                            quote_spanned! { path.span() =>
+                                #path(#ident)
+                            }
+                        }
+                        Some(SelectWith::Obj(ast)) => {
+                            let mut path_visitor =
+                                PathVisitor::new(Some(ident), &ast.arena);
+                            let stmts = path_visitor.eval(ast.root);
+                            quote_spanned! { span =>
+                                #stmts
+                            }
+                        }
+                    }
+                });
                 let attrs = filter_non_liquid_attributes(&right.attrs);
                 let sig = &right.sig;
                 let fn_ident = &sig.ident;
@@ -44,6 +76,11 @@ impl<'a> GenerateCode for Rights<'a> {
                      contract, not a cloned one",
                     fn_ident, contract_ident
                 );
+                let abolish_owners = if sig.is_self_ref() {
+                    quote! {}
+                } else {
+                    quote! { owners.extend(signers.clone()); }
+                };
 
                 quote_spanned! { right.span =>
                     #(#attrs)*
@@ -51,6 +88,27 @@ impl<'a> GenerateCode for Rights<'a> {
                         if self.__liquid_forbids_constructing_contract.0 {
                             liquid_lang::env::revert(&#clone_error.to_owned())
                         }
+
+                        {
+                            #[allow(unused_imports)]
+                            use liquid_lang::Can_Not_Select_Any_Account_Address_From_It;
+                            use liquid_lang::AcquireSigners;
+
+                            let signers = self.acquire_signers();
+                            #[allow(unused_mut)]
+                            let mut owners = liquid_prelude::collections::BTreeSet::<address>::new();
+                            #abolish_owners
+                            #(owners.extend((#selectors).acquire_addrs());)*
+                            let storage = __liquid_acquire_storage_instance();
+                            let authorizers = &mut storage.__liquid_authorizers;
+                            for owner in &owners {
+                                if !authorizers.contains(owner) {
+                                    liquid_lang::env::revert(&#contract_ident::__LIQUID_UNAUTHORIZED_CREATE_ERROR.to_owned());
+                                }
+                            }
+                            authorizers.extend(signers);
+                        }
+
                         #(#stmts)*
                     }
                 }

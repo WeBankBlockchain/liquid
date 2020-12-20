@@ -69,6 +69,19 @@ pub fn create_impl(input: TokenStream2) -> Result<TokenStream2> {
                 #(#iter)*
                 #implicit_field_assign
             };
+
+            let storage = __liquid_acquire_storage_instance();
+            let signers = <#ident as liquid_lang::AcquireSigners>::acquire_signers(&contract);
+            if signers.is_empty() {
+                liquid_lang::env::revert(&#ident::__LIQUID_NO_AVAILABLE_SIGNERS_ERROR.to_owned())
+            }
+            let authorizers = &storage.__liquid_authorizers;
+            for signer in signers {
+                if !authorizers.contains(&signer) {
+                    liquid_lang::env::revert(&#ident::__LIQUID_UNAUTHORIZED_CREATE_ERROR.to_owned());
+                }
+            }
+
             let len = contract_collection.len();
             contract_collection.insert(&len, (contract, false));
 

@@ -53,7 +53,7 @@ cfg_if! {
         }
 
         pub trait AcquireSigners {
-            fn acquire_signers(&self) -> Vec<Address>;
+            fn acquire_signers(&self) -> liquid_prelude::collections::BTreeSet<Address>;
         }
 
         #[allow(non_camel_case_types)]

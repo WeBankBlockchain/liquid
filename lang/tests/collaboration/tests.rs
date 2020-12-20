@@ -19,4 +19,5 @@ fn compile_tests() {
     t.pass("tests/collaboration/ui/pass/04-role.rs");
     t.pass("tests/collaboration/ui/pass/05-shop.rs");
     t.compile_fail("tests/collaboration/ui/fail/01-no-signers.rs");
+    t.compile_fail("tests/collaboration/ui/fail/02-no-contract.rs")
 }

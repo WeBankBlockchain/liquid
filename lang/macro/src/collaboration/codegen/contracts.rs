@@ -100,10 +100,8 @@ impl<'a> Contracts<'a> {
                         }
                     }
                     Some(SelectWith::Obj(ast)) => {
-                        let mut path_visitor = PathVisitor::new(
-                            Some(quote! { self.#field_ident }),
-                            &ast.arena,
-                        );
+                        let mut path_visitor =
+                            PathVisitor::new(Some(quote! { self.#field_ident }), &ast.arena);
                         let stmts = path_visitor.eval(ast.root);
                         quote_spanned! { field_ident.span() =>
                             #stmts
@@ -112,30 +110,37 @@ impl<'a> Contracts<'a> {
                 }
             });
 
+            let ident_str = ident.to_string();
             let field_ident = Ident::new(
-                &format!("__liquid_{}", ident.to_string().to_snake_case()),
+                &format!("__liquid_{}", ident_str.to_snake_case()),
                 Span::call_site(),
             );
-            let fetch_error = Literal::byte_string(
-                format!(
-                    "unable to fetch `{}` contract, it's inexistent or abolished",
-                    ident.to_string()
-                )
-                .as_bytes(),
+
+            let no_signers_error = format!("no available signers to sign this `{}` contract", ident_str);
+            let unauthorized_error = format!("signing of contract `{}` is not permitted", ident_str);
+            let fetch_error = format!(
+                "unable to fetch `{}` contract, it's inexistent or abolished",
+                ident_str
             );
 
             quote! {
                 impl liquid_lang::AcquireSigners for #ident {
-                    fn acquire_signers(&self) -> liquid_prelude::vec::Vec<address> {
+                    fn acquire_signers(&self) -> liquid_prelude::collections::BTreeSet::<address> {
                         use liquid_lang::Can_Not_Select_Any_Account_Address_From_It;
 
-                        let mut addresses = Vec::new();
-                        #(addresses.extend((#selectors).acquire_addrs());)*
-                        addresses
+                        #[allow(unused_mut)]
+                        let mut signers = liquid_prelude::collections::BTreeSet::new();
+                        #(signers.extend((#selectors).acquire_addrs());)*
+                        signers
                     }
                 }
 
                 impl liquid_lang::You_Should_Use_An_Valid_Contract_Type for #ident {}
+
+                impl #ident {
+                    const __LIQUID_UNAUTHORIZED_CREATE_ERROR: &'static str = #unauthorized_error;
+                    const __LIQUID_NO_AVAILABLE_SIGNERS_ERROR: &'static str = #no_signers_error;
+                }
 
                 impl __LiquidFetch<#ident> for liquid_lang::ContractId<#ident> {
                     fn fetch(&self) -> &#ident {
