@@ -43,6 +43,7 @@ fn generate_encode_shadow_struct(
         );
 
         quote_spanned! { ty.span() =>
+            #[allow(non_camel_case_types)]
             struct #field_checker(<#ty as liquid_lang::You_Should_Use_An_Valid_Field_Type>::T);
         }
     });
@@ -94,7 +95,7 @@ fn generate_decode_shadow_struct(
         }
 
         impl scale::Decode for #ident {
-            fn decode<I: scale::Input>(value: &mut I) -> Result<Self, scale::Error> {
+            fn decode<I: scale::Input>(value: &mut I) -> ::core::result::Result<Self, scale::Error> {
                 use scale::Decode;
 
                 let origin = <DecodeShadow as scale::Decode>::decode(value)?;

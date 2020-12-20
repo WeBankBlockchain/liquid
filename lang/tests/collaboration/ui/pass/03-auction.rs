@@ -8,15 +8,16 @@
 // 3. Each bidder responds to the invitation with a `Bid`.
 // 4. When the auction finishes at `Auction.end` time, an off-ledger process collects all the bids, calculates the resulting allocations as an `AuctionResult`.
 
+use liquid::InOut;
 use liquid_lang as liquid;
 
 #[liquid::collaboration]
 mod auction {
-    use liquid::Codec;
+    use super::*;
 
     /// Used both to indicate a bid, and to show the final allocations.
-    #[derive(Clone, Codec)]
-    struct Allocation {
+    #[derive(Clone, InOut)]
+    pub struct Allocation {
         party: address,
         price: u64,
         quantity: u64,
@@ -24,7 +25,7 @@ mod auction {
 
     /// Used to place a bid on an active auction.
     #[liquid(contract)]
-    struct Bid {
+    pub struct Bid {
         auction: Auction,
         #[liquid(signers = "$.party")]
         allocation: Allocation,
@@ -32,16 +33,15 @@ mod auction {
 
     /// Created on successful completion of an auction, to display allocs.
     #[liquid(contract)]
-    struct AuctionResult {
+    pub struct AuctionResult {
         #[liquid(signers = "$.seller")]
         auction: Auction,
         allocations: Vec<Allocation>,
     }
 
     /// Contains a copy of the main `Auction` contract.
-    #[derive(Clone)]
     #[liquid(contract)]
-    struct AuctionInvitation {
+    pub struct AuctionInvitation {
         #[liquid(signers = "$.seller")]
         auction: Auction,
         buyer: address,
@@ -50,7 +50,7 @@ mod auction {
     #[liquid(rights)]
     impl AuctionInvitation {
         #[liquid(belongs_to = "buyer")]
-        pub fn submit_bid(self, price: u32, quantity: u32) -> Bid {
+        pub fn submit_bid(self, price: u64, quantity: u64) -> ContractId<Bid> {
             let now = self.env().now();
             assert!(now < self.auction.end && now >= self.auction.start);
 
@@ -60,14 +60,14 @@ mod auction {
                     price,
                     quantity,
                 },
-                ..self
+                auction: self.auction,
             }
         }
     }
 
-    #[derive(Clone)]
     #[liquid(contract)]
-    struct Auction {
+    #[derive(Clone)]
+    pub struct Auction {
         security: String,
         quantity: u64,
         #[liquid(signers)]
@@ -79,7 +79,7 @@ mod auction {
     #[liquid(rights_belong_to = "seller")]
     impl Auction {
         /// Sent individually to each participant (bidder) at start of auction.
-        pub fn invite_bidder(&self, buyer: address) -> AuctionInvitation {
+        pub fn invite_bidder(&self, buyer: address) -> ContractId<AuctionInvitation> {
             create! { AuctionInvitation =>
                 buyer,
                 auction: self.clone(),
@@ -88,9 +88,11 @@ mod auction {
 
         /// This should be triggered externally at the auction end time.
         /// Collect the bids and publish allocations in `AuctionResult`.
-        pub fn complete_auction(self, bids: Vec<Bid>) -> AuctionResult {
-            let mut request_allocs =
-                bids.map(|bid| bid.allocation.clone()).collect::<Vec<_>>();
+        pub fn complete_auction(self, bids: Vec<Bid>) -> ContractId<AuctionResult> {
+            let mut request_allocs = bids
+                .iter()
+                .map(|bid| bid.allocation.clone())
+                .collect::<Vec<_>>();
             request_allocs.sort_by(|x, y| y.price.partial_cmp(&x.price).unwrap());
 
             let mut quantity = self.quantity;

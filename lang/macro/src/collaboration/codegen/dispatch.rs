@@ -29,7 +29,6 @@ impl<'a> GenerateCode for Dispatch<'a> {
     fn generate_code(&self) -> TokenStream2 {
         let marker = self.generate_right_marker();
         let traits = self.generate_right_traits();
-        let impls = self.generate_impls();
         let dispatch = self.generate_dispatch();
         let entry_point = self.generate_entry_point();
 
@@ -37,7 +36,6 @@ impl<'a> GenerateCode for Dispatch<'a> {
             #[cfg(not(test))]
             const _: () = {
                 #marker
-                #impls
                 #traits
                 #dispatch
                 #entry_point
@@ -164,29 +162,24 @@ impl<'a> Dispatch<'a> {
                 quote! { (id, (#(#input_idents,)*)) }
             };
 
-            let mut_tag = if sig.is_mut() {
-                quote! { mut }
+            let (ref_ty, get_ty) = if sig.is_mut() {
+                (quote! { mut }, quote! { get_mut })
             } else {
-                quote! {}
+                (quote! { }, quote! { get })
             };
 
-            let execute =  if sig.is_self_ref() {
+            let execute = if sig.is_self_ref() {
                 quote! {
-                    let contract = &#mut_tag storage.#field_name.get_mut(&id).unwrap().0;
+                    let contract = &#ref_ty storage.#field_name.#get_ty(&id).unwrap().0;
                     contract.#right_name(#(#input_idents,)*)
                 }
             } else {
                 quote! {
-                    use scale::{Encode, Decode};
-
-                    let #mut_tag contract = storage.#field_name.remove(&id).unwrap().0;
-                    let encoded = contract.encode();
-                    let result = contract.#right_name(#(#input_idents,)*);
-                    storage.#field_name.insert(&id, (
-                        <#ident as Decode>::decode(&mut encoded.as_slice()).unwrap(),
-                        true
-                    ));
-                    result
+                    let (contract, abolished) = storage.#field_name.get_mut(&id).unwrap();
+                    *abolished = true;
+                    let encoded = <#ident as scale::Encode>::encode(contract);
+                    let cloned = <#ident as scale::Decode>::decode(&mut encoded.as_slice()).unwrap();
+                    cloned.#right_name(#(#input_idents,)*)
                 }
             };
 
@@ -227,53 +220,6 @@ impl<'a> Dispatch<'a> {
 
         quote! {
             #(#fragments)*
-        }
-    }
-
-    fn generate_impls(&self) -> TokenStream2 {
-        let all_item_rights = &self.collaboration.all_item_rights;
-        let impls = all_item_rights.iter().map(|item_rights| {
-            let ident = &item_rights.ty;
-            let rights = &item_rights.rights;
-            let fns = rights.iter().map(|right| {
-                let attrs = filter_non_liquid_attributes(&right.attrs);
-                let sig = &right.sig;
-                let fn_ident = &sig.ident;
-                let inputs = &sig.inputs;
-                let output = &sig.output;
-                let body = &right.body;
-
-                quote_spanned! { right.span =>
-                    #(#attrs)*
-                    fn #fn_ident (#inputs) #output
-                    #body
-                }
-            });
-
-            quote! {
-                impl #ident {
-                    #(#fns)*
-                }
-            }
-        });
-
-        let contracts = &self.collaboration.contracts;
-        let envs = contracts.iter().map(|contract| {
-            let ident = &contract.ident;
-
-            quote! {
-                impl #ident {
-                    #[allow(unused)]
-                    pub fn env(&self) -> liquid_lang::EnvAccess {
-                        liquid_lang::EnvAccess {}
-                    }
-                }
-            }
-        });
-
-        quote! {
-            #(#impls)*
-            #(#envs)*
         }
     }
 

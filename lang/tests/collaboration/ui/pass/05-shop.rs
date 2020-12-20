@@ -11,12 +11,14 @@
 // 5. The user buys the item via the `buy_item` choice on its `UserRelationship` contract.
 // 6. The `Item` and the `Iou` are swapped atomically between vendor and user.
 
+#![allow(unused_variables)]
+
 use liquid_lang as liquid;
 
 #[liquid::collaboration]
 mod shop {
     #[liquid(contract)]
-    struct Iou {
+    pub struct Iou {
         #[liquid(signers)]
         issuer: address,
         owner: address,
@@ -27,7 +29,7 @@ mod shop {
     #[liquid(rights)]
     impl Iou {
         #[liquid(belongs_to = "owner")]
-        pub fn transfer_iou(self, new_owner: address) -> Iou {
+        pub fn transfer_iou(self, new_owner: address) -> ContractId<Iou> {
             create! { Self =>
                 owner: new_owner,
                 ..self
@@ -36,7 +38,7 @@ mod shop {
     }
 
     #[liquid(contract)]
-    struct Item {
+    pub struct Item {
         #[liquid(signers)]
         producer: address,
         owner: address,
@@ -48,14 +50,14 @@ mod shop {
 
     #[liquid(rights_belong_to = "owner")]
     impl Item {
-        pub fn transfer_item(self, new_owner: address) -> Item {
+        pub fn transfer_item(self, new_owner: address) -> ContractId<Item> {
             create! { Self =>
                 owner: new_owner,
                 ..self
             }
         }
 
-        pub fn disclose(self, users: Vec<address>) -> Item {
+        pub fn disclose(self, users: Vec<address>) -> ContractId<Item> {
             create! { Self =>
                 observers: users,
                 ..self
@@ -64,12 +66,12 @@ mod shop {
     }
 
     #[liquid(contract)]
-    struct Offer {
+    pub struct Offer {
         #[liquid(signers)]
         owner: address,
         #[liquid(signers)]
         vendor: address,
-        item: Item,
+        item_id: ContractId<Item>,
         price: u64,
         currency: String,
         users: Vec<address>,
@@ -78,49 +80,59 @@ mod shop {
     #[liquid(rights)]
     impl Offer {
         #[liquid(belongs_to = "owner")]
-        pub fn settle(self, buyer: address) -> Item {
-            self.item.transfer_item(buyer)
+        pub fn settle(self, buyer: address) -> ContractId<Item> {
+            let item = self.item_id.fetch_exclusive();
+            item.transfer_item(buyer)
         }
     }
 
     #[liquid(contract)]
-    struct Shop {
+    #[derive(Clone)]
+    pub struct Shop {
         #[liquid(signers)]
         owner: address,
         vendors: Vec<address>,
         users: Vec<address>,
-        offers: Vec<address>,
+        offer_ids: Vec<ContractId<Offer>>,
     }
 
     #[liquid(rights_belong_to = "owner")]
     impl Shop {
-        pub fn invite_vendor(mut self, vendor: address) -> (Shop, VendorInvite) {
+        pub fn invite_vendor(
+            mut self,
+            vendor: address,
+        ) -> (ContractId<Shop>, ContractId<VendorInvite>) {
             self.vendors.push(vendor);
-            let shop = create! { Self =>
-                ..self
-            };
-            let invite = create! { VendorInvite =>
-                vendor,
-                ..self
-            };
-            (shop, invite)
+            (
+                create! { Self =>
+                    ..self
+                },
+                create! { VendorInvite =>
+                    vendor,
+                    owner: self.owner,
+                },
+            )
         }
 
-        pub fn invite_user(mut self, user: address) -> (Shop, UserInvite) {
+        pub fn invite_user(
+            mut self,
+            user: address,
+        ) -> (ContractId<Shop>, ContractId<UserInvite>) {
             self.users.push(user);
-            let shop = create! { Self =>
-                ..self
-            };
-            let invite = create! { UserInvite =>
-                user,
-                ..self
-            };
-            (shop, invite)
+            (
+                create! { Self =>
+                    ..self
+                },
+                create! { UserInvite =>
+                    user,
+                    owner: self.owner,
+                },
+            )
         }
     }
 
     #[liquid(contract)]
-    struct VendorInvite {
+    pub struct VendorInvite {
         #[liquid(signers)]
         owner: address,
         vendor: address,
@@ -129,15 +141,16 @@ mod shop {
     #[liquid(rights)]
     impl VendorInvite {
         #[liquid(belongs_to = "vendor")]
-        pub fn accept_vendor_invite(self) -> VendorRelationship {
+        pub fn accept_vendor_invite(self) -> ContractId<VendorRelationship> {
             create! { VendorRelationship =>
-                ..self
+                owner: self.owner,
+                vendor: self.vendor,
             }
         }
     }
 
     #[liquid(contract)]
-    struct VendorRelationship {
+    pub struct VendorRelationship {
         #[liquid(signers)]
         owner: address,
         #[liquid(signers)]
@@ -149,38 +162,41 @@ mod shop {
         #[liquid(belongs_to = "vendor")]
         pub fn offer_item(
             &self,
-            shop: Shop,
-            item: Item,
+            shop_id: ContractId<Shop>,
+            item_id: ContractId<Item>,
             price: u64,
             currency: String,
-        ) -> (Shop, Offer) {
-            let mut users = Vec::new();
+        ) -> (ContractId<Shop>, ContractId<Offer>) {
+            let shop = shop_id.fetch();
+            let item = item_id.fetch_exclusive();
+
+            let mut users = shop.users.clone();
             users.push(self.owner);
-            users.extend(shop.users);
             let disclosed_item = item.disclose(users);
 
-            let offer = create! { Offer =>
-                item: disclosed_item,
-                users: shop.users,
+            let offer_id = create! { Offer =>
+                item_id: disclosed_item,
+                users: shop.users.clone(),
                 price,
                 currency,
-                ..self
+                owner: self.owner,
+                vendor: self.vendor,
             };
 
-            let mut offers = Vec::new();
-            offers.push(offer);
-            offers.extend(shop.offers);
-            let shop = create! { Shop =>
-                offers,
+            let mut offer_ids = shop.offer_ids.clone();
+            offer_ids.push(offer_id);
+            let shop = shop.clone();
+            let shop_id = create! { Shop =>
+                offer_ids,
                 ..shop
             };
 
-            (shop, offer)
+            (shop_id, offer_id)
         }
     }
 
     #[liquid(contract)]
-    struct UserInvite {
+    pub struct UserInvite {
         #[liquid(signers)]
         owner: address,
         user: address,
@@ -189,15 +205,16 @@ mod shop {
     #[liquid(rights)]
     impl UserInvite {
         #[liquid(belongs_to = "user")]
-        pub fn accept_user_invite(self) -> UserRelationship {
+        pub fn accept_user_invite(self) -> ContractId<UserRelationship> {
             create! { UserRelationship =>
-                ..self
+                owner: self.owner,
+                user: self.user,
             }
         }
     }
 
     #[liquid(contract)]
-    struct UserRelationship {
+    pub struct UserRelationship {
         #[liquid(signers)]
         owner: address,
         #[liquid(signers)]
@@ -207,23 +224,34 @@ mod shop {
     #[liquid(rights)]
     impl UserRelationship {
         #[liquid(belongs_to = "user")]
-        pub fn buy_item(&self, shop: Shop, offer: Offer, iou: Iou) -> (Shop, Item, Iou) {
-            assert_eq!(offer.price == iou.amount);
-            assert_eq!(offer.currency == iou.currency);
+        pub fn buy_item(
+            &self,
+            shop_id: ContractId<Shop>,
+            offer_id: ContractId<Offer>,
+            iou_id: ContractId<Iou>,
+        ) -> (ContractId<Shop>, ContractId<Item>, ContractId<Iou>) {
+            let shop = shop_id.fetch().clone();
+            let offer = offer_id.fetch_exclusive();
+            let iou = iou_id.fetch_exclusive();
 
-            let new_offers = shop
-                .offers
-                .iter()
-                .filter(|shop_offer| shop_offer != offer)
+            assert_eq!(offer.price, iou.amount);
+            assert_eq!(offer.currency, iou.currency);
+
+            let new_offer_ids = shop
+                .offer_ids
+                .clone()
+                .into_iter()
+                .filter(|shop_offer_id| *shop_offer_id != offer_id)
                 .collect::<Vec<_>>();
-            assert!(new_offers.len() == shop.offers.len() - 1);
+            assert_eq!(new_offer_ids.len(), shop.offer_ids.len() - 1);
 
             let new_shop = create! { Shop =>
-                offers: new_offers,
+                offer_ids: new_offer_ids,
                 ..shop
             };
+            let vendor = offer.vendor;
             let new_item = offer.settle(self.user);
-            let new_iou = iou.transfer_iou(offer.vendor);
+            let new_iou = iou.transfer_iou(vendor);
             (new_shop, new_item, new_iou)
         }
     }

@@ -51,11 +51,13 @@ mod tic_tac_toe {
     #[liquid(rights)]
     impl GameInvite {
         #[liquid(belongs_to = "player2")]
-        pub fn accept(self) -> Game {
+        pub fn accept(self) -> ContractId<Game> {
             create! { Game =>
                 current: self.player1,
                 moves: Vec::new(),
-                ..self
+                player1: self.player1,
+                player2: self.player2,
+                size: self.size,
             }
         }
     }
@@ -73,8 +75,8 @@ mod tic_tac_toe {
 
     #[derive(InOut)]
     pub enum TurnResult {
-        Result(Result),
-        Game(Game),
+        Result(ContractId<Result>),
+        Game(ContractId<Game>),
     }
 
     #[liquid(rights)]
@@ -100,13 +102,19 @@ mod tic_tac_toe {
             if self.has_won(self.current) {
                 let result = create! { Result =>
                     outcome: Outcome::Winner(self.current),
-                    ..self
+                    player1: self.player1,
+                    player2: self.player1,
+                    moves: self.moves,
+                    size: self.size,
                 };
                 TurnResult::Result(result)
             } else if self.moves.len() == (self.size * self.size) as usize {
                 let result = create! { Result =>
-                    outcome = Outcome::Tie,
-                    ..self
+                    outcome: Outcome::Tie,
+                    player1: self.player1,
+                    player2: self.player1,
+                    moves: self.moves,
+                    size: self.size,
                 };
                 TurnResult::Result(result)
             } else {

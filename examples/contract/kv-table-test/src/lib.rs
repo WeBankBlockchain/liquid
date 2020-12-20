@@ -156,12 +156,9 @@ mod kv_table_test {
 
         #[test]
         fn set_works() {
-            use std::{collections::HashMap, sync::Mutex};
+            use std::collections::HashMap;
 
-            lazy_static! {
-                static ref ENTRY: Mutex<HashMap<String, Vec<u8>>> =
-                    Mutex::new(HashMap::new());
-            }
+            static mut ENTRY: HashMap<String, Vec<u8>> = HashMap::new();
 
             // EXPECTATIONS SETUP
             let create_table_ctx = KvTableFactory::createTable_context();
@@ -181,15 +178,12 @@ mod kv_table_test {
             entry_set_ctx
                 .expect::<(String, String)>()
                 .returns_fn(|key, value| {
-                    ENTRY.lock().unwrap().insert(key, value.into_bytes());
+                    ENTRY.insert(key, value.into_bytes());
                 });
             entry_set_ctx
                 .expect::<(String, i256)>()
                 .returns_fn(|key, value| {
-                    ENTRY
-                        .lock()
-                        .unwrap()
-                        .insert(key, value.to_be_bytes().to_vec());
+                    ENTRY.insert(key, value.to_be_bytes().to_vec());
                 });
 
             let get_ctx = KvTable::get_context();
@@ -199,14 +193,13 @@ mod kv_table_test {
                 .returns((true, Entry::at(Default::default())));
 
             let get_int_ctx = Entry::getInt_context();
-            get_int_ctx.expect().returns_fn(|key| {
-                i256::from_signed_be_bytes(ENTRY.lock().unwrap().get(&key).unwrap())
-            });
+            get_int_ctx
+                .expect()
+                .returns_fn(|key| i256::from_signed_be_bytes(ENTRY.get(&key).unwrap()));
 
             let get_string_ctx = Entry::getString_context();
             get_string_ctx.expect().returns_fn(|key| {
-                String::from_utf8(ENTRY.lock().unwrap().get(&key).unwrap().clone())
-                    .unwrap()
+                String::from_utf8(ENTRY.get(&key).unwrap().clone()).unwrap()
             });
 
             let kv_table_set_ctx = KvTable::liquid_is_fun();

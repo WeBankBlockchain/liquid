@@ -10,13 +10,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[test]
-fn compile_tests() {
-    let t = trybuild::TestCases::new();
-    t.pass("tests/collaboration/ui/pass/01-voting.rs");
-    t.pass("tests/collaboration/ui/pass/02-tic-tac-toe.rs");
-    t.pass("tests/collaboration/ui/pass/03-auction.rs");
-    t.pass("tests/collaboration/ui/pass/04-role.rs");
-    t.pass("tests/collaboration/ui/pass/05-shop.rs");
-    t.compile_fail("tests/collaboration/ui/fail/01-no-signers.rs");
-}
+#![allow(dead_code)]
+
+pub(crate) mod api;
+mod backend;
+mod calldata;
+pub mod engine;
+pub mod error;
+
+pub use self::{
+    api::{call, emit, finish, get_address, get_call_data, get_caller, now, revert},
+    backend::CallMode,
+};
+
+#[cfg(any(feature = "std", test))]
+pub use self::engine::off_chain::test_api as test;

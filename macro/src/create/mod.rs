@@ -11,31 +11,101 @@
 // limitations under the License.
 
 use crate::utils::*;
-use proc_macro2::{
-    token_stream::IntoIter as TokenIter, Ident, Span, TokenStream as TokenStream2,
-    TokenTree,
-};
+use core::iter::FromIterator;
+use liquid_prelude::vec;
+use proc_macro2::{Ident, Spacing, Span, TokenStream as TokenStream2, TokenTree};
 use quote::quote;
 
 pub fn create_impl(input: TokenStream2) -> Result<TokenStream2> {
-    let mut iter = input.into_iter();
+    let tokens = Vec::from_iter(input);
+    let mut has_struct_update_syntax = false;
+    let mut i = 0;
+    while i < tokens.len() {
+        match &tokens[i] {
+            TokenTree::Punct(punct) => {
+                if punct.as_char() == '.' && punct.spacing() == Spacing::Joint {
+                    if i + 1 < tokens.len() {
+                        match &tokens[i + 1] {
+                            TokenTree::Punct(punct) => {
+                                if punct.as_char() == '.'
+                                    && punct.spacing() == Spacing::Alone
+                                {
+                                    has_struct_update_syntax = true;
+                                    break;
+                                }
+                            }
+                            _ => {
+                                i += 1;
+                                continue;
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                } else {
+                    i += 1;
+                    continue;
+                }
+            }
+            _ => {
+                i += 1;
+                continue;
+            }
+        }
+    }
+    let mut iter = tokens.into_iter();
+
     let ident = expect_ident(&mut iter)?;
+    expect_right_arrow(&mut iter)?;
+    let implicit_field_assign = if has_struct_update_syntax {
+        quote! {}
+    } else {
+        quote! { __liquid_forbids_constructing_contract: Default::default() }
+    };
     Ok(quote! {
-        liquid_lang::ContractId::<#ident> {
-            __liquid_index: 0,
-            __liquid_marker: Default::default(),
+        {
+            let contract_collection = <#ident as liquid_lang::This_Contract_Type_Is_Not_Exist>::fetch();
+            let contract = #ident {
+                #(#iter)*
+                #implicit_field_assign
+            };
+            let len = contract_collection.len();
+            contract_collection.insert(&len, (contract, false));
+
+            liquid_lang::ContractId::<#ident> {
+                __liquid_index: len,
+                __liquid_marker: Default::default(),
+            }
         }
     })
 }
 
-pub fn expect_ident(iter: &mut TokenIter) -> Result<Ident> {
+pub fn expect_ident(iter: &mut vec::IntoIter<TokenTree>) -> Result<Ident> {
     match next_token(iter)? {
         TokenTree::Ident(ident) => Ok(ident),
         other => Err(SyntaxError::new("expected ident".to_owned(), &other)),
     }
 }
 
-fn next_token(iter: &mut TokenIter) -> Result<TokenTree> {
+pub fn expect_right_arrow(iter: &mut vec::IntoIter<TokenTree>) -> Result<()> {
+    match next_token(iter)? {
+        TokenTree::Punct(punct)
+            if punct.as_char() != '=' || punct.spacing() == Spacing::Joint =>
+        {
+            match next_token(iter)? {
+                TokenTree::Punct(punct)
+                    if punct.as_char() != '>' || punct.spacing() == Spacing::Alone =>
+                {
+                    Ok(())
+                }
+                other => Err(SyntaxError::new("expected ident".to_owned(), &other)),
+            }
+        }
+        other => Err(SyntaxError::new("expected ident".to_owned(), &other)),
+    }
+}
+
+fn next_token(iter: &mut vec::IntoIter<TokenTree>) -> Result<TokenTree> {
     iter.next().ok_or_else(|| SyntaxError {
         message: "unexpected end of input".to_owned(),
         span: Span::call_site(),

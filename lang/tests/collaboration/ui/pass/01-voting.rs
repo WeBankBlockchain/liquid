@@ -12,8 +12,6 @@
 // 4. Once all voters have voted the government can `decide` the vote.
 // 5. The outcome of the ballot is recorded in a `Decision` contract on the ledger.
 
-#![allow(unused_variables)]
-
 use liquid::InOut;
 use liquid_lang as liquid;
 
@@ -86,9 +84,12 @@ mod voting {
             require(yays != nays, "cannot decide on tie");
 
             let accept = yays > nays;
+            let voters = self.voters.iter().map(|voter| voter.addr).collect();
             create! { Decision =>
                 accept,
-                ..self
+                government: self.government,
+                proposal: self.proposal,
+                voters,
             }
         }
     }

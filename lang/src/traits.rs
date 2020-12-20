@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crate::storage;
 use cfg_if::cfg_if;
 use liquid_macro::seq;
 use liquid_prelude::{string::String, vec::Vec};
@@ -67,6 +68,11 @@ cfg_if! {
             fn acquire_addrs(self) -> Vec<Address> {
                 self.into_iter().map(|addr| addr.clone()).collect()
             }
+        }
+
+        #[allow(non_camel_case_types)]
+        pub trait This_Contract_Type_Is_Not_Exist: Sized {
+            fn fetch<'a>() -> &'a mut storage::Mapping<u32, (Self, bool)>;
         }
     }
 }

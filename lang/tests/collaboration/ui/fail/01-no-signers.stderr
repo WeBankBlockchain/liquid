@@ -1,0 +1,8 @@
+error: this contract has no signers
+  --> $DIR/01-no-signers.rs:7:5
+   |
+7  | /     #[liquid(contract)]
+8  | |     pub struct Noop {
+9  | |         addr: address
+10 | |     }
+   | |_____^

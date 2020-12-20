@@ -93,6 +93,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
             Span::call_site(),
         );
         field_checkers.push(quote_spanned! { ty.span() =>
+            #[allow(non_camel_case_types)]
             struct #field_checker(<#ty as liquid_lang::You_Should_Use_An_Valid_Field_Type>::T);
         })
     }
@@ -131,7 +132,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
         }
 
         impl liquid_abi_codec::MediateDecode for #ident {
-            fn decode(slices: &[liquid_abi_codec::Word], offset: usize) -> Result<liquid_abi_codec::DecodeResult<Self>, liquid_primitives::Error>{
+            fn decode(slices: &[liquid_abi_codec::Word], offset: usize) -> ::core::result::Result::Result<liquid_abi_codec::DecodeResult<Self>, liquid_primitives::Error>{
                 let is_dynamic = <Self as liquid_abi_codec::TypeInfo>::is_dynamic();
 
                 // The first element in a dynamic Tuple is an offset to the Tuple's data
