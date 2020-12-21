@@ -15,7 +15,7 @@ use crate::{
         codegen::{path_visitor::PathVisitor, utils},
         ir::*,
     },
-    traits::GenerateCode,
+    common::GenerateCode,
     utils::filter_non_liquid_attributes,
 };
 use derive_more::From;
@@ -62,6 +62,7 @@ impl<'a> GenerateCode for Rights<'a> {
                                 #stmts
                             }
                         }
+                        _ => unreachable!()
                     }
                 });
                 let attrs = filter_non_liquid_attributes(&right.attrs);

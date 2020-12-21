@@ -12,7 +12,7 @@
 
 use crate::{
     contract::ir::{Contract, FnArg},
-    traits::GenerateCode,
+    common::GenerateCode,
     utils as lang_utils,
 };
 use derive_more::From;

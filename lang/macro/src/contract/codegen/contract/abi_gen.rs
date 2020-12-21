@@ -12,7 +12,7 @@
 
 use crate::{
     contract::ir::{Contract, FnArg, Signature},
-    traits::GenerateCode,
+    common::GenerateCode,
 };
 use derive_more::From;
 use proc_macro2::TokenStream as TokenStream2;

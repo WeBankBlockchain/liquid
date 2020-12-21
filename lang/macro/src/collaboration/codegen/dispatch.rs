@@ -12,7 +12,7 @@
 
 use crate::{
     collaboration::{codegen::utils, ir::*},
-    traits::GenerateCode,
+    common::GenerateCode,
     utils::filter_non_liquid_attributes,
 };
 use derive_more::From;

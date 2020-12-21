@@ -18,7 +18,7 @@ mod storage;
 mod utils;
 
 use crate::{
-    collaboration::ir::Collaboration, traits::GenerateCode, utils as macro_utils,
+    collaboration::ir::Collaboration, common::GenerateCode, utils as macro_utils,
 };
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;

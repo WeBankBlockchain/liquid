@@ -15,7 +15,7 @@ use crate::{
         codegen::path_visitor::PathVisitor,
         ir::{Collaboration, SelectFrom, SelectWith, Selector},
     },
-    traits::GenerateCode,
+    common::GenerateCode,
     utils::filter_non_liquid_attributes,
 };
 use derive_more::From;
@@ -105,6 +105,11 @@ impl<'a> Contracts<'a> {
                         let stmts = path_visitor.eval(ast.root);
                         quote_spanned! { field_ident.span() =>
                             #stmts
+                        }
+                    }
+                    Some(SelectWith::Inherited(field_ty)) => {
+                        quote_spanned! { field_ident.span() =>
+                            <#field_ty as liquid_lang::AcquireSigners>::acquire_signers(&self.#field_ident)
                         }
                     }
                 }

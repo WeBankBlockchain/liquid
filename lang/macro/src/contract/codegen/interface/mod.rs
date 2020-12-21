@@ -17,7 +17,7 @@ use crate::{
         codegen::utils as codegen_utils,
         ir::{ForeignFn, Interface, LangType},
     },
-    traits::GenerateCode,
+    common::GenerateCode,
     utils as lang_utils,
 };
 use either::Either;

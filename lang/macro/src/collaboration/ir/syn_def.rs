@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::collaboration::obj_path;
+use crate::{collaboration::obj_path, common::AttrValue};
 use derive_more::From;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::ToTokens;
@@ -52,6 +52,7 @@ impl Spanned for SelectFrom {
 pub enum SelectWith {
     Func(syn::ExprPath),
     Obj(obj_path::Ast),
+    Inherited(syn::Type),
 }
 
 #[derive(Clone)]
@@ -220,7 +221,7 @@ pub struct Marker {
     /// The single identifier.
     pub ident: Ident,
     /// The optional attribute value assigned to the identifier.
-    pub value: Option<(String, Span)>,
+    pub value: (AttrValue, Span),
 }
 
 impl Spanned for Marker {

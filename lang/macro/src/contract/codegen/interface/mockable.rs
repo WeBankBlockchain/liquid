@@ -15,7 +15,7 @@ use crate::{
         codegen::utils as codegen_utils,
         ir::{FnArg, ForeignFn, Interface},
     },
-    traits::GenerateCode,
+    common::GenerateCode,
     utils as lang_utils,
 };
 use derive_more::From;
