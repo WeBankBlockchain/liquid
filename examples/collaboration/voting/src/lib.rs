@@ -122,7 +122,7 @@ mod voting {
         use liquid::env::test;
 
         #[test]
-        fn voting_1() {
+        fn vote() {
             let default_accounts = test::default_accounts();
             let government = default_accounts.alice;
             let bob = default_accounts.bob;
@@ -138,16 +138,8 @@ mod voting {
                     content: String::from("take a holiday"),
                 },
             };
-            let ballot_id = ballot_id.exec(|ballot| {
-                //println!("fuck {:p}", Box::into_raw(ballot) as *const Ballot);
-                //ballot.add(bob)
-                let raw = Box::into_raw(ballot);
-                unsafe {
-                    (*raw).add(bob)
-                }
-            });
-            //let ballot_id = ballot_id.take().add(charlie);
-            /*
+            let ballot_id = ballot_id.take().add(bob);
+            let ballot_id = ballot_id.take().add(charlie);
             let mut ballot_id = ballot_id.take().add(david);
             test::pop_execution_context();
 
@@ -161,11 +153,10 @@ mod voting {
 
             test::push_execution_context(david);
             ballot_id.as_mut().vote(true);
-            test::pop_execution_context();*/
+            test::pop_execution_context();
 
-            /*
             test::push_execution_context(government);
-            let decision_id = ballot_id.take().decide();
+            let decision_id = ballot_id.exec(|ballot| ballot.decide());
             let decision = decision_id.fetch();
             assert_eq!(decision.government, government);
             assert_eq!(decision.voters, vec![bob, charlie, david]);
@@ -173,16 +164,15 @@ mod voting {
             let proposal = &decision.proposal;
             assert_eq!(proposal.proposer, government);
             assert_eq!(proposal.content, "take a holiday");
-            */
         }
 
-        /*
         #[test]
-        fn voting_2() {
+        fn add_voter_after_voting() {
             let default_accounts = test::default_accounts();
             let government = default_accounts.alice;
             let bob = default_accounts.bob;
             let charlie = default_accounts.charlie;
+            let david = default_accounts.david;
 
             test::push_execution_context(government);
             let ballot_id = sign! { Ballot =>
@@ -190,7 +180,7 @@ mod voting {
                 voters: Vec::new(),
                 proposal: Proposal {
                     proposer: government,
-                    content: String::from("take a holiday"),
+                    content: String::from("let's 996"),
                 },
             };
             let mut ballot_id = ballot_id.take().add(bob);
@@ -201,13 +191,60 @@ mod voting {
             test::pop_execution_context();
 
             test::push_execution_context(government);
-            let _ = ballot_id.take().add(charlie);
+            let ballot_id = ballot_id.exec(|ballot| ballot.add(charlie));
+            let mut ballot_id = ballot_id.exec(|ballot| ballot.add(david));
+            test::pop_execution_context();
+
+            test::push_execution_context(charlie);
+            ballot_id.as_mut().vote(false);
+            test::pop_execution_context();
+
+            test::push_execution_context(david);
+            ballot_id.as_mut().vote(false);
+            test::pop_execution_context();
+
+            test::push_execution_context(government);
+            let decision_id = ballot_id.exec(|ballot| ballot.decide());
+            let decision = decision_id.fetch();
+            assert_eq!(decision.government, government);
+            assert_eq!(decision.voters, vec![bob, charlie, david]);
+            assert_eq!(decision.accept, false);
+            let proposal = &decision.proposal;
+            assert_eq!(proposal.proposer, government);
+            assert_eq!(proposal.content, "let's 996");
+        }
+
+        #[test]
+        #[should_panic(expected = "voter already voted")]
+        fn duplicate_voting() {
+            let default_accounts = test::default_accounts();
+            let government = default_accounts.alice;
+            let bob = default_accounts.bob;
+
+            test::push_execution_context(government);
+            let ballot_id = sign! { Ballot =>
+                government,
+                voters: Vec::new(),
+                proposal: Proposal {
+                    proposer: government,
+                    content: String::from("let's 996"),
+                },
+            };
+            let mut ballot_id = ballot_id.take().add(bob);
+            test::pop_execution_context();
+
+            test::push_execution_context(bob);
+            ballot_id.as_mut().vote(true);
+            test::pop_execution_context();
+
+            test::push_execution_context(bob);
+            ballot_id.as_mut().vote(false);
             test::pop_execution_context();
         }
 
         #[test]
-        #[should_panic(expected = "signing of contract `Ballot` is not permitted")]
-        fn unauthorized_1() {
+        #[should_panic]
+        fn unauthorized_signing() {
             let default_accounts = test::default_accounts();
             let government = default_accounts.alice;
             let bob = default_accounts.bob;
@@ -218,14 +255,14 @@ mod voting {
                 voters: Vec::new(),
                 proposal: Proposal {
                     proposer: government,
-                    content: String::from("take a holiday"),
+                    content: String::from("let's 996"),
                 },
             };
-        }*/
-/*
+        }
+
         #[test]
         #[should_panic(expected = "DO NOT excise right on an inexistent `Ballot`contract")]
-        fn unauthorized_2() {
+        fn exercise_on_a_temporary_contract() {
             let default_accounts = test::default_accounts();
             let government = default_accounts.alice;
 
@@ -243,7 +280,7 @@ mod voting {
 
         #[test]
         #[should_panic(expected = "DO NOT excise right on an inexistent `Ballot`contract")]
-        fn unauthorized_3() {
+        fn exercise_on_fetch() {
             let default_accounts = test::default_accounts();
             let government = default_accounts.alice;
 
@@ -263,14 +300,14 @@ mod voting {
         #[should_panic(
             expected = "exercising right `decide` of contract `Ballot` is not permitted"
         )]
-        fn unauthorized_4() {
+        fn unauthorized_exercising() {
             let default_accounts = test::default_accounts();
             let government = default_accounts.alice;
             let bob = default_accounts.bob;
 
             test::push_execution_context(government);
             let ballot_id = sign! {Ballot =>
-                government: address::empty(),
+                government,
                 voters: Vec::new(),
                 proposal: Proposal {
                     proposer: government,
@@ -280,8 +317,95 @@ mod voting {
             test::pop_execution_context();
 
             test::push_execution_context(bob);
-            ballot_id.take().decide();
+            ballot_id.exec(|ballot| ballot.decide());
             test::pop_execution_context();
-        }*/
+        }
+
+        #[test]
+        #[should_panic(expected = "cannot decide on tie")]
+        fn decide_on_tie() {
+            let default_accounts = test::default_accounts();
+            let government = default_accounts.alice;
+            let bob = default_accounts.bob;
+            let charlie = default_accounts.charlie;
+
+            test::push_execution_context(government);
+            let ballot_id = sign! { Ballot =>
+                government,
+                voters: Vec::new(),
+                proposal: Proposal {
+                    proposer: government,
+                    content: String::from("take a holiday"),
+                },
+            };
+            let ballot_id = ballot_id.take().add(bob);
+            let mut ballot_id = ballot_id.take().add(charlie);
+            test::pop_execution_context();
+
+            test::push_execution_context(bob);
+            ballot_id.as_mut().vote(true);
+            test::pop_execution_context();
+
+            test::push_execution_context(charlie);
+            ballot_id.as_mut().vote(false);
+            test::pop_execution_context();
+
+            test::push_execution_context(government);
+            ballot_id.exec(|ballot| ballot.decide());
+            test::pop_execution_context();
+        }
+
+        #[test]
+        #[should_panic(expected = "all voters must vote")]
+        fn not_all_voters_voted() {
+            let default_accounts = test::default_accounts();
+            let government = default_accounts.alice;
+            let bob = default_accounts.bob;
+            let charlie = default_accounts.charlie;
+
+            test::push_execution_context(government);
+            let ballot_id = sign! { Ballot =>
+                government,
+                voters: Vec::new(),
+                proposal: Proposal {
+                    proposer: government,
+                    content: String::from("take a holiday"),
+                },
+            };
+            let ballot_id = ballot_id.take().add(bob);
+            let mut ballot_id = ballot_id.take().add(charlie);
+            test::pop_execution_context();
+
+            test::push_execution_context(bob);
+            ballot_id.as_mut().vote(true);
+            test::pop_execution_context();
+
+            test::push_execution_context(government);
+            ballot_id.exec(|ballot| ballot.decide());
+            test::pop_execution_context();
+        }
+
+        #[test]
+        #[should_panic(expected = "voter not added")]
+        fn voter_not_added() {
+            let default_accounts = test::default_accounts();
+            let government = default_accounts.alice;
+            let bob = default_accounts.bob;
+
+            test::push_execution_context(government);
+            let mut ballot_id = sign! { Ballot =>
+                government,
+                voters: Vec::new(),
+                proposal: Proposal {
+                    proposer: government,
+                    content: String::from("take a holiday"),
+                },
+            };
+            test::pop_execution_context();
+
+            test::push_execution_context(bob);
+            ballot_id.as_mut().vote(true);
+            test::pop_execution_context();
+        }
     }
 }

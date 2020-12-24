@@ -26,7 +26,32 @@ use derive::wrapper;
 use proc_macro::TokenStream;
 
 cfg_if! {
-    if #[cfg(feature = "collaboration")] {
+    if #[cfg(all(feature = "contract", feature = "collaboration"))] {
+        compile_error! {
+            "compilation feature `contract` and `collaboration` can not be \
+             enabled simultaneously"
+        }
+    } else if #[cfg(all(feature = "collaboration", feature = "solidity-compatible"))] {
+        compile_error! {
+            "compilation feature `collaboration` and `solidity-compatible` can not be \
+             enabled simultaneously"
+        }
+    } else if #[cfg(all(feature = "collaboration", feature = "solidity-interface"))] {
+        compile_error! {
+            "compilation feature `collaboration` and `solidity-interface` can not be \
+             enabled simultaneously"
+        }
+    } else if #[cfg(all(feature = "solidity-compatible", feature = "solidity-interface"))]{
+        compile_error! {
+            "it's unnecessary to enable `solidity-interface` feature when \
+             `solidity-compatible` is enabled"
+        }
+    } else if #[cfg(all(feature = "contract", not(feature = "solidity-compatible")))] {
+        compile_error! {
+            "up till now, compilation feature `contract` and `solidity-compatible` must \
+             be enabled simultaneously"
+        }
+    } else if #[cfg(feature = "collaboration")] {
         mod collaboration;
         use derive::codec;
 

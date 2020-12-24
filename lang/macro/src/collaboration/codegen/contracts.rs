@@ -197,6 +197,8 @@ impl<'a> Contracts<'a> {
     
                 impl ContractId<#ident> {
                     pub fn take(self) -> #ident {
+                        use liquid_prelude::string::ToString;
+
                         let (contract, abolished) = self.abolishment_check();
                         let signers = <#ident as liquid_lang::AcquireSigners>::acquire_signers(contract);
                         if !__liquid_authorization_check(&signers) {
@@ -212,7 +214,6 @@ impl<'a> Contracts<'a> {
                         let encoded = <#ident as scale::Encode>::encode(contract);
                         let decoded = <#ident as scale::Decode>::decode(&mut encoded.as_slice()).unwrap();
                         let ptrs = <Self as FetchContract<#ident>>::fetch_ptrs();
-                        println!("origin {:p}", &decoded as *const #ident);
                         ptrs.push(&decoded as *const #ident);
                         decoded
                     }
@@ -232,20 +233,15 @@ impl<'a> Contracts<'a> {
                     #[cfg(test)]
                     pub fn exec<F, R>(&self, f: F) -> R
                     where
-                        F: FnOnce(Box<#ident>) -> R
+                        F: FnOnce(#ident) -> R
                     {
                         let (contract, abolished) = self.abolishment_check();
                         let encoded = <#ident as scale::Encode>::encode(contract);
                         let decoded = <#ident as scale::Decode>::decode(&mut encoded.as_slice()).unwrap();
-                        let boxed = Box::new(decoded);
-                        let ptr = Box::into_raw(boxed);
-                        println!("origin: {:p}", ptr);
-                        let ptrs = <Self as FetchContract<#ident>>::fetch_ptrs();
-                        let boxed = unsafe { Box::from_raw(ptr) };
-                        let len = ptrs.len();
-                        ptrs.push(ptr);
-                        let result = f(boxed);
-                        ptrs.swap_remove(len);
+                        let exec_flag = &mut __liquid_acquire_storage_instance().__liquid_under_exec;
+                        *exec_flag = true;
+                        let result = f(decoded);
+                        *exec_flag = false;
                         *abolished = true;
                         result
                     }

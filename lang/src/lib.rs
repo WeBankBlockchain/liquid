@@ -45,22 +45,7 @@ pub mod precompiled {
 use cfg_if::cfg_if;
 
 cfg_if! {
-    if #[cfg(all(feature = "contract", feature = "collaboration"))] {
-        compile_error! {
-            "compilation feature `contract` and `collaboration` can not be \
-             enabled simultaneously"
-        }
-    } else if #[cfg(all(feature = "collaboration", feature = "solidity-compatible"))] {
-        compile_error! {
-            "compilation feature `collaboration` and `solidity-compatible` can not be \
-             enabled simultaneously"
-        }
-    } else if #[cfg(all(feature = "solidity-compatible", feature = "solidity-interface"))]{
-        compile_error! {
-            "it's unnecessary to enable `solidity-interface` feature when \
-             `solidity-compatible` is enabled"
-        }
-    } else if #[cfg(feature = "collaboration")] {
+    if #[cfg(feature = "collaboration")] {
         pub trait Fetch {
             type Target;
             fn fetch(&self) -> Self::Target; 
