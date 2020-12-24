@@ -47,3 +47,4 @@ contract = [
 ]
 solidity-compatible = []
 collaboration = []
+solidity-interface = []

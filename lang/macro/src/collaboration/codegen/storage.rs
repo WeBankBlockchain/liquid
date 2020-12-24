@@ -87,6 +87,8 @@ impl<'a> Storage<'a> {
         quote! {
             pub struct Storage {
                 pub __liquid_authorizers: liquid_prelude::vec::Vec<address>,
+                #[cfg(test)]
+                pub __liquid_under_exec: bool,
                 #(#fields)*
             }
 
@@ -105,6 +107,8 @@ impl<'a> Storage<'a> {
                 fn new() -> Self {
                     let mut storage = Self {
                         __liquid_authorizers: liquid_prelude::vec::Vec::new(),
+                        #[cfg(test)]
+                        __liquid_under_exec: false,
                         #(#bind_stats)*
                         #(#ptrs_inits)*
                     };

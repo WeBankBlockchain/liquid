@@ -64,6 +64,7 @@ solidity-compatible = [
 ]
 solidity-interface = [
     "liquid_abi_codec",
+    "liquid_lang_macro/solidity-interface",
 ]
 collaboration = [
     "liquid_abi_codec",

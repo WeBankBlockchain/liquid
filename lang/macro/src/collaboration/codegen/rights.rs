@@ -84,16 +84,20 @@ impl<'a> GenerateCode for Rights<'a> {
                     #(#attrs)*
                     #[cfg_attr(feature = "std", allow(dead_code))]
                     pub fn #fn_ident(#inputs) #output {
-                        {
+                        loop {
+                            #[cfg(test)]
+                            if __liquid_acquire_storage_instance().__liquid_under_exec {
+                                break;
+                            }
+
                             // Validity check.
                             let self_addr = #self_ref as *const #contract_ident;
                             let ptrs = <ContractId::<#contract_ident> as FetchContract<#contract_ident>>::fetch_ptrs();
-                            println!("{:?}", ptrs);
-                            println!("get {:p}", self_addr);
                             let pos = ptrs.iter().position(|&ptr| ptr == self_addr);
                             #[allow(unused_variables)]
                             if let Some(pos) = pos {
                                 #rm_from_ptrs
+                                break;
                             } else {
                                 let mut error_info = String::from("DO NOT excise right on an inexistent `");
                                 error_info.push_str(#contract_ident_str);
