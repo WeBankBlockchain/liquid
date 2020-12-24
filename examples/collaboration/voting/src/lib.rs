@@ -139,8 +139,12 @@ mod voting {
                 },
             };
             let ballot_id = ballot_id.exec(|ballot| {
-                println!("fuck {:p}", &ballot as *const Ballot);
-                ballot.add(bob)
+                //println!("fuck {:p}", Box::into_raw(ballot) as *const Ballot);
+                //ballot.add(bob)
+                let raw = Box::into_raw(ballot);
+                unsafe {
+                    (*raw).add(bob)
+                }
             });
             //let ballot_id = ballot_id.take().add(charlie);
             /*

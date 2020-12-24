@@ -1,11 +1,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use liquid::storage;
 use liquid_lang as liquid;
 
 #[liquid::contract]
 mod erc20 {
+    use super::*;
     type Balance = u128;
-    use liquid_core::storage;
 
     #[liquid(storage)]
     struct Erc20 {
@@ -112,7 +113,7 @@ mod erc20 {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use liquid_core::env::test;
+        use liquid::env::test;
 
         #[test]
         fn new_works() {

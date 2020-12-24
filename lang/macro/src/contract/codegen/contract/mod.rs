@@ -42,6 +42,8 @@ impl GenerateCode for ir::Contract {
             mod #ident {
                 #[allow(unused_imports)]
                 use liquid_lang::intrinsics::*;
+                #[allow(unused_imports)]
+                use liquid_lang::Env;
                 #types
 
                 mod __liquid_private {
@@ -66,9 +68,7 @@ impl GenerateCode for ir::Contract {
 
                 #event_struct
 
-                #(
-                    #rust_items
-                )*
+                #(#rust_items)*
             }
 
             #[cfg(feature = "liquid-abi-gen")]
