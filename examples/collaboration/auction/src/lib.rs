@@ -8,6 +8,8 @@
 // 3. Each bidder responds to the invitation with a `Bid`.
 // 4. When the auction finishes at `Auction.end` time, an off-ledger process collects all the bids, calculates the resulting allocations as an `AuctionResult`.
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use liquid::InOut;
 use liquid_lang as liquid;
 
@@ -54,7 +56,7 @@ mod auction {
             let now = self.env().now();
             assert!(now < self.auction.end && now >= self.auction.start);
 
-            create! { Bid =>
+            sign! { Bid =>
                 allocation: Allocation {
                     party: self.buyer,
                     price,
@@ -80,7 +82,7 @@ mod auction {
     impl Auction {
         /// Sent individually to each participant (bidder) at start of auction.
         pub fn invite_bidder(&self, buyer: address) -> ContractId<AuctionInvitation> {
-            create! { AuctionInvitation =>
+            sign! { AuctionInvitation =>
                 buyer,
                 auction: self.clone(),
             }
@@ -103,7 +105,7 @@ mod auction {
                 final_allocs.push(allocation);
             }
 
-            create! { AuctionResult =>
+            sign! { AuctionResult =>
                 auction: self.clone(),
                 allocations: final_allocs,
             }
@@ -121,5 +123,3 @@ mod auction {
         (rem_qty - allocation.quantity, allocation)
     }
 }
-
-fn main() {}

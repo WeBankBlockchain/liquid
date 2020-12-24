@@ -9,6 +9,8 @@
 // 4. The players now take turns until the `play` choice detects a final state (win or tie).
 // 5. When the game is finished a `Result` contract is created containing the state and outcome of the game.
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use liquid::InOut;
 use liquid_lang as liquid;
 
@@ -52,7 +54,7 @@ mod tic_tac_toe {
     impl GameInvite {
         #[liquid(belongs_to = "player2")]
         pub fn accept(self) -> ContractId<Game> {
-            create! { Game =>
+            sign! { Game =>
                 current: self.player1,
                 moves: Vec::new(),
                 player1: self.player1,
@@ -99,8 +101,8 @@ mod tic_tac_toe {
                 self.player1
             };
 
-            if self.has_won(self.current) {
-                let result = create! { Result =>
+            if has_won(&self, self.current) {
+                let result = sign! { Result =>
                     outcome: Outcome::Winner(self.current),
                     player1: self.player1,
                     player2: self.player1,
@@ -109,7 +111,7 @@ mod tic_tac_toe {
                 };
                 TurnResult::Result(result)
             } else if self.moves.len() == (self.size * self.size) as usize {
-                let result = create! { Result =>
+                let result = sign! { Result =>
                     outcome: Outcome::Tie,
                     player1: self.player1,
                     player2: self.player1,
@@ -119,43 +121,39 @@ mod tic_tac_toe {
                 TurnResult::Result(result)
             } else {
                 self.current = opponent;
-                TurnResult::Game(create! { Self =>
+                TurnResult::Game(sign! { Self =>
                     ..self
                 })
             }
         }
     }
 
-    impl Game {
-        fn has_won(&self, player: address) -> bool {
-            let get_moves = || self.moves.iter().filter(|m| m.player == player);
+    fn has_won(game: &Game, player: address) -> bool {
+        let get_moves = || game.moves.iter().filter(|m| m.player == player);
 
-            let has_all_horizontal =
-                |i| get_moves().filter(|m| m.x == i).count() == self.size as usize;
-            let has_all_vertical =
-                |i| get_moves().filter(|m| m.y == i).count() == self.size as usize;
-            let has_all_diagonal = |i| {
-                get_moves().filter(|m| m.y == i && m.x == i).count() == self.size as usize
-            };
-            let has_all_counter_diagonal = |i| {
-                get_moves()
-                    .filter(|m| m.y == i && m.x == self.size - 1 - i)
-                    .count()
-                    == self.size as usize
-            };
+        let has_all_horizontal =
+            |i| get_moves().filter(|m| m.x == i).count() == game.size as usize;
+        let has_all_vertical =
+            |i| get_moves().filter(|m| m.y == i).count() == game.size as usize;
+        let has_all_diagonal = |i| {
+            get_moves().filter(|m| m.y == i && m.x == i).count() == game.size as usize
+        };
+        let has_all_counter_diagonal = |i| {
+            get_moves()
+                .filter(|m| m.y == i && m.x == game.size - 1 - i)
+                .count()
+                == game.size as usize
+        };
 
-            let has_won_horizontal = (0..self.size).all(|i| has_all_horizontal(i));
-            let has_won_vertical = (0..self.size).all(|i| has_all_vertical(i));
-            let has_won_diagonal = (0..self.size).all(|i| has_all_diagonal(i));
-            let has_won_counter_diagonal =
-                (0..self.size).all(|i| has_all_counter_diagonal(i));
+        let has_won_horizontal = (0..game.size).all(|i| has_all_horizontal(i));
+        let has_won_vertical = (0..game.size).all(|i| has_all_vertical(i));
+        let has_won_diagonal = (0..game.size).all(|i| has_all_diagonal(i));
+        let has_won_counter_diagonal =
+            (0..game.size).all(|i| has_all_counter_diagonal(i));
 
-            has_won_horizontal
-                || has_won_vertical
-                || has_won_diagonal
-                || has_won_counter_diagonal
-        }
+        has_won_horizontal
+            || has_won_vertical
+            || has_won_diagonal
+            || has_won_counter_diagonal
     }
 }
-
-fn main() {}

@@ -12,14 +12,13 @@
 
 #![allow(unused_imports)]
 #![allow(unused_macros)]
-#![allow(dead_code)]
 
 extern crate proc_macro;
 
 #[macro_use]
 mod error;
+mod common;
 mod derive;
-mod traits;
 mod utils;
 
 use cfg_if::cfg_if;

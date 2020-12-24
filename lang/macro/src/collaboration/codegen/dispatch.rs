@@ -12,7 +12,7 @@
 
 use crate::{
     collaboration::{codegen::utils, ir::*},
-    traits::GenerateCode,
+    common::GenerateCode,
     utils::filter_non_liquid_attributes,
 };
 use derive_more::From;
@@ -65,10 +65,11 @@ impl<'a> Dispatch<'a> {
         [hash[0], hash[1], hash[2], hash[3]]
     }
 
-    fn generate_contract_selector(contract: &ItemContract) -> [u8; 4] {
+    fn generate_contract_selector(contract: &ItemContract, for_abolish: bool) -> [u8; 4] {
         let contract_name = &contract.ident;
+        let prefix = if for_abolish { "~" } else { "" };
         let hash = liquid_primitives::hash::hash(
-            format!("{}", contract_name.to_string()).as_bytes(),
+            format!("{}{}", prefix, contract_name.to_string()).as_bytes(),
         );
         [hash[0], hash[1], hash[2], hash[3]]
     }
@@ -81,7 +82,7 @@ impl<'a> Dispatch<'a> {
     }
 
     fn generate_contract_id(contract: &ItemContract) -> u32 {
-        let selector = Self::generate_contract_selector(contract);
+        let selector = Self::generate_contract_selector(contract, false);
         let mut buf = [0u8; 4];
         buf.copy_from_slice(&selector[..4]);
         u32::from_be_bytes(buf)
@@ -92,8 +93,11 @@ impl<'a> Dispatch<'a> {
         let traits = all_item_rights
             .iter()
             .map(|item_rights| {
+                let ty = &item_rights.ident;
                 let rights = &item_rights.rights;
-                rights.iter().map(|right| self.generate_right_trait(right))
+                rights
+                    .iter()
+                    .map(move |right| self.generate_right_trait(right, ty))
             })
             .flatten();
 
@@ -113,7 +117,7 @@ impl<'a> Dispatch<'a> {
         }
     }
 
-    fn generate_right_trait(&self, right: &Right) -> TokenStream2 {
+    fn generate_right_trait(&self, right: &Right, ty: &Ident) -> TokenStream2 {
         let right_id = Self::generate_right_id(right);
         let right_marker = quote! { Marker::<[(); #right_id as usize]> };
         let sig = &right.sig;
@@ -122,7 +126,7 @@ impl<'a> Dispatch<'a> {
         let input_ty_checker = utils::generate_ty_checker(input_tys.as_slice());
         let right_input = quote! {
             impl liquid_lang::FnInput for #right_marker {
-                type Input = (u32, (#(#input_tys,)*));
+                type Input = (ContractId::<#ty>, (#(#input_tys,)*));
             }
         };
 
@@ -180,7 +184,7 @@ impl<'a> Dispatch<'a> {
             }
         };
 
-        let selector = Self::generate_contract_selector(contract);
+        let selector = Self::generate_contract_selector(contract, false);
         let contract_selector = {
             quote! {
                 impl liquid_lang::FnSelector for #contract_marker {
@@ -201,11 +205,6 @@ impl<'a> Dispatch<'a> {
     ) -> TokenStream2 {
         use heck::SnakeCase;
 
-        let ident = &item_rights.ty;
-        let field_name = Ident::new(
-            &format!("__liquid_{}", ident.to_string().to_snake_case()),
-            Span::call_site(),
-        );
         let rights = &item_rights.rights;
         let fragments = rights.iter().map(|right| {
             let right_id = Self::generate_right_id(right);
@@ -213,31 +212,17 @@ impl<'a> Dispatch<'a> {
             let sig = &right.sig;
             let right_name = &sig.ident;
             let input_idents = utils::generate_input_idents(&sig.inputs);
+
             let pat_idents = if input_idents.is_empty() {
-                quote! { (id, _) }
+                quote! { (mut contract_id, _) }
             } else {
-                quote! { (id, (#(#input_idents,)*)) }
+                quote! { (mut contract_id, (#(#input_idents,)*)) }
             };
 
-            let (ref_ty, get_ty) = if sig.is_mut() {
-                (quote! { mut }, quote! { get_mut })
-            } else {
-                (quote! { }, quote! { get })
-            };
-
-            let execute = if sig.is_self_ref() {
-                quote! {
-                    let contract = &#ref_ty storage.#field_name.#get_ty(&id).unwrap().0;
-                    contract.#right_name(#(#input_idents,)*)
-                }
-            } else {
-                quote! {
-                    let (contract, abolished) = storage.#field_name.get_mut(&id).unwrap();
-                    *abolished = true;
-                    let encoded = <#ident as scale::Encode>::encode(contract);
-                    let cloned = <#ident as scale::Decode>::decode(&mut encoded.as_slice()).unwrap();
-                    cloned.#right_name(#(#input_idents,)*)
-                }
+            let construct = match (sig.is_self_ref(), sig.is_mut()) {
+                (true, true) => quote! { as_mut },
+                (true, false) => quote! { as_ref },
+                (false, _) => quote! { take },
             };
 
             let flush = if !sig.is_self_ref() || sig.is_mut() {
@@ -253,21 +238,14 @@ impl<'a> Dispatch<'a> {
                     let #pat_idents = <<#right_marker as liquid_lang::FnInput>::Input as scale::Decode>::decode(&mut data.as_slice())
                         .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
 
-                    if !storage.#field_name.contains_key(&id) {
-                        liquid_lang::env::revert(&"the contract is not exist".to_owned());
-                    }
-
-                    let abolished = storage.#field_name.get(&id).unwrap().1;
-                    if abolished {
-                        liquid_lang::env::revert(&"the contract had been abolished".to_owned());
-                    }
-
-                    let result = { #execute };
+                    #[allow(unused_mut)]
+                    let result = contract_id.#construct().#right_name(#(#input_idents,)*);
 
                     #flush
 
                     if core::any::TypeId::of::<<#right_marker as liquid_lang::FnOutput>::Output>() != core::any::TypeId::of::<()>() {
                         liquid_lang::env::finish(&result);
+                        unreachable!();
                     }
 
                     return Ok(());
@@ -285,6 +263,7 @@ impl<'a> Dispatch<'a> {
         item_contract: &ItemContract,
     ) -> TokenStream2 {
         let contract_ident = &item_contract.ident;
+        let contract_ident_str = contract_ident.to_string();
         let contract_id = Self::generate_contract_id(item_contract);
         let contract_marker = quote! { Marker::<[(); #contract_id as usize]> };
         let input_idents = item_contract
@@ -293,15 +272,50 @@ impl<'a> Dispatch<'a> {
             .iter()
             .map(|field| &field.ident)
             .collect::<Vec<_>>();
+        let storage_field_name = &item_contract.storage_field_name;
+        let abolish_selector = Self::generate_contract_selector(item_contract, true);
         quote! {
             if selector == <#contract_marker as liquid_lang::FnSelector>::SELECTOR {
                 let (#(#input_idents,)*) = <<#contract_marker as liquid_lang::FnInput>::Input as scale::Decode>::decode(&mut data.as_slice())
                     .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
-                let contract_id = liquid_macro::create! (#contract_ident => #(#input_idents,)*);
+                let contract_id = liquid_macro::sign! (#contract_ident => #(#input_idents,)*);
                 <Storage as liquid_lang::storage::Flush>::flush(storage);
                 liquid_lang::env::finish(&contract_id);
 
                 return Ok(());
+            }
+
+            if selector == [#(#abolish_selector,)*] {
+                let id = <u32 as scale::Decode>::decode(&mut data.as_slice())
+                    .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+
+                use liquid_prelude::string::ToString;
+
+                if !storage.#storage_field_name.contains_key(&id) {
+                    let mut error_info = String::from("the contract `");
+                    error_info.push_str(#contract_ident_str);
+                    error_info.push_str("` with id `");
+                    error_info.push_str(&id.to_string());
+                    error_info.push_str("` is not exist");
+                    liquid_lang::env::revert(&error_info);
+                    unreachable!();
+                }
+
+                let abolished = &mut storage.#storage_field_name.get_mut(&id).unwrap().1;
+                if *abolished {
+                    let mut error_info = String::from("the contract `");
+                    error_info.push_str(#contract_ident_str);
+                    error_info.push_str("` with id `");
+                    error_info.push_str(&id.to_string());
+                    error_info.push_str("` had been abolished already");
+                    liquid_lang::env::revert(&error_info);
+                    unreachable!();
+                }
+
+                *abolished = true;
+                <Storage as liquid_lang::storage::Flush>::flush(storage);
+
+                return Ok(())
             }
         }
     }
@@ -325,12 +339,8 @@ impl<'a> Dispatch<'a> {
                     let selector = call_data.selector;
                     let data = call_data.data;
 
-                    #(
-                        #rights_fragments
-                    )*
-                    #(
-                        #contract_fragments
-                    )*
+                    #(#rights_fragments)*
+                    #(#contract_fragments)*
 
                     Err(liquid_lang::DispatchError::UnknownSelector)
                 }
@@ -346,35 +356,49 @@ impl<'a> Dispatch<'a> {
     #[cfg(not(feature = "std"))]
     fn generate_entry_point(&self) -> TokenStream2 {
         let contracts = &self.collaboration.contracts;
-        let contract_idents = contracts
+        let contract_names = contracts
             .iter()
-            .map(|contract| contract.ident.to_string())
+            .map(|contract| {
+                let ident_str = contract.ident.to_string();
+                quote! { liquid_prelude::string::String::from(#ident_str) }
+            })
             .collect::<Vec<_>>();
-        let existent_errors = contract_idents
-            .iter()
-            .map(|ident| format!("contract `{}` already exists", ident));
-        let register_errors = contract_idents
-            .iter()
-            .map(|ident| format!("fail to register contract `{}`", ident));
-        let addr_check = contract_idents.iter().zip(existent_errors).map(|(ident, error)| {
-            quote! {
-                let addr = cns.get_contract_address(#ident.to_owned(), "0".to_owned());
-                if let Some(addr) = addr {
-                    if addr != address::empty() {
-                        liquid_lang::env::revert(&#error.to_owned())
-                    }
-                }
-            }
+        let existent_errors = contracts.iter().map(|contract| {
+            let ident = &contract.ident;
+            let info = format!("contract `{}` already exists", ident);
+            quote! { &liquid_prelude::string::String::from(#info) }
         });
-        let register = contract_idents.iter().zip(register_errors).map(|(ident, error)| {
+        let register_errors = contracts.iter().map(|contract| {
+            let ident = &contract.ident;
+            let info = format!("fail to register contract `{}`", ident);
+            quote! { &liquid_prelude::string::String::from(#info) }
+        });
+        let version_0 = quote! { liquid_prelude::string::String::from("0") };
+        let empty_abi = quote! { liquid_prelude::string::String::from("") };
+
+        let addr_check =
+            contract_names
+                .iter()
+                .zip(existent_errors)
+                .map(|(name, error)| {
+                    quote! {
+                        let addr = CNS::get_contract_address(#name, #version_0);
+                        if let Some(addr) = addr {
+                            if addr != address::empty() {
+                                liquid_lang::env::revert(#error)
+                            }
+                        }
+                    }
+                });
+        let register = contract_names.iter().zip(register_errors).map(|(name, error)| {
             quote! {
-                let ret = cns.insert(#ident.to_owned(), "0".to_owned(), self_addr.clone(), "".to_owned());
-                let error = #error.to_owned();
+                let ret = CNS::insert(#name, #version_0, self_addr.clone(), #empty_abi);
+                let error = #error;
                 match ret {
                     Some(code) => if code == 0.into() {
-                        liquid_lang::env::revert(&error);
+                        liquid_lang::env::revert(error);
                     }
-                    None => liquid_lang::env::revert(&error),
+                    None => liquid_lang::env::revert(error),
                 }
             }
         });
@@ -391,9 +415,9 @@ impl<'a> Dispatch<'a> {
             #[no_mangle]
             fn deploy() {
                 use liquid_prelude::string::ToString;
+                use liquid_lang::precompiled::CNS;
 
                 let self_addr = liquid_lang::env::get_address().to_string();
-                let cns = liquid_lang::precompiled::CNS::new();
 
                 #(#addr_check)*
                 #(#register)*

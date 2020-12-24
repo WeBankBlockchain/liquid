@@ -14,8 +14,8 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 
-mod create;
 mod seq;
+mod sign;
 mod utils;
 
 #[proc_macro]
@@ -28,8 +28,8 @@ pub fn seq(input: TokenStream) -> TokenStream {
 
 #[cfg(feature = "collaboration")]
 #[proc_macro]
-pub fn create(input: TokenStream) -> TokenStream {
-    match create::create_impl(input.into()) {
+pub fn sign(input: TokenStream) -> TokenStream {
+    match sign::sign_impl(input.into()) {
         Ok(expanded) => expanded.into(),
         Err(error) => error.into_compile_error().into(),
     }

@@ -9,6 +9,8 @@
 // 2. `sender` excises `send_iou` choice on the `IouSender` contract.
 // 3. An `Iou` transfer from `sender` to `receiver`.
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use liquid_lang as liquid;
 
 #[liquid::collaboration]
@@ -26,7 +28,7 @@ mod iou {
     impl Iou {
         #[liquid(belongs_to = "owner, ^new_owner")]
         pub fn mutual_transfer(self, new_owner: address) -> ContractId<Iou> {
-            create! { Self =>
+            sign! { Self =>
                 owner: new_owner,
                 ..self
             }
@@ -50,5 +52,3 @@ mod iou {
         }
     }
 }
-
-fn main() {}

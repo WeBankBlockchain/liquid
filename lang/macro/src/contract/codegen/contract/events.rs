@@ -11,7 +11,7 @@
 // limitations under the License.
 
 use crate::contract::ir::Contract;
-use crate::traits::GenerateCode;
+use crate::common::GenerateCode;
 use crate::utils as lang_utils;
 use derive_more::From;
 use proc_macro2::TokenStream as TokenStream2;

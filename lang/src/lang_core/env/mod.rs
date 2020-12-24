@@ -13,8 +13,8 @@
 #![allow(dead_code)]
 
 pub(crate) mod api;
-mod backend;
-mod calldata;
+pub(crate) mod backend;
+pub(crate) mod calldata;
 pub mod engine;
 pub mod error;
 

@@ -15,7 +15,7 @@ use crate::{
         codegen::utils,
         ir::{Contract, Function, FunctionKind},
     },
-    traits::GenerateCode,
+    common::GenerateCode,
 };
 use derive_more::From;
 use proc_macro2::{Ident, TokenStream as TokenStream2};
@@ -199,6 +199,7 @@ impl<'a> Dispatch<'a> {
 
                 if core::any::TypeId::of::<<#namespace as liquid_lang::FnOutput>::Output>() != core::any::TypeId::of::<()>() {
                     liquid_lang::env::finish(&result);
+                    unreachable!();
                 }
 
                 return Ok(());

@@ -10,11 +10,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::collaboration::{ir, ir::utils::*};
+use crate::{
+    collaboration::{ir, ir::utils::*},
+    common::AttrValue,
+};
 use core::convert::TryFrom;
 use either::Either;
 use itertools::Itertools;
-use proc_macro2::Ident;
+use proc_macro2::{Ident, Span};
 use std::collections::BTreeMap;
 use syn::{
     parse::{Parse, ParseStream},
@@ -47,7 +50,7 @@ impl Parse for ir::Marker {
             Ok(ir::Marker {
                 paren_token,
                 ident,
-                value: None,
+                value: (AttrValue::None, Span::call_site()),
             })
         } else {
             if SINGLE_MARKER
@@ -62,11 +65,12 @@ impl Parse for ir::Marker {
             }
 
             let _ = content.parse::<Token![=]>()?;
-            let value = content.parse::<syn::LitStr>()?;
+            let value = content.parse::<AttrValue>()?;
+            let span = value.span();
             Ok(ir::Marker {
                 paren_token,
                 ident,
-                value: Some((value.value(), value.span())),
+                value: (value, span),
             })
         }
     }
@@ -189,11 +193,23 @@ impl TryFrom<syn::ItemStruct> for ir::ItemContract {
 
             field_signers.push(ir::Selector {
                 from: ir::SelectFrom::This(name.clone()),
-                with: if let Some(signers) = signers[0].value.as_ref() {
-                    let select_path = parse_select_path(&signers.0, signers.1)?;
-                    Some(select_path)
-                } else {
-                    None
+                with: match &signers[0].value {
+                    (AttrValue::None, _) => None,
+                    (AttrValue::LitStr(path), span) => {
+                        let select_path = parse_select_path(&path.value(), *span)?;
+                        Some(select_path)
+                    }
+                    (AttrValue::Ident(ident), span) => {
+                        if ident == "inherited" {
+                            Some(ir::SelectWith::Inherited(field.ty.clone()))
+                        } else {
+                            bail_span!(
+                                *span,
+                                "invalid indicators of signers: `{}`",
+                                ident
+                            )
+                        }
+                    }
                 },
             });
         }
@@ -202,12 +218,15 @@ impl TryFrom<syn::ItemStruct> for ir::ItemContract {
             bail!(item_struct, "this contract has no signers")
         }
 
+        let storage_field_name = generate_storage_field_name(&item_struct.ident);
+
         Ok(ir::ItemContract {
             attrs: item_struct.attrs,
             struct_token: item_struct.struct_token,
             ident: item_struct.ident,
             fields: fields.clone(),
             field_signers,
+            storage_field_name,
             span,
         })
     }
@@ -406,9 +425,18 @@ impl TryFrom<(syn::ImplItemMethod, Selectors, Ident)> for ir::Right {
                 }
             }
 
-            let owners = owners[0].value.as_ref().unwrap();
-            let owner_parser = OwnersParser::new(&owners.0, owners.1, true)?;
-            owner_parser.parse()?
+            let owners = &owners[0];
+            match &owners.value {
+                (AttrValue::None, _) => bail!(&owners.ident, "no right owner specified"),
+                (AttrValue::Ident(ident), _) => {
+                    bail!(ident, "invalid indicator of right owner: `{}`", ident)
+                }
+                (AttrValue::LitStr(path), span) => {
+                    let path = &path.value();
+                    let owner_parser = OwnersParser::new(&path, *span, true)?;
+                    owner_parser.parse()?
+                }
+            }
         };
 
         let span = method.span();
@@ -507,10 +535,13 @@ impl TryFrom<(syn::ItemImpl, Selectors)> for ir::ItemRights {
             }
         }
 
+        let storage_field_name = generate_storage_field_name(&ident);
+
         Ok(Self {
             attrs: item_impl.attrs,
             impl_token: item_impl.impl_token,
-            ty: ident,
+            ident,
+            storage_field_name,
             brace_token: item_impl.brace_token,
             rights: functions,
             constants,
@@ -553,16 +584,31 @@ impl TryFrom<syn::Item> for ir::Item {
                 }
 
                 if rights_marker.is_empty() {
-                    Ok(ir::Item::Rust(Box::new(item_impl.into())))
+                    bail!(
+                        item_impl,
+                        "`impl` block in collaboration must be tagged with \
+                         `#[liquid(rights)]` or `#[liquid(rights_belong_to)]` attribute"
+                    )
                 } else {
-                    let rights_marker = rights_marker[0];
+                    let rights_marker = &rights_marker[0];
                     let ident = rights_marker.ident.to_string();
 
                     let outer_owners = if ident == "rights_belong_to" {
-                        let owners = rights_marker.value.as_ref().unwrap();
-                        let owners_parser =
-                            OwnersParser::new(&owners.0, owners.1, false)?;
-                        owners_parser.parse()?
+                        match &rights_marker.value {
+                            (AttrValue::None, _) => {
+                                bail!(&rights_marker.ident, "no right owner specified")
+                            }
+                            (AttrValue::Ident(ident), _) => bail!(
+                                ident,
+                                "invalid indicator of right owner: `{}`",
+                                ident
+                            ),
+                            (AttrValue::LitStr(path), span) => {
+                                let path = path.value();
+                                let owner_parser = OwnersParser::new(&path, *span, true)?;
+                                owner_parser.parse()?
+                            }
+                        }
                     } else {
                         vec![]
                     };

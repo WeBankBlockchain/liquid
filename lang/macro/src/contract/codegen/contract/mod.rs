@@ -16,7 +16,7 @@ mod events;
 mod storage;
 mod testable;
 
-use crate::{contract::ir, traits::GenerateCode, utils};
+use crate::{contract::ir, common::GenerateCode, utils};
 use abi_gen::ABIGen;
 use dispatch::Dispatch;
 use events::{EventStructs, Events};

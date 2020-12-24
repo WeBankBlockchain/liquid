@@ -61,89 +61,10 @@ cfg_if! {
              `solidity-compatible` is enabled"
         }
     } else if #[cfg(feature = "collaboration")] {
-        pub struct ContractId<T>
-        where
-            T: You_Should_Use_An_Valid_Contract_Type
-        {
-            pub __liquid_index: u32,
-            pub __liquid_marker: ::core::marker::PhantomData<fn() -> T>,
+        pub trait Fetch {
+            type Target;
+            fn fetch(&self) -> Self::Target; 
         }
-
-        impl<T> Copy for ContractId<T>
-        where
-            T: You_Should_Use_An_Valid_Contract_Type
-        {
-        }
-
-        impl<T> Clone for ContractId<T>
-        where
-        T: You_Should_Use_An_Valid_Contract_Type
-        {
-            fn clone(&self) -> ContractId<T> {
-                *self
-            }
-        }
-
-        impl<T> scale::Encode for ContractId<T>
-        where
-            T: You_Should_Use_An_Valid_Contract_Type
-        {
-            fn encode(&self) -> Vec<u8> {
-                <u32 as scale::Encode>::encode(&self.__liquid_index)
-            }
-        }
-
-        impl<T> scale::Decode for ContractId<T>
-        where
-            T: You_Should_Use_An_Valid_Contract_Type
-        {
-            fn decode<I: scale::Input>(value: &mut I) -> Result<Self, scale::Error> {
-                let __liquid_index = <u32 as scale::Decode>::decode(value)?;
-                Ok(Self {
-                    __liquid_index,
-                    __liquid_marker: Default::default()
-                })
-            }
-        }
-
-        impl<T> ::core::cmp::PartialEq for ContractId<T>
-        where
-            T: You_Should_Use_An_Valid_Contract_Type
-        {
-            fn eq(&self, other: &Self) -> bool {
-                self.__liquid_index == other.__liquid_index
-            }
-        }
-
-        impl<T> You_Should_Use_An_Valid_Field_Type for ContractId<T>
-        where
-            T: You_Should_Use_An_Valid_Contract_Type
-        {
-        }
-
-        impl<T> You_Should_Use_An_Valid_Input_Type for ContractId<T>
-        where
-            T: You_Should_Use_An_Valid_Contract_Type
-        {
-        }
-
-        impl<T> You_Should_Use_An_Valid_Return_Type for ContractId<T>
-        where
-            T: You_Should_Use_An_Valid_Contract_Type
-        {
-        }
-
-        #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Default, scale::Encode, scale::Decode)]
-        #[allow(non_camel_case_types)]
-        pub struct Contract_Constructing_Is_Forbidden(pub bool);
-
-        impl Clone for Contract_Constructing_Is_Forbidden {
-            fn clone(&self) -> Self {
-                Self(true)
-            }
-        }
-
-        impl You_Should_Use_An_Valid_Field_Type for Contract_Constructing_Is_Forbidden {}
 
         pub use liquid_lang_macro::{collaboration, InOut};
     } else if #[cfg(all(feature = "contract", feature = "solidity-compatible"))] {

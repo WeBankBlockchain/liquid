@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod contract_id;
 mod contracts;
 mod dispatch;
 mod path_visitor;
@@ -18,11 +19,12 @@ mod storage;
 mod utils;
 
 use crate::{
-    collaboration::ir::Collaboration, traits::GenerateCode, utils as macro_utils,
+    collaboration::ir::Collaboration, common::GenerateCode, utils as macro_utils,
 };
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
+use contract_id::ContractId;
 use contracts::Contracts;
 use dispatch::Dispatch;
 use rights::Rights;
@@ -37,19 +39,20 @@ impl GenerateCode for Collaboration {
         let contracts = Contracts::from(self).generate_code();
         let dispatch = Dispatch::from(self).generate_code();
         let rights = Rights::from(self).generate_code();
+        let contract_id = ContractId::generate_code();
 
         quote! {
             mod #ident {
                 #[allow(unused_imports)]
-                use liquid_lang::{intrinsics::*, ContractId};
+                use liquid_lang::intrinsics::*;
                 #[allow(unused_imports)]
-                use liquid_macro::create;
+                use liquid_macro::sign;
+                #[allow(unused_imports)]
+                use liquid_lang::Env;
+                #[allow(unused_imports)]
+                use liquid_lang::FetchContract;
                 #types
-                trait __LiquidFetch<T> {
-                    fn fetch(&self) -> &T;
-                    fn fetch_mut(&self) -> &mut T;
-                    fn fetch_exclusive(&self) -> T;
-                }
+                #contract_id
 
                 #contracts
                 #rights
@@ -61,6 +64,8 @@ impl GenerateCode for Collaboration {
                 }
 
                 use __liquid_private::__liquid_acquire_storage_instance;
+                use __liquid_private::__liquid_acquire_authorizers;
+                use __liquid_private::__liquid_authorization_check;
 
                 #(#rust_items)*
             }

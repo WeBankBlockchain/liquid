@@ -13,7 +13,7 @@
 mod codegen;
 mod ir;
 
-use crate::{traits::GenerateCode, utils::check_idents};
+use crate::{common::GenerateCode, utils::check_idents};
 use proc_macro2::TokenStream as TokenStream2;
 use std::convert::TryFrom;
 use syn::Result;

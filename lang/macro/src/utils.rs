@@ -20,6 +20,7 @@ pub fn check_idents(input: TokenStream2) -> Result<(), Error> {
         match token {
             TokenTree::Ident(ident) => {
                 if ident.to_string().starts_with("__liquid")
+                    || ident.to_string().starts_with("__Liquid")
                     || ident.to_string().starts_with("__LIQUID")
                 {
                     return Err(format_err_span!(
@@ -39,6 +40,7 @@ pub fn check_idents(input: TokenStream2) -> Result<(), Error> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn calculate_fn_id<T>(ident: &T) -> usize
 where
     T: ToString,

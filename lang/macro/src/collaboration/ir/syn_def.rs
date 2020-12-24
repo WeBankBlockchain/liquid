@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::collaboration::obj_path;
+use crate::{collaboration::obj_path, common::AttrValue};
 use derive_more::From;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::ToTokens;
@@ -52,6 +52,7 @@ impl Spanned for SelectFrom {
 pub enum SelectWith {
     Func(syn::ExprPath),
     Obj(obj_path::Ast),
+    Inherited(syn::Type),
 }
 
 #[derive(Clone)]
@@ -72,6 +73,13 @@ pub struct ItemContract {
     pub fields: syn::FieldsNamed,
     /// Signers of the contract.
     pub field_signers: Vec<Selector>,
+    /// A contract will be mapped to a `Mapping` in storage.
+    /// For example, the contract `#[liquid(contract)] struct Foo { ... }`
+    /// is mapped to a field with type `Mapping<u32, Foo>` in storage,
+    /// and the name of this field is composed in the form of "__liquid_"
+    /// with contract name in snake case followed. In the example, the
+    /// field name will be "__liquid_foo".
+    pub storage_field_name: Ident,
     /// Span of the contract.
     pub span: Span,
 }
@@ -90,7 +98,9 @@ pub struct ItemRights {
     /// The `impl` token.
     pub impl_token: Token![impl],
     /// The implementer type.
-    pub ty: Ident,
+    pub ident: Ident,
+    /// Same to `storage_field_name` in `ItemContract`
+    pub storage_field_name: Ident,
     /// The `{` and `}` tokens.
     pub brace_token: syn::token::Brace,
     /// The rights.
@@ -220,7 +230,7 @@ pub struct Marker {
     /// The single identifier.
     pub ident: Ident,
     /// The optional attribute value assigned to the identifier.
-    pub value: Option<(String, Span)>,
+    pub value: (AttrValue, Span),
 }
 
 impl Spanned for Marker {

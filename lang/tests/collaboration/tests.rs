@@ -13,11 +13,9 @@
 #[test]
 fn compile_tests() {
     let t = trybuild::TestCases::new();
-    t.pass("tests/collaboration/ui/pass/01-voting.rs");
-    t.pass("tests/collaboration/ui/pass/02-tic-tac-toe.rs");
-    t.pass("tests/collaboration/ui/pass/03-auction.rs");
-    t.pass("tests/collaboration/ui/pass/04-role.rs");
-    t.pass("tests/collaboration/ui/pass/05-shop.rs");
+    t.pass("tests/collaboration/ui/pass/01-noop.rs");
+    t.pass("tests/collaboration/ui/pass/02-right-belongs-to-everyone.rs");
+    t.pass("tests/collaboration/ui/pass/03-inherited-signers.rs");
     t.compile_fail("tests/collaboration/ui/fail/01-no-signers.rs");
     t.compile_fail("tests/collaboration/ui/fail/02-no-contract.rs")
 }

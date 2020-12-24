@@ -13,11 +13,11 @@
 mod mockable;
 
 use crate::{
+    common::GenerateCode,
     contract::{
         codegen::utils as codegen_utils,
         ir::{ForeignFn, Interface, LangType},
     },
-    traits::GenerateCode,
     utils as lang_utils,
 };
 use either::Either;
@@ -375,7 +375,7 @@ impl Interface {
             }
 
             impl scale::Decode for Interface {
-                fn decode<I: scale::Input>(value: &mut I) -> Result<Self, scale::Error> {
+                fn decode<I: scale::Input>(value: &mut I) -> ::core::result::Result<Self, scale::Error> {
                     let addr = liquid_primitives::types::Address::decode(value)?;
                     Ok(Self::at(addr))
                 }
@@ -428,7 +428,7 @@ impl Interface {
                     fn decode(
                         slices: &[liquid_abi_codec::Word],
                         offset: usize
-                    ) -> Result<liquid_abi_codec::DecodeResult<Self>, liquid_primitives::Error> {
+                    ) -> ::core::result::Result<liquid_abi_codec::DecodeResult<Self>, liquid_primitives::Error> {
                         let decode_result = <liquid_primitives::types::Address as liquid_abi_codec::MediateDecode>::decode(slices, offset)?;
                         let value = Self::at(decode_result.value);
                         Ok(liquid_abi_codec::DecodeResult {

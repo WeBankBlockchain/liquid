@@ -11,6 +11,7 @@
 // limitations under the License.
 
 use crate::{
+    common::AttrValue,
     contract::ir::{self, utils as ir_utils},
     utils as lang_utils,
 };
@@ -82,7 +83,7 @@ impl Parse for ir::Marker {
             Ok(ir::Marker {
                 paren_token,
                 ident,
-                value: ir::AttrValue::None,
+                value: AttrValue::None,
             })
         } else {
             let ident_str = ident.to_string();
@@ -98,7 +99,7 @@ impl Parse for ir::Marker {
             }
 
             let _ = content.parse::<Token![=]>()?;
-            let value = content.parse::<ir::AttrValue>()?;
+            let value = content.parse::<AttrValue>()?;
             Ok(ir::Marker {
                 paren_token,
                 ident,
@@ -873,7 +874,7 @@ impl TryFrom<&syn::ForeignItem> for ir::ForeignFn {
                     .find(|marker| marker.ident == "mock_context_getter")
                 {
                     let value = match &marker.value {
-                        ir::AttrValue::LitStr(value) => value,
+                        AttrValue::LitStr(value) => value,
                         _ => bail_span!(
                             marker.span(),
                             "the attribute `mock_context_getter` should be assigned \

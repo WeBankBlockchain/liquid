@@ -23,12 +23,12 @@ pub const ADDRESS_LENGTH: usize = 20;
 pub struct Address(pub [u8; ADDRESS_LENGTH]);
 
 impl Address {
-    pub fn new(addr: [u8; ADDRESS_LENGTH]) -> Self {
+    pub const fn new(addr: [u8; ADDRESS_LENGTH]) -> Self {
         Self(addr)
     }
 
-    pub fn empty() -> Self {
-        Default::default()
+    pub const fn empty() -> Self {
+        Self([0u8; ADDRESS_LENGTH])
     }
 }
 

@@ -68,10 +68,10 @@ pub fn split_items(items: Vec<LiquidItem>, span: Span) -> Result<CollaborationIt
     for impl_block in &impl_blocks {
         if !contracts
             .iter()
-            .any(|contract| contract.ident == impl_block.ty)
+            .any(|contract| contract.ident == impl_block.ident)
         {
             bail!(
-                impl_block.ty,
+                impl_block.ident,
                 "the rights need to be associated with an existed `#[liquid(contract)]` \
                  struct"
             )
@@ -319,4 +319,12 @@ impl<'a> OwnersParser<'a> {
     fn eat_char(&mut self) {
         let _ = self.next_char();
     }
+}
+
+pub fn generate_storage_field_name(ident: &Ident) -> Ident {
+    use heck::SnakeCase;
+    Ident::new(
+        &format!("__liquid_{}", ident.to_string().to_snake_case()),
+        Span::call_site(),
+    )
 }

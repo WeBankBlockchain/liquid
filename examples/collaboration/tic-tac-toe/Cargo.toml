@@ -1,0 +1,64 @@
+[package]
+name = "tic_tac_toe"
+version = "0.2.0"
+authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+scale = { package = "parity-scale-codec", version = "1.3.1", default-features = false, features = ["derive", "full"] }
+spin = "0.7.0"
+
+liquid_lang = { version = "0.2.0", path = "../../../lang", default-features = false, features = ["collaboration"] }
+liquid_primitives = { version = "0.2.0", path = "../../../primitives", default-features = false }
+liquid_prelude = { version = "0.2.0", path = "../../../prelude", default-features = false }
+liquid_abi_codec = { version = "0.2.0", path = "../../../abi-codec", default-features = false }
+liquid_macro = { version = "0.2.0", path = "../../../macro", default-features = false, features = ["collaboration"] }
+liquid_abi_gen = { version = "0.2.0", path = "../../../abi-gen", default-features = false, optional = true }
+
+[dev-dependencies]
+predicates = "1.0.5"
+
+[lib]
+name = "tic_tac_toe"
+crate-type = [
+    # Used for normal contract Wasm blobs.
+    "cdylib",
+    # Used for ABI generation.
+    "rlib",
+]
+
+[features]
+default = ["std"]
+std = [
+    "liquid_lang/std",
+    "scale/std",
+    "liquid_primitives/std",
+    "liquid_prelude/std",
+    "liquid_abi_codec/std",
+    "liquid_macro/std",
+]
+liquid-abi-gen = [
+    "std",
+    "liquid_abi_gen",
+    "liquid_lang/liquid-abi-gen",
+]
+gm = [
+    "liquid_lang/gm",
+    "liquid_primitives/gm",
+]
+
+[profile.release]
+panic = "abort"
+lto = true
+opt-level = "z"
+overflow-checks = true
+
+[workspace]
+members = [
+    ".liquid/abi_gen",
+]
+exclude = [
+    ".liquid",
+]

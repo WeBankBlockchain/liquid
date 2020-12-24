@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crate::common::AttrValue;
 use derive_more::From;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::ToTokens;
@@ -231,32 +232,6 @@ impl ToTokens for IdentType {
         self.ident.to_tokens(tokens);
         self.colon_token.to_tokens(tokens);
         self.ty.to_tokens(tokens);
-    }
-}
-
-#[derive(Debug)]
-pub enum AttrValue {
-    LitStr(syn::LitStr),
-    Ident(syn::Ident),
-    None,
-}
-
-impl Parse for AttrValue {
-    fn parse(input: ParseStream) -> Result<Self> {
-        if input.peek(syn::Ident) {
-            let ident = input.parse::<syn::Ident>()?;
-            return Ok(Self::Ident(ident));
-        }
-
-        if input.peek(syn::LitStr) {
-            let lit_str = input.parse::<syn::LitStr>()?;
-            return Ok(Self::LitStr(lit_str));
-        }
-
-        Err(input.error(
-            "invalid value of an liquid attribute, identifier or a literal string \
-             required",
-        ))
     }
 }
 
