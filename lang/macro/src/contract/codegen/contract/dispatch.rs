@@ -240,9 +240,7 @@ impl<'a> Dispatch<'a> {
                     let selector = call_data.selector;
                     let data = call_data.data;
 
-                    #(
-                        #fragments
-                    )*
+                    #(#fragments)*
 
                     Err(liquid_lang::DispatchError::UnknownSelector)
                 }
@@ -285,9 +283,9 @@ impl<'a> Dispatch<'a> {
                 if let Ok(call_data) = result {
                     let data = call_data.data;
                     #[cfg(feature = "solidity-compatible")]
-                    let result = <#(#input_tys,)* as liquid_abi_codec::Decode>::decode(&mut data.as_slice());
+                    let result = <(#(#input_tys,)*) as liquid_abi_codec::Decode>::decode(&mut data.as_slice());
                     #[cfg(not(feature = "solidity-compatible"))]
-                    let result = <#(#input_tys,)* as scale::Decode>::decode(&mut data.as_slice());
+                    let result = <(#(#input_tys,)*) as scale::Decode>::decode(&mut data.as_slice());
 
                     if let Ok(data) = result {
                         let #pat_idents = data;

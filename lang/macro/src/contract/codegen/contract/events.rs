@@ -80,6 +80,32 @@ impl<'a> Events<'a> {
             .map(|item_event| &item_event.ident)
             .collect::<Vec<_>>();
 
+        let encode = if cfg!(feature = "solidity-compatible") {
+            quote! {
+                impl liquid_abi_codec::Encode for Event {
+                    fn encode(&self) -> Vec<u8> {
+                        match self {
+                            #(
+                                Event::#event_idents(event) => event.encode(),
+                            )*
+                        }
+                    }
+                }
+            }
+        } else {
+            quote! {
+                impl scale::Encode for Event {
+                    fn encode(&self) -> Vec<u8> {
+                        match self {
+                            #(
+                                Event::#event_idents(event) => event.encode(),
+                            )*
+                        }
+                    }
+                }
+            }
+        };
+
         quote! {
             pub enum Event {
                 #(#event_idents(#event_idents),)*
@@ -103,27 +129,7 @@ impl<'a> Events<'a> {
                 }
             }
 
-            #[cfg(feature = "solidity-compatible")]
-            impl liquid_abi_codec::Encode for Event {
-                fn encode(&self) -> Vec<u8> {
-                    match self {
-                        #(
-                            Event::#event_idents(event) => event.encode(),
-                        )*
-                    }
-                }
-            }
-
-            #[cfg(not(feature = "solidity-compatible"))]
-            impl scale::Encode for Event {
-                fn encode(&self) -> Vec<u8> {
-                    match self {
-                        #(
-                            Event::#event_idents(event) => event.encode(),
-                        )*
-                    }
-                }
-            }
+            #encode
         }
     }
 

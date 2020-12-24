@@ -232,18 +232,19 @@ impl<'a> Contracts<'a> {
                     #[cfg(test)]
                     pub fn exec<F, R>(&self, f: F) -> R
                     where
-                        F: FnOnce(#ident) -> R
+                        F: FnOnce(Box<#ident>) -> R
                     {
                         let (contract, abolished) = self.abolishment_check();
                         let encoded = <#ident as scale::Encode>::encode(contract);
                         let decoded = <#ident as scale::Decode>::decode(&mut encoded.as_slice()).unwrap();
-                        let ptr = &decoded as *const #ident;
-                        println!("origin {:p}", ptr);
+                        let boxed = Box::new(decoded);
+                        let ptr = Box::into_raw(boxed);
+                        println!("origin: {:p}", ptr);
                         let ptrs = <Self as FetchContract<#ident>>::fetch_ptrs();
+                        let boxed = unsafe { Box::from_raw(ptr) };
                         let len = ptrs.len();
                         ptrs.push(ptr);
-                        println!("{:?}", ptrs);
-                        let result = f(decoded);
+                        let result = f(boxed);
                         ptrs.swap_remove(len);
                         *abolished = true;
                         result
