@@ -55,7 +55,7 @@ mod voting {
 
     #[liquid(rights_belong_to = "government")]
     impl Ballot {
-        pub fn add(mut self, voter_addr: address) {
+        pub fn add(mut self, voter_addr: address) -> ContractId<Ballot> {
             assert!(self
                 .voters
                 .iter()
@@ -69,10 +69,10 @@ mod voting {
             };
             self.voters.push(voter);
 
-            create! { Self =>
+            sign! { Ballot =>
                 voters: self.voters,
                 ..self
-            };
+            }
         }
 
         pub fn decide(self) -> ContractId<Decision> {
@@ -87,7 +87,7 @@ mod voting {
 
             let accept = yays > nays;
             let voters = self.voters.iter().map(|voter| voter.addr).collect();
-            create! { Decision =>
+            sign! { Decision =>
                 accept,
                 government: self.government,
                 proposal: self.proposal,
@@ -114,5 +114,170 @@ mod voting {
             voter.voted = true;
             voter.choice = choice;
         }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use liquid::env::test;
+
+        #[test]
+        fn voting_1() {
+            let default_accounts = test::default_accounts();
+            let government = default_accounts.alice;
+            let bob = default_accounts.bob;
+            let charlie = default_accounts.charlie;
+            let david = default_accounts.david;
+
+            test::push_execution_context(government);
+            let ballot_id = sign! { Ballot =>
+                government,
+                voters: Vec::new(),
+                proposal: Proposal {
+                    proposer: government,
+                    content: String::from("take a holiday"),
+                },
+            };
+            let ballot_id = ballot_id.exec(|ballot| {
+                println!("fuck {:p}", &ballot as *const Ballot);
+                ballot.add(bob)
+            });
+            //let ballot_id = ballot_id.take().add(charlie);
+            /*
+            let mut ballot_id = ballot_id.take().add(david);
+            test::pop_execution_context();
+
+            test::push_execution_context(bob);
+            ballot_id.as_mut().vote(true);
+            test::pop_execution_context();
+
+            test::push_execution_context(charlie);
+            ballot_id.as_mut().vote(true);
+            test::pop_execution_context();
+
+            test::push_execution_context(david);
+            ballot_id.as_mut().vote(true);
+            test::pop_execution_context();*/
+
+            /*
+            test::push_execution_context(government);
+            let decision_id = ballot_id.take().decide();
+            let decision = decision_id.fetch();
+            assert_eq!(decision.government, government);
+            assert_eq!(decision.voters, vec![bob, charlie, david]);
+            assert_eq!(decision.accept, true);
+            let proposal = &decision.proposal;
+            assert_eq!(proposal.proposer, government);
+            assert_eq!(proposal.content, "take a holiday");
+            */
+        }
+
+        /*
+        #[test]
+        fn voting_2() {
+            let default_accounts = test::default_accounts();
+            let government = default_accounts.alice;
+            let bob = default_accounts.bob;
+            let charlie = default_accounts.charlie;
+
+            test::push_execution_context(government);
+            let ballot_id = sign! { Ballot =>
+                government,
+                voters: Vec::new(),
+                proposal: Proposal {
+                    proposer: government,
+                    content: String::from("take a holiday"),
+                },
+            };
+            let mut ballot_id = ballot_id.take().add(bob);
+            test::pop_execution_context();
+
+            test::push_execution_context(bob);
+            ballot_id.as_mut().vote(true);
+            test::pop_execution_context();
+
+            test::push_execution_context(government);
+            let _ = ballot_id.take().add(charlie);
+            test::pop_execution_context();
+        }
+
+        #[test]
+        #[should_panic(expected = "signing of contract `Ballot` is not permitted")]
+        fn unauthorized_1() {
+            let default_accounts = test::default_accounts();
+            let government = default_accounts.alice;
+            let bob = default_accounts.bob;
+
+            test::push_execution_context(government);
+            sign! { Ballot =>
+                government: bob,
+                voters: Vec::new(),
+                proposal: Proposal {
+                    proposer: government,
+                    content: String::from("take a holiday"),
+                },
+            };
+        }*/
+/*
+        #[test]
+        #[should_panic(expected = "DO NOT excise right on an inexistent `Ballot`contract")]
+        fn unauthorized_2() {
+            let default_accounts = test::default_accounts();
+            let government = default_accounts.alice;
+
+            test::push_execution_context(government);
+            let ballot = Ballot {
+                government: address::empty(),
+                voters: Vec::new(),
+                proposal: Proposal {
+                    proposer: government,
+                    content: String::from("take a holiday"),
+                },
+            };
+            ballot.add(government);
+        }
+
+        #[test]
+        #[should_panic(expected = "DO NOT excise right on an inexistent `Ballot`contract")]
+        fn unauthorized_3() {
+            let default_accounts = test::default_accounts();
+            let government = default_accounts.alice;
+
+            test::push_execution_context(government);
+            let ballot_id = sign! {Ballot =>
+                government: address::empty(),
+                voters: Vec::new(),
+                proposal: Proposal {
+                    proposer: government,
+                    content: String::from("take a holiday"),
+                },
+            };
+            ballot_id.fetch().add(government);
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "exercising right `decide` of contract `Ballot` is not permitted"
+        )]
+        fn unauthorized_4() {
+            let default_accounts = test::default_accounts();
+            let government = default_accounts.alice;
+            let bob = default_accounts.bob;
+
+            test::push_execution_context(government);
+            let ballot_id = sign! {Ballot =>
+                government: address::empty(),
+                voters: Vec::new(),
+                proposal: Proposal {
+                    proposer: government,
+                    content: String::from("take a holiday"),
+                },
+            };
+            test::pop_execution_context();
+
+            test::push_execution_context(bob);
+            ballot_id.take().decide();
+            test::pop_execution_context();
+        }*/
     }
 }

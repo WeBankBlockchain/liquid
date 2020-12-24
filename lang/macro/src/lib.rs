@@ -12,7 +12,6 @@
 
 #![allow(unused_imports)]
 #![allow(unused_macros)]
-#![allow(dead_code)]
 
 extern crate proc_macro;
 

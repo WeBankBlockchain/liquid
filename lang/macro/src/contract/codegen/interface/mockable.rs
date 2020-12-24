@@ -519,7 +519,7 @@ impl<'a> Mockable<'a> {
             }
 
             impl scale::Decode for Interface {
-                fn decode<I: scale::Input>(value: &mut I) -> Result<Self, scale::Error> {
+                fn decode<I: scale::Input>(value: &mut I) -> ::core::result::Result<Self, scale::Error> {
                     let _ = <() as scale::Decode>::decode(value)?;
                     Ok(Self(InterfaceImpl {
                         #(

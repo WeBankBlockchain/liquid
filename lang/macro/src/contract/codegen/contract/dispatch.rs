@@ -199,6 +199,7 @@ impl<'a> Dispatch<'a> {
 
                 if core::any::TypeId::of::<<#namespace as liquid_lang::FnOutput>::Output>() != core::any::TypeId::of::<()>() {
                     liquid_lang::env::finish(&result);
+                    unreachable!();
                 }
 
                 return Ok(());

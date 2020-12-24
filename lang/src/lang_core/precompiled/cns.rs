@@ -10,23 +10,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::lang_core::{env::call, precompiled::ReturnDataWrapper};
+use crate::lang_core::{
+    env::call,
+    precompiled::{ReturnDataWrapper, CNS_ADDRESS},
+};
 use liquid_abi_codec::{Decode, Encode};
+use liquid_prelude::string::String;
 use liquid_primitives::types::{u256, Address};
 
-pub struct CNS {
-    addr: Address,
-}
+pub struct CNS;
 
 impl CNS {
-    pub fn new() -> Self {
-        Self {
-            addr: "0x1004".parse().unwrap(),
-        }
-    }
-
     pub fn insert(
-        &self,
         name: String,
         version: String,
         addr: String,
@@ -40,11 +35,11 @@ impl CNS {
         .to_vec();
 
         input_data.extend(&(name, version, addr, abi).encode());
-        let ret = call::<ReturnDataWrapper>(&self.addr, &input_data).ok()?;
+        let ret = call::<ReturnDataWrapper>(&CNS_ADDRESS, &input_data).ok()?;
         <u256 as Decode>::decode(&mut ret.data.as_slice()).ok()
     }
 
-    pub fn get_contract_address(&self, name: String, version: String) -> Option<Address> {
+    pub fn get_contract_address(name: String, version: String) -> Option<Address> {
         let mut input_data = if cfg!(feature = "gm") {
             [0xf1, 0xa3, 0x1b, 0xfa]
         } else {
@@ -52,7 +47,7 @@ impl CNS {
         }
         .to_vec();
         input_data.extend(&(name, version).encode());
-        let ret = call::<ReturnDataWrapper>(&self.addr, &input_data).ok()?;
+        let ret = call::<ReturnDataWrapper>(&CNS_ADDRESS, &input_data).ok()?;
         <Address as Decode>::decode(&mut ret.data.as_slice()).ok()
     }
 }

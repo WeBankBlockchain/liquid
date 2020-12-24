@@ -218,12 +218,15 @@ impl TryFrom<syn::ItemStruct> for ir::ItemContract {
             bail!(item_struct, "this contract has no signers")
         }
 
+        let storage_field_name = generate_storage_field_name(&item_struct.ident);
+
         Ok(ir::ItemContract {
             attrs: item_struct.attrs,
             struct_token: item_struct.struct_token,
             ident: item_struct.ident,
             fields: fields.clone(),
             field_signers,
+            storage_field_name,
             span,
         })
     }
@@ -532,10 +535,13 @@ impl TryFrom<(syn::ItemImpl, Selectors)> for ir::ItemRights {
             }
         }
 
+        let storage_field_name = generate_storage_field_name(&ident);
+
         Ok(Self {
             attrs: item_impl.attrs,
             impl_token: item_impl.impl_token,
-            ty: ident,
+            ident,
+            storage_field_name,
             brace_token: item_impl.brace_token,
             rights: functions,
             constants,
@@ -578,7 +584,11 @@ impl TryFrom<syn::Item> for ir::Item {
                 }
 
                 if rights_marker.is_empty() {
-                    Ok(ir::Item::Rust(Box::new(item_impl.into())))
+                    bail!(
+                        item_impl,
+                        "`impl` block in collaboration must be tagged with \
+                         `#[liquid(rights)]` or `#[liquid(rights_belong_to)]` attribute"
+                    )
                 } else {
                     let rights_marker = &rights_marker[0];
                     let ident = rights_marker.ident.to_string();

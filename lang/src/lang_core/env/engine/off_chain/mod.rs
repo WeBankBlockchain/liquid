@@ -19,7 +19,7 @@ use crate::lang_core::env::{
 };
 use cfg_if::cfg_if;
 use core::cell::RefCell;
-use liquid_primitives::{types::Address, Topics};
+use liquid_primitives::{types::address::Address, Topics};
 
 pub struct EnvInstance {
     contract_storage: ContractStorage,
@@ -169,7 +169,7 @@ impl Env for EnvInstance {
                 V: scale::Encode,
             {
                 // Ensure that the type of `V` can only be String.
-                panic!(<String as liquid_abi_codec::Decode>::decode(
+                panic!(<String as scale::Decode>::decode(
                     &mut msg.encode().as_slice()
                 )
                 .unwrap());

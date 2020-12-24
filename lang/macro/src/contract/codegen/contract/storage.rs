@@ -11,8 +11,8 @@
 // limitations under the License.
 
 use crate::{
-    contract::ir::{Contract, Function, FunctionKind},
     common::GenerateCode,
+    contract::ir::{Contract, Function, FunctionKind},
     utils as lang_utils,
 };
 use derive_more::From;
@@ -104,12 +104,9 @@ impl<'a> Storage<'a> {
             impl Storage {
                 #[allow(unused)]
                 const STORAGE_KEYS: [&'static str; #keys_count] = [ #keys ];
-
-                #[allow(unused)]
-                pub fn env(&self) -> liquid_lang::EnvAccess {
-                    liquid_lang::EnvAccess {}
-                }
             }
+
+            impl liquid_lang::Env for Storage {}
 
             impl liquid_lang::storage::New for Storage {
                 fn new() -> Self {

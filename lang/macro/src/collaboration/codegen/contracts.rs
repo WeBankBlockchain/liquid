@@ -64,7 +64,6 @@ impl<'a> Contracts<'a> {
                 #[derive(liquid_lang::InOut)]
                 pub struct #ident {
                     #(#fields)*
-                    __liquid_forbids_constructing_contract: liquid_lang::Contract_Constructing_Is_Forbidden,
                 }
             }
         });
@@ -116,24 +115,17 @@ impl<'a> Contracts<'a> {
             });
 
             let ident_str = ident.to_string();
-            let field_ident = Ident::new(
-                &format!("__liquid_{}", ident_str.to_snake_case()),
-                Span::call_site(),
-            );
+            let storage_field_name = &contract.storage_field_name;
+            let ptrs_field_name = Ident::new(&format!("{}_ptrs", storage_field_name.to_string()), Span::call_site());
 
-            let no_signers_error = format!("no available signers to sign this `{}` contract", ident_str);
-            let unauthorized_error = format!("signing of contract `{}` is not permitted", ident_str);
-            let fetch_error = format!(
-                "unable to fetch `{}` contract, it's inexistent or abolished",
-                ident_str
-            );
+            let no_available_signers_error = format!("no available signers to sign this `{}` contract", ident_str);
+            let unauthorized_signing_error = format!("signing of contract `{}` is not permitted", ident_str);
 
             quote! {
                 impl liquid_lang::AcquireSigners for #ident {
                     fn acquire_signers(&self) -> liquid_prelude::collections::BTreeSet::<address> {
                         use liquid_lang::Can_Not_Select_Any_Account_Address_From_It;
 
-                        #[allow(unused_mut)]
                         let mut signers = liquid_prelude::collections::BTreeSet::new();
                         #(signers.extend((#selectors).acquire_addrs());)*
                         signers
@@ -142,68 +134,125 @@ impl<'a> Contracts<'a> {
 
                 impl liquid_lang::You_Should_Use_An_Valid_Contract_Type for #ident {}
 
-                impl #ident {
-                    const __LIQUID_UNAUTHORIZED_CREATE_ERROR: &'static str = #unauthorized_error;
-                    const __LIQUID_NO_AVAILABLE_SIGNERS_ERROR: &'static str = #no_signers_error;
-                }
-
-                impl __LiquidFetch<#ident> for liquid_lang::ContractId<#ident> {
-                    fn fetch(&self) -> &#ident {
+                impl liquid_lang::FetchContract<#ident> for ContractId<#ident> {
+                    const CONTRACT_NAME: &'static str = #ident_str;
+                    fn fetch_collection() -> &'static mut liquid_lang::storage::Mapping<u32, (#ident, bool)> {
                         let storage = __liquid_acquire_storage_instance();
-                        match storage.#field_ident.get(&self.__liquid_index) {
-                            Some((contract, abolished)) => if *abolished {
-                                liquid_lang::env::revert(&#fetch_error.to_owned());
-                                unreachable!();
-                            } else {
-                                contract
-                            },
-                            _ => {
-                                liquid_lang::env::revert(&#fetch_error.to_owned());
-                                unreachable!();
-                            }
-                        }
+                        &mut storage.#storage_field_name
                     }
 
-                    fn fetch_mut(&self) -> &mut #ident {
+                    fn fetch_ptrs() -> &'static mut Vec<*const #ident> {
                         let storage = __liquid_acquire_storage_instance();
-                        match storage.#field_ident.get_mut(&self.__liquid_index) {
-                            Some((contract, abolished)) => if *abolished {
-                                liquid_lang::env::revert(&#fetch_error.to_owned());
-                                unreachable!();
-                            } else {
-                                contract
-                            },
-                            _ => {
-                                liquid_lang::env::revert(&#fetch_error.to_owned());
-                                unreachable!();
-                            }
-                        }
-                    }
-
-                    fn fetch_exclusive(&self) -> #ident {
-                        let storage = __liquid_acquire_storage_instance();
-                        match storage.#field_ident.get_mut(&self.__liquid_index) {
-                            Some((contract, abolished)) => if *abolished {
-                                liquid_lang::env::revert(&#fetch_error.to_owned());
-                                unreachable!();
-                            } else {
-                                *abolished = true;
-                                let encoded = <#ident as scale::Encode>::encode(contract);
-                                <#ident as scale::Decode>::decode(&mut encoded.as_slice()).unwrap()
-                            },
-                            _ => {
-                                liquid_lang::env::revert(&#fetch_error.to_owned());
-                                unreachable!();
-                            }
-                        }
+                        &mut storage.#ptrs_field_name
                     }
                 }
 
-                impl liquid_lang::This_Contract_Type_Is_Not_Exist for #ident {
-                    fn fetch<'a>() -> &'a mut liquid_lang::storage::Mapping<u32, (Self, bool)> {
-                        let storage = __liquid_acquire_storage_instance();
-                        &mut storage.#field_ident
+                impl scale::Decode for ContractId<#ident>
+                {
+                    fn decode<I: scale::Input>(input: &mut I) -> ::core::result::Result<Self, scale::Error> {
+                        let __liquid_id = <u32 as scale::Decode>::decode(input)?;
+                        let (contract, _) = <Self as FetchContract<#ident>>::fetch(__liquid_id);
+                        let ptrs = <Self as FetchContract<#ident>>::fetch_ptrs();
+                        ptrs.push(contract as *const #ident);
+                        Ok(Self { 
+                            __liquid_id,
+                            __liquid_marker: Default::default(),
+                        })
                     }
+                }
+
+                impl ::core::convert::AsRef<#ident> for ContractId<#ident>
+                {
+                    fn as_ref(&self) -> &#ident {
+                        let (contract, _) = self.abolishment_check();
+                        contract
+                    }
+                }
+    
+                impl ::core::convert::AsMut<#ident> for ContractId<#ident>
+                {
+                    fn as_mut(&mut self) -> &mut #ident {
+                        let (contract, _) = self.abolishment_check();
+                        contract
+                    }
+                }
+
+                impl ContractId<#ident> {
+                    fn abolishment_check(&self) -> (&'static mut #ident, &'static mut bool) {
+                        use liquid_prelude::string::ToString;
+    
+                        let (contract, abolished) = <Self as FetchContract<#ident>>::fetch(self.__liquid_id);
+                        if *abolished {
+                            let mut error_info = String::from("the contract `");
+                            error_info.push_str(<Self as FetchContract<#ident>>::CONTRACT_NAME);
+                            error_info.push_str("` with id `");
+                            error_info.push_str(&self.__liquid_id.to_string());
+                            error_info.push_str("` had been abolished already");
+                            liquid_lang::env::revert(&error_info);
+                            unreachable!();
+                        }
+                        (contract, abolished)
+                    }
+                }
+    
+                impl ContractId<#ident> {
+                    pub fn take(self) -> #ident {
+                        let (contract, abolished) = self.abolishment_check();
+                        let signers = <#ident as liquid_lang::AcquireSigners>::acquire_signers(contract);
+                        if !__liquid_authorization_check(&signers) {
+                            let mut error_info = String::from("the contract `");
+                            error_info.push_str(<Self as FetchContract<#ident>>::CONTRACT_NAME);
+                            error_info.push_str("` with id `");
+                            error_info.push_str(&self.__liquid_id.to_string());
+                            error_info.push_str("` is not allowed to be abolished");
+                            liquid_lang::env::revert(&error_info);
+                            unreachable!();
+                        }
+                        *abolished = true;
+                        let encoded = <#ident as scale::Encode>::encode(contract);
+                        let decoded = <#ident as scale::Decode>::decode(&mut encoded.as_slice()).unwrap();
+                        let ptrs = <Self as FetchContract<#ident>>::fetch_ptrs();
+                        println!("origin {:p}", &decoded as *const #ident);
+                        ptrs.push(&decoded as *const #ident);
+                        decoded
+                    }
+
+                    pub fn fetch(&self) -> #ident {
+                        let (contract, _) = <Self as FetchContract<#ident>>::fetch(self.__liquid_id);
+                        let encoded = <#ident as scale::Encode>::encode(contract);
+                        let decoded = <#ident as scale::Decode>::decode(&mut encoded.as_slice()).unwrap();
+                        decoded
+                    }
+
+                    pub fn is_abolished(&self) -> bool {
+                        let (_, abolished) = <Self as FetchContract<#ident>>::fetch(self.__liquid_id);
+                        *abolished
+                    }
+
+                    #[cfg(test)]
+                    pub fn exec<F, R>(&self, f: F) -> R
+                    where
+                        F: FnOnce(#ident) -> R
+                    {
+                        let (contract, abolished) = self.abolishment_check();
+                        let encoded = <#ident as scale::Encode>::encode(contract);
+                        let decoded = <#ident as scale::Decode>::decode(&mut encoded.as_slice()).unwrap();
+                        let ptr = &decoded as *const #ident;
+                        println!("origin {:p}", ptr);
+                        let ptrs = <Self as FetchContract<#ident>>::fetch_ptrs();
+                        let len = ptrs.len();
+                        ptrs.push(ptr);
+                        println!("{:?}", ptrs);
+                        let result = f(decoded);
+                        ptrs.swap_remove(len);
+                        *abolished = true;
+                        result
+                    }
+                }
+
+                impl ContractId<#ident> {
+                    const UNAUTHORIZED_SIGNING_ERROR: &'static str = #unauthorized_signing_error;
+                    const NO_AVAILABLE_SIGNERS_ERROR: &'static str = #no_available_signers_error;
                 }
             }
         });

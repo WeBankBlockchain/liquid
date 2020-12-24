@@ -10,7 +10,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::storage;
 use cfg_if::cfg_if;
 use liquid_macro::seq;
 use liquid_prelude::{string::String, vec::Vec};
@@ -38,6 +37,12 @@ pub trait FnSelector {
 
 pub trait FnMutability {
     const IS_MUT: bool;
+}
+
+pub trait Env {
+    fn env(&self) -> crate::EnvAccess {
+        crate::EnvAccess {}
+    }
 }
 
 cfg_if! {
@@ -70,9 +75,45 @@ cfg_if! {
             }
         }
 
-        #[allow(non_camel_case_types)]
-        pub trait This_Contract_Type_Is_Not_Exist: Sized {
-            fn fetch<'a>() -> &'a mut storage::Mapping<u32, (Self, bool)>;
+        use crate::storage::Mapping;
+
+        pub trait FetchContract<Contract>: Sized
+        where
+            Contract: scale::Codec,
+        {
+            const CONTRACT_NAME: &'static str;
+            fn fetch_collection() -> &'static mut Mapping<u32, (Contract, bool)>;
+            fn fetch_ptrs() -> &'static mut liquid_prelude::vec::Vec<*const Contract>;
+
+            fn fetch(id: u32) -> (&'static mut Contract, &'static mut bool) {
+                let collection = Self::fetch_collection();
+
+                // Existence checking.
+                if !collection.contains_key(&id) {
+                    let mut error_info = String::from("the contract `");
+                    error_info.push_str(Self::CONTRACT_NAME);
+                    error_info.push_str("` with id `");
+                    use liquid_prelude::string::ToString;
+                    error_info.push_str(&id.to_string());
+                    error_info.push_str("` is not exist");
+                    crate::env::revert(&error_info);
+                    unreachable!();
+                }
+
+                let item = collection.get_mut(&id).unwrap();
+                (&mut item.0, &mut item.1)
+            }
+
+            fn revert_abolished(id: u32) {
+                let mut error_info = String::from("the contract `");
+                error_info.push_str(Self::CONTRACT_NAME);
+                error_info.push_str("` with id `");
+                use liquid_prelude::string::ToString;
+                error_info.push_str(&id.to_string());
+                error_info.push_str("` had been abolished");
+                crate::env::revert(&error_info);
+                unreachable!();
+            }
         }
     }
 }
@@ -249,7 +290,8 @@ cfg_if! {
 
 cfg_if! {
     if #[cfg(feature = "contract")] {
-        /// `__LIQUID_GETTER_INDEX_PLACEHOLDER` can only be used in getter for `liquid_lang::storage::Value`
+        /// `__LIQUID_GETTER_INDEX_PLACEHOLDER` can only be used in getter for
+        /// `liquid_lang::storage::Value`
         use liquid_primitives::__LIQUID_GETTER_INDEX_PLACEHOLDER;
         impl You_Should_Use_An_Valid_Input_Type for __LIQUID_GETTER_INDEX_PLACEHOLDER {}
     }

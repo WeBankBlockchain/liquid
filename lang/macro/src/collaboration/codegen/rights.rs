@@ -32,7 +32,8 @@ impl<'a> GenerateCode for Rights<'a> {
     fn generate_code(&self) -> TokenStream2 {
         let all_item_rights = &self.collaboration.all_item_rights;
         let impls = all_item_rights.iter().map(|item_rights| {
-            let contract_ident = &item_rights.ty;
+            let contract_ident = &item_rights.ident;
+            let contract_ident_str = contract_ident.to_string();
             let rights = &item_rights.rights;
             let fns = rights.iter().map(|right| {
                 let owners = &right.owners;
@@ -62,55 +63,74 @@ impl<'a> GenerateCode for Rights<'a> {
                                 #stmts
                             }
                         }
-                        _ => unreachable!()
+                        _ => unreachable!(),
                     }
                 });
-                let attrs = filter_non_liquid_attributes(&right.attrs);
+                let attrs = filter_non_liquid_attributes(&right.attrs).collect::<Vec<_>>();
                 let sig = &right.sig;
                 let fn_ident = &sig.ident;
+                let fn_ident_str = fn_ident.to_string();
                 let inputs = &sig.inputs;
                 let output = &sig.output;
                 let body = &right.body;
                 let stmts = &body.stmts;
-                let clone_error = format!(
-                    "the exercising of right `{}` must be based on an existing `{}` \
-                     contract, not a cloned one",
-                    fn_ident, contract_ident
-                );
-                let abolish_owners = if sig.is_self_ref() {
-                    quote! {}
+                let (self_ref, rm_from_ptrs) = if sig.is_self_ref() {
+                    (quote! { self }, quote! {})
                 } else {
-                    quote! { owners.extend(signers.clone()); }
+                    (quote! { &self }, quote! { ptrs.swap_remove(pos); })
                 };
 
                 quote_spanned! { right.span =>
                     #(#attrs)*
-                    pub fn #fn_ident (#inputs) #output {
-                        if self.__liquid_forbids_constructing_contract.0 {
-                            liquid_lang::env::revert(&#clone_error.to_owned())
-                        }
-
+                    #[cfg_attr(feature = "std", allow(dead_code))]
+                    pub fn #fn_ident(#inputs) #output {
                         {
+                            // Validity check.
+                            let self_addr = #self_ref as *const #contract_ident;
+                            let ptrs = <ContractId::<#contract_ident> as FetchContract<#contract_ident>>::fetch_ptrs();
+                            println!("{:?}", ptrs);
+                            println!("get {:p}", self_addr);
+                            let pos = ptrs.iter().position(|&ptr| ptr == self_addr);
+                            #[allow(unused_variables)]
+                            if let Some(pos) = pos {
+                                #rm_from_ptrs
+                            } else {
+                                let mut error_info = String::from("DO NOT excise right on an inexistent `");
+                                error_info.push_str(#contract_ident_str);
+                                error_info.push_str("`contract");
+                                liquid_lang::env::revert(&error_info);
+                                unreachable!();
+                            }
+                        }
+                        let __liquid_authorizers = __liquid_acquire_authorizers();
+                        let __liquid_count = __liquid_authorizers.len();
+                        {
+                            // Authorization checking.
                             #[allow(unused_imports)]
-                            use liquid_lang::Can_Not_Select_Any_Account_Address_From_It;
-                            use liquid_lang::AcquireSigners;
-
-                            let signers = self.acquire_signers();
+                            use liquid_lang::{Can_Not_Select_Any_Account_Address_From_It, AcquireSigners};
                             #[allow(unused_mut)]
                             let mut owners = liquid_prelude::collections::BTreeSet::<address>::new();
-                            #abolish_owners
                             #(owners.extend((#selectors).acquire_addrs());)*
-                            let storage = __liquid_acquire_storage_instance();
-                            let authorizers = &mut storage.__liquid_authorizers;
-                            for owner in &owners {
-                                if !authorizers.contains(owner) {
-                                    liquid_lang::env::revert(&#contract_ident::__LIQUID_UNAUTHORIZED_CREATE_ERROR.to_owned());
-                                }
+                            if !__liquid_authorization_check(&owners) {
+                                let mut error_info = String::from("exercising right `");
+                                error_info.push_str(#fn_ident_str);
+                                error_info.push_str("` of contract `");
+                                error_info.push_str(#contract_ident_str);
+                                error_info.push_str("` is not permitted");
+                                liquid_lang::env::revert(&error_info);
+                                unreachable!();
                             }
-                            authorizers.extend(signers);
+                            let signers = <#contract_ident as AcquireSigners>::acquire_signers(#self_ref);
+                            __liquid_authorizers.extend(signers);
+                            __liquid_authorizers.extend(owners);
+                            __liquid_authorizers.sort();
+                            __liquid_authorizers.dedup();
                         }
-
-                        #(#stmts)*
+                        let result = {
+                            #(#stmts)*
+                        };
+                        __liquid_authorizers.truncate(__liquid_count);
+                        result
                     }
                 }
             });
@@ -127,12 +147,7 @@ impl<'a> GenerateCode for Rights<'a> {
             let ident = &contract.ident;
 
             quote! {
-                impl #ident {
-                    #[allow(unused)]
-                    pub fn env(&self) -> liquid_lang::EnvAccess {
-                        liquid_lang::EnvAccess {}
-                    }
-                }
+                impl liquid_lang::Env for #ident {}
             }
         });
 
