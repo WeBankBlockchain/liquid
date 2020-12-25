@@ -10,7 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{codegen::GenerateCode, ir::Contract, utils as lang_utils};
+use crate::contract::ir::Contract;
+use crate::common::GenerateCode;
+use crate::utils as lang_utils;
 use cfg_if::cfg_if;
 use derive_more::From;
 use proc_macro2::TokenStream as TokenStream2;
@@ -53,32 +55,34 @@ impl<'a> Assets<'a> {
             let span = asset.span;
             let description = asset.description.clone();
             let supports_asset_signature = lang_utils::SUPPORTS_ASSET_SIGNATURE;
-            let mut call_supports_asset = quote_spanned! {span =>
-                let is_contract = match liquid_core::env::get_external_code_size(to){
-                    0 => false,
-                    _  => true,
-                };
-                if is_contract {
-                    use crate::alloc::string::ToString;
-                    #[allow(dead_code)]
-                    type Input = (String,);
-                    #[allow(dead_code)]
-                    const SUPPORTS_ASSET: liquid_primitives::Selector = {
-                        let hash = liquid_primitives::hash::hash(&#supports_asset_signature.as_bytes());
-                        [hash[0], hash[1], hash[2], hash[3]]
-                    };
-                    let mut encoded = SUPPORTS_ASSET.to_vec();
-                    encoded.extend(<Input as liquid_abi_codec::Encode>::encode(&(Self::ASSET_NAME.to_string(),)));
-                    match liquid_core::env::call::<bool>(&to, &encoded) {
-                        Ok(true) =>(),
-                        _ => require(false, "the contract doesn't know ".to_string() + Self::ASSET_NAME)
-                    }
-                }
-            };
+
             cfg_if! {
                 if #[cfg(feature = "std")]
                 {
-                    call_supports_asset = quote! {};
+                    let call_supports_asset = quote! {};
+                }else {
+                    let call_supports_asset = quote_spanned! {span =>
+                        let is_contract = match liquid_lang::env::get_external_code_size(to){
+                            0 => false,
+                            _  => true,
+                        };
+                        if is_contract {
+                            use crate::alloc::string::ToString;
+                            #[allow(dead_code)]
+                            type Input = (String,);
+                            #[allow(dead_code)]
+                            const SUPPORTS_ASSET: liquid_primitives::Selector = {
+                                let hash = liquid_primitives::hash::hash(&#supports_asset_signature.as_bytes());
+                                [hash[0], hash[1], hash[2], hash[3]]
+                            };
+                            let mut encoded = SUPPORTS_ASSET.to_vec();
+                            encoded.extend(<Input as liquid_abi_codec::Encode>::encode(&(Self::ASSET_NAME.to_string(),)));
+                            match liquid_lang::env::call::<bool>(&to, &encoded) {
+                                Ok(true) =>(),
+                                _ => require(false, "the contract doesn't know ".to_string() + Self::ASSET_NAME)
+                            }
+                        }
+                    };
                 }
             };
             if asset.fungible {
@@ -109,7 +113,7 @@ impl<'a> Assets<'a> {
                     }
                     #[allow(unused)]
                     pub fn register() -> bool {
-                        liquid_core::env::register_asset(
+                        liquid_lang::env::register_asset(
                             Self::ASSET_NAME.as_bytes(),
                             &Self::issuer(),
                             true,
@@ -131,14 +135,14 @@ impl<'a> Assets<'a> {
                     }
                     #[allow(unused)]
                     pub fn balance_of(owner: &address) -> u64 {
-                        liquid_core::env::get_asset_balance(
+                        liquid_lang::env::get_asset_balance(
                             owner,
                             Self::ASSET_NAME.as_bytes(),
                         )
                     }
                     #[allow(unused)]
                     pub fn issue_to(to: &address, amount: u64) -> bool {
-                        liquid_core::env::issue_fungible_asset(
+                        liquid_lang::env::issue_fungible_asset(
                             to,
                             Self::ASSET_NAME.as_bytes(),
                             amount,
@@ -146,7 +150,7 @@ impl<'a> Assets<'a> {
                     }
                     #[allow(unused)]
                     pub fn withdraw_from_caller(amount: u64) -> Option<Self> {
-                        let caller = liquid_core::env::get_caller();
+                        let caller = liquid_lang::env::get_caller();
                         let caller_balance = Self::balance_of(&caller);
                         if caller_balance < amount {
                             return None;
@@ -159,7 +163,7 @@ impl<'a> Assets<'a> {
                     }
                     #[allow(unused)]
                     pub fn withdraw_from_self(amount: u64) -> Option<Self> {
-                        let self_address = liquid_core::env::get_address();
+                        let self_address = liquid_lang::env::get_address();
                         let self_balance = #ident::balance_of(&self_address);
                         if self_balance < amount {
                             return None;
@@ -173,7 +177,7 @@ impl<'a> Assets<'a> {
                     #[allow(unused)]
                     pub fn deposit(mut self, to: &address) {
                         #call_supports_asset
-                        self.stored = liquid_core::env::transfer_asset(
+                        self.stored = liquid_lang::env::transfer_asset(
                             to,
                             Self::ASSET_NAME.as_bytes(),
                             self.value,
@@ -221,7 +225,7 @@ impl<'a> Assets<'a> {
                         }
                         #[allow(unused)]
                         pub fn register() -> bool {
-                            liquid_core::env::register_asset(
+                            liquid_lang::env::register_asset(
                                 Self::ASSET_NAME.as_bytes(),
                                 &Self::issuer(),
                                 false,
@@ -243,21 +247,21 @@ impl<'a> Assets<'a> {
                         }
                         #[allow(unused)]
                         pub fn balance_of(owner: &address) -> u64 {
-                            liquid_core::env::get_asset_balance(
+                            liquid_lang::env::get_asset_balance(
                                 owner,
                                 Self::ASSET_NAME.as_bytes(),
                             )
                         }
                         #[allow(unused)]
                         pub fn tokens_of(owner: &address) -> Vec<u64> {
-                            liquid_core::env::get_not_fungible_asset_ids(
+                            liquid_lang::env::get_not_fungible_asset_ids(
                                 owner,
                                 Self::ASSET_NAME.as_bytes(),
                             )
                         }
                         #[allow(unused)]
                         pub fn issue_to(to: &address, uri: &str) -> Option<u64> {
-                            match liquid_core::env::issue_not_fungible_asset(
+                            match liquid_lang::env::issue_not_fungible_asset(
                                 to,
                                 Self::ASSET_NAME.as_bytes(),
                                 uri.as_bytes(),
@@ -268,8 +272,8 @@ impl<'a> Assets<'a> {
                         }
                         #[allow(unused)]
                         pub fn withdraw_from_caller(id: u64) -> Option<Self> {
-                            let caller = liquid_core::env::get_caller();
-                            let uri = liquid_core::env::get_not_fungible_asset_info(
+                            let caller = liquid_lang::env::get_caller();
+                            let uri = liquid_lang::env::get_not_fungible_asset_info(
                                 &caller,
                                 Self::ASSET_NAME.as_bytes(),
                                 id,
@@ -286,8 +290,8 @@ impl<'a> Assets<'a> {
                         }
                         #[allow(unused)]
                         pub fn withdraw_from_self(id: u64) -> Option<Self> {
-                            let self_address = liquid_core::env::get_address();
-                            let uri = liquid_core::env::get_not_fungible_asset_info(
+                            let self_address = liquid_lang::env::get_address();
+                            let uri = liquid_lang::env::get_not_fungible_asset_info(
                                 &self_address,
                                 Self::ASSET_NAME.as_bytes(),
                                 id,
@@ -305,7 +309,7 @@ impl<'a> Assets<'a> {
                         #[allow(unused)]
                         pub fn deposit(mut self, to: &address) {
                             #call_supports_asset
-                            self.stored = liquid_core::env::transfer_asset(
+                            self.stored = liquid_lang::env::transfer_asset(
                                 to,
                                 Self::ASSET_NAME.as_bytes(),
                                 self.id,

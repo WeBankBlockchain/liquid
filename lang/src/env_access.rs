@@ -29,11 +29,11 @@ impl EnvAccess {
     }
 
     pub fn get_address(self) -> Address {
-        env::get_address()
+        api::get_address()
     }
 
     pub fn is_contract(self, account: &Address) -> bool {
-        match env::get_external_code_size(account) {
+        match api::get_external_code_size(account) {
             0 => true,
             _ => false,
         }

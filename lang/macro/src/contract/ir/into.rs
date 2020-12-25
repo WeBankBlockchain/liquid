@@ -83,7 +83,7 @@ impl Parse for ir::Marker {
             Ok(ir::Marker {
                 paren_token,
                 ident,
-                value: AttrValue::None,
+                value: ir::AttrValue::None,
             })
         } else if ident.to_string() == "asset" {
             let attributes_content;
@@ -111,7 +111,7 @@ impl Parse for ir::Marker {
             }
             println!("++++ir::Marker ident_str={:?}", ident_str);
             let _ = content.parse::<Token![=]>()?;
-            let value = content.parse::<AttrValue>()?;
+            let value = content.parse::<ir::AttrValue>()?;
             Ok(ir::Marker {
                 paren_token,
                 ident,
@@ -1007,7 +1007,7 @@ impl TryFrom<&syn::ForeignItem> for ir::ForeignFn {
                     .find(|marker| marker.ident == "mock_context_getter")
                 {
                     let value = match &marker.value {
-                        AttrValue::LitStr(value) => value,
+                        ir::AttrValue::LitStr(value) => value,
                         _ => bail_span!(
                             marker.span(),
                             "the attribute `mock_context_getter` should be assigned \

@@ -17,7 +17,6 @@ either = { version = "1.5.3", default-features = false }
 itertools = { version = "0.9.0", default-features = false }
 heck = "0.3.1"
 paste = "0.1.17"
-cfg-if = "0.1.10"
 id-arena = "2.2.1"
 log = "0.4"
 env_logger = "0.7"

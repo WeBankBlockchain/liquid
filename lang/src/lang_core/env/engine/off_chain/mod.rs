@@ -128,10 +128,6 @@ impl Env for EnvInstance {
         self.current_block().block_number()
     }
 
-    fn get_address(&mut self) -> Address {
-        unimplemented!()
-    }
-
     cfg_if! {
         if #[cfg(feature = "solidity-compatible")] {
             fn emit<E>(&mut self, event: E)

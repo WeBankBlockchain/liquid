@@ -11,7 +11,7 @@ extern crate alloc;
 
 #[liquid::contract(version = "0.2.0")]
 mod asset_erc20 {
-    use liquid_core::storage;
+    use liquid_lang::storage;
 
     /// Defines the storage of your contract.
     #[liquid(storage)]

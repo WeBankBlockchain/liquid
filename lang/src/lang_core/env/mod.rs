@@ -19,7 +19,12 @@ pub mod engine;
 pub mod error;
 
 pub use self::{
-    api::{call, emit, finish, get_address, get_call_data, get_caller, now, revert},
+    api::{
+        call, emit, finish, get_address, get_asset_balance, get_call_data, get_caller,
+        get_external_code_size, get_not_fungible_asset_ids, get_not_fungible_asset_info,
+        issue_fungible_asset, issue_not_fungible_asset, now, register_asset, revert,
+        transfer_asset,
+    },
     backend::CallMode,
 };
 

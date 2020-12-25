@@ -21,9 +21,9 @@ pub use self::{
         NameValue, ParamName,
     },
     syn_def::{
-        AssetAttribute, AssetMetaInfo, Contract, ContractMetaInfo, FnArg, ForeignFn,
-        ForeignStruct, Function, FunctionKind, IdentType, Interface, InterfaceMetaInfo,
-        Item, ItemAsset, ItemEvent, ItemImpl, ItemStorage, LangType, LiquidItem, Marker,
-        MetaVersion, RustItem, Signature,
+        AssetAttribute, AssetMetaInfo, AttrValue, Contract, ContractMetaInfo, FnArg,
+        ForeignFn, ForeignStruct, Function, FunctionKind, IdentType, Interface,
+        InterfaceMetaInfo, Item, ItemAsset, ItemEvent, ItemImpl, ItemStorage, LangType,
+        LiquidItem, Marker, MetaVersion, RustItem, Signature,
     },
 };
