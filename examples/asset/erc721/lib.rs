@@ -94,7 +94,6 @@ mod asset_erc20 {
             false
         }
         pub fn safe_transfer(&mut self, recipient: address, token_id: u64) -> bool {
-            // FIXME: check if contract address
             match Erc721Token::withdraw_from_caller(token_id) {
                 None => false,
                 Some(token) => {
@@ -193,3 +192,33 @@ mod asset_erc20 {
         }
     }
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use liquid::env::test;
+//     use crate::asset_erc20::__liquid_private::Erc721Token;
+
+//     #[test]
+//     fn issue_to_works() {
+//         let success = asset_erc20::Erc721Token::register();
+//         assert_eq!(success, true);
+//         let accounts = test::default_accounts();
+//         let alice = accounts.alice;
+
+//         test::set_caller(alice);
+//         let mut contract = asset_erc20::Erc721::new();
+//         let id = contract.issue_to(accounts.bob, String::from("token 1"));
+//         assert_eq!(success, 1u64);
+//         let id = contract.issue_to(accounts.bob, String::from("token 2"));
+//         assert_eq!(success, 2u64);
+//         let id = contract.issue_to(accounts.bob, String::from("token 3"));
+//         assert_eq!(success, 3u64);
+//         let id = contract.issue_to(accounts.charlie, String::from("token 4"));
+//         assert_eq!(success, 4u64);
+//         let id = contract.issue_to(accounts.charlie, String::from("token 5"));
+//         assert_eq!(success, 5u64);
+//         let id = contract.issue_to(accounts.charlie, String::from("token 6"));
+//         assert_eq!(success, 6u64);
+//     }
+// }

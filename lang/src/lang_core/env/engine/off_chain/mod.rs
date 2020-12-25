@@ -42,9 +42,7 @@ pub struct EnvInstance {
 
 impl Default for EnvInstance {
     fn default() -> Self {
-        let mut blocks = Vec::new();
-        blocks.push(Block::new(0));
-
+        let blocks = vec![Block::new(0)];
         Self {
             contract_storage: ContractStorage::new(),
             blocks,

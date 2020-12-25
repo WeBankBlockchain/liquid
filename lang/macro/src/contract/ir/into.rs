@@ -33,6 +33,8 @@ use syn::{
     Error, Result, Token,
 };
 
+const MAX_ASSET_NAME_LENGTH : usize = 32;
+
 impl TryFrom<&String> for ir::MetaVersion {
     type Error = regex::Error;
 
@@ -770,7 +772,9 @@ impl TryFrom<syn::ItemStruct> for ir::ItemAsset {
         } else {
             bail!(item_struct, "`#[liquid(asset)]` with mismatch attributes")
         }
-
+        if item_struct.ident.to_string().len() > MAX_ASSET_NAME_LENGTH {
+            bail!(item_struct, "`#[liquid(asset)]` ")
+        }
         Ok(ir::ItemAsset {
             attrs: item_struct.attrs,
             struct_token: item_struct.struct_token,
@@ -877,7 +881,6 @@ impl TryFrom<syn::Item> for ir::Item {
                 if markers.is_empty() {
                     return Ok(ir::Item::Rust(Box::new(item.into())));
                 }
-
                 if markers.len() > 1 {
                     bail!(
                         item_struct,

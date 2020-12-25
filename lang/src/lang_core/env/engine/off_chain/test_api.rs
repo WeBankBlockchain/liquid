@@ -60,19 +60,20 @@ pub struct DefaultAccounts {
     pub bob: Address,
     pub charlie: Address,
     pub david: Address,
-    pub eva: Address,
+    pub eve: Address,
     pub frank: Address,
 }
 
 /// Returns the default accounts for testing purposes:
 /// Alice, Bob, Charlie, David, Eve and Frank
+/// https://en.wikipedia.org/wiki/Alice_and_Bob
 pub fn default_accounts() -> DefaultAccounts {
     DefaultAccounts {
         alice: [0xffu8; ADDRESS_LENGTH].into(),
         bob: [0x01u8; ADDRESS_LENGTH].into(),
         charlie: [0x02u8; ADDRESS_LENGTH].into(),
         david: [0x03u8; ADDRESS_LENGTH].into(),
-        eva: [0x04u8; ADDRESS_LENGTH].into(),
+        eve: [0x04u8; ADDRESS_LENGTH].into(),
         frank: [0x05u8; ADDRESS_LENGTH].into(),
     }
 }

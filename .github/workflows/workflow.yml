@@ -1,0 +1,71 @@
+name: liquid GitHub Actions
+on:
+  push:
+  pull_request:
+  release:
+    types: [published, created, edited]
+
+jobs:
+  macOS_test:
+    name: macOS_test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-11.0, macos-10.15]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 5
+      - name: install macOS dependencies
+        run: brew install openssl@1.1 ccache automake
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: rustfmt, clippy
+      - name: check
+        run: ./scripts/check.sh
+
+  ubuntu_test:
+    name: ubuntu_test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-18.04]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 5
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: rustfmt, clippy
+      # - name: install ubuntu dependencies
+        # run: sudo apt install -y git curl build-essential clang cmake openssl libssl-dev zlib1g-dev ccache libgmp-dev flex bison automake libtool
+      - name: check
+        run: ./scripts/check.sh
+
+  win_test:
+    name: win_test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 5
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: rustfmt, clippy
+      # - name: install ubuntu dependencies
+        # run: sudo apt install -y git curl build-essential clang cmake openssl libssl-dev zlib1g-dev ccache libgmp-dev flex bison automake libtool
+      - name: check
+        shell: cmd
+        run: ./scripts/check-examples.bat
