@@ -1,10 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use liquid::storage;
 use liquid_lang as liquid;
 
 #[liquid::contract]
 mod sum_2 {
-    use liquid_core::storage;
+    use super::*;
 
     #[liquid(storage)]
     struct Sum2 {

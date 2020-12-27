@@ -318,7 +318,7 @@ impl Env for EnvInstance {
         let asset_info = self.assets_info.get(asset_name).unwrap();
         if asset_info.fungible {
             let amount = amount_or_id;
-            let mut from_balance = self
+            let from_balance = self
                 .fungible_asset
                 .get_mut(asset_name)
                 .unwrap()
@@ -326,7 +326,7 @@ impl Env for EnvInstance {
                 .or_insert(0);
             if *from_balance >= amount {
                 *from_balance -= amount;
-                let mut to_balance = self
+                let to_balance = self
                     .fungible_asset
                     .get_mut(asset_name)
                     .unwrap()
@@ -338,7 +338,7 @@ impl Env for EnvInstance {
             false
         } else {
             let token_id = amount_or_id;
-            let mut from_balance = self
+            let from_balance = self
                 .not_fungible_asset
                 .get_mut(asset_name)
                 .unwrap()
@@ -348,7 +348,7 @@ impl Env for EnvInstance {
                 return false;
             }
             let token_uri = from_balance.remove(&token_id).unwrap();
-            let mut to_balance = self
+            let to_balance = self
                 .not_fungible_asset
                 .get_mut(asset_name)
                 .unwrap()

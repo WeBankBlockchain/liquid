@@ -55,36 +55,31 @@ impl<'a> Assets<'a> {
             let span = asset.span;
             let description = asset.description.clone();
             let supports_asset_signature = lang_utils::SUPPORTS_ASSET_SIGNATURE;
-
-            cfg_if! {
-                if #[cfg(feature = "std")]
-                {
-                    let call_supports_asset = quote! {};
-                }else {
-                    let call_supports_asset = quote_spanned! {span =>
-                        let is_contract = match liquid_lang::env::get_external_code_size(to){
-                            0 => false,
-                            _  => true,
-                        };
-                        if is_contract {
-                            use crate::alloc::string::ToString;
-                            #[allow(dead_code)]
-                            type Input = (String,);
-                            #[allow(dead_code)]
-                            const SUPPORTS_ASSET: liquid_primitives::Selector = {
-                                let hash = liquid_primitives::hash::hash(&#supports_asset_signature.as_bytes());
-                                [hash[0], hash[1], hash[2], hash[3]]
-                            };
-                            let mut encoded = SUPPORTS_ASSET.to_vec();
-                            encoded.extend(<Input as liquid_abi_codec::Encode>::encode(&(Self::ASSET_NAME.to_string(),)));
-                            match liquid_lang::env::call::<bool>(&to, &encoded) {
-                                Ok(true) =>(),
-                                _ => require(false, "the contract doesn't know ".to_string() + Self::ASSET_NAME)
-                            }
-                        }
+            let call_supports_asset = if cfg!(feature = "std") {
+                quote! {}
+            } else {
+                quote_spanned! {span =>
+                    let is_contract = match liquid_lang::env::get_external_code_size(to){
+                        0 => false,
+                        _  => true,
                     };
+                    if is_contract {
+                        use crate::alloc::string::ToString;
+                        type Input = (String,);
+                        const SUPPORTS_ASSET: liquid_primitives::Selector = {
+                            let hash = liquid_primitives::hash::hash(&#supports_asset_signature.as_bytes());
+                            [hash[0], hash[1], hash[2], hash[3]]
+                        };
+                        let mut encoded = SUPPORTS_ASSET.to_vec();
+                        encoded.extend(<Input as liquid_abi_codec::Encode>::encode(&(Self::ASSET_NAME.to_string(),)));
+                        match liquid_lang::env::call::<bool>(&to, &encoded) {
+                            Ok(true) =>(),
+                            _ => require(false, "the contract doesn't know ".to_string() + Self::ASSET_NAME)
+                        }
+                    }
                 }
             };
+
             if asset.fungible {
                 quote_spanned! {span =>
                 #[cfg_attr(test, derive(Debug))]

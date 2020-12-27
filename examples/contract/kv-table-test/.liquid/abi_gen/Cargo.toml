@@ -9,8 +9,17 @@ publish = false
 name = "abi-gen"
 path = "main.rs"
 
+[dependencies.contract]
+path = "../../"
+package = "kv_table_test"
+default-features = false
+features = ["liquid-abi-gen"]
+
+[dependencies.liquid_lang]
+path = "../../../../../lang"
+default-features = false
+features = ["liquid-abi-gen", "contract", "solidity-compatible"]
+
 [dependencies]
-contract = { path = "../..", package = "kv_table_test", default-features = false, features = ["liquid-abi-gen"] }
-liquid_lang = { path = "../../../../lang", default-features = false, features = ["liquid-abi-gen"] }
 serde = "1.0"
 serde_json = "1.0"

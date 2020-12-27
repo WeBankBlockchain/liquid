@@ -23,8 +23,6 @@ use crate::env::{
 };
 use cfg_if::cfg_if;
 use core::convert::TryInto;
-use core::mem;
-use liquid_abi_codec::Decode;
 use liquid_prelude::{string::String, vec::Vec};
 use liquid_primitives::{types::address::*, Topics};
 
@@ -364,12 +362,12 @@ impl Env for EnvInstance {
             let mut start: usize = 0;
             while start < size as usize {
                 ret.push(u64::from_le_bytes(
-                    self.buffer[start..start + mem::size_of::<u64>()]
+                    self.buffer[start..start + core::mem::size_of::<u64>()]
                         .try_into()
                         .unwrap(),
                 ));
                 ext::print64(*ret.last().unwrap());
-                start += mem::size_of::<u64>();
+                start += core::mem::size_of::<u64>();
             }
         }
         ret

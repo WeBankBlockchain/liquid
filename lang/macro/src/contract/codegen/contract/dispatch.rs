@@ -61,7 +61,7 @@ impl<'a> Dispatch<'a> {
             .contract
             .functions
             .iter()
-            .filter(|func| matches!(&func.kind, FunctionKind::External(_)))
+            .filter(|func| matches!(&func.kind, FunctionKind::External(..)))
             .map(|func| self.generate_external_fn_trait(func));
 
         quote! {
@@ -71,7 +71,7 @@ impl<'a> Dispatch<'a> {
 
     fn generate_external_fn_trait(&self, func: &Function) -> TokenStream2 {
         let fn_id = match &func.kind {
-            FunctionKind::External(fn_id) => fn_id,
+            FunctionKind::External(fn_id, _) => fn_id,
             _ => unreachable!(),
         };
 
@@ -163,7 +163,7 @@ impl<'a> Dispatch<'a> {
         is_getter: bool,
     ) -> TokenStream2 {
         let fn_id = match &func.kind {
-            FunctionKind::External(fn_id) => fn_id,
+            FunctionKind::External(fn_id, _) => fn_id,
             _ => return quote! {},
         };
         let namespace = quote! { FnMarker<[(); #fn_id]> };
@@ -222,9 +222,8 @@ impl<'a> Dispatch<'a> {
     }
 
     fn generate_dispatch(&self) -> TokenStream2 {
-        let fragments = self.contract.functions.iter().enumerate().map(|(i, func)| {
-            let is_getter = self.contract.functions.len() - i
-                <= self.contract.storage.public_fields.len();
+        let fragments = self.contract.functions.iter().map(|func| {
+            let is_getter = matches!(func.kind, FunctionKind::External(_, true));
             self.generate_dispatch_fragment(func, is_getter)
         });
 

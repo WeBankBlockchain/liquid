@@ -46,12 +46,7 @@ pub trait Env {
 }
 
 cfg_if! {
-    if #[cfg(feature = "solidity-compatible")] {
-        #[allow(non_camel_case_types)]
-        pub trait You_Should_Use_An_Valid_Element_Type: Sized {
-            type T = Self;
-        }
-    } else if #[cfg(feature = "collaboration")] {
+    if #[cfg(feature = "collaboration")] {
         #[allow(non_camel_case_types)]
         pub trait You_Should_Use_An_Valid_Contract_Type: Sized {
             type T = Self;
@@ -128,9 +123,28 @@ pub trait You_Should_Use_An_Valid_Input_Type: Sized {
     type T = Self;
 }
 
-#[allow(non_camel_case_types)]
-pub trait You_Should_Use_An_Valid_Field_Type: Sized {
-    type T = Self;
+cfg_if! {
+    if #[cfg(feature = "solidity-compatible")] {
+        #[allow(non_camel_case_types)]
+        pub trait You_Should_Use_An_Valid_Element_Type: Sized {
+            type T = Self;
+        }
+
+        #[allow(non_camel_case_types)]
+        pub trait You_Should_Use_An_Valid_InOut_Type: Sized {
+            type T = Self;
+        }
+
+        #[allow(non_camel_case_types)]
+        pub trait You_Should_Use_An_Valid_State_Type: Sized {
+            type T = Self;
+        }
+    } else {
+        #[allow(non_camel_case_types)]
+        pub trait You_Should_Use_An_Valid_Field_Type: Sized {
+            type T = Self;
+        }
+    }
 }
 
 #[allow(non_camel_case_types)]
@@ -150,23 +164,26 @@ pub trait You_Should_Use_An_Valid_Event_Topic_Type: Sized {
     }
 }
 
-#[macro_export]
 macro_rules! gen_basic_type_notations {
-    ($t:ty, $p:tt) => {
-        #[cfg(feature = "solidity-compatible")]
-        impl $p::You_Should_Use_An_Valid_Element_Type for $t {}
-
-        impl $p::You_Should_Use_An_Valid_Return_Type for $t {}
-        impl $p::You_Should_Use_An_Valid_Input_Type for $t {}
-        #[cfg(feature = "contract")]
-        impl $p::You_Should_Use_An_Valid_Event_Data_Type for $t {}
-        impl $p::You_Should_Use_An_Valid_Field_Type for $t {}
+    ($t:ty) => {
+        cfg_if! {
+            if #[cfg(feature = "solidity-compatible")] {
+                impl You_Should_Use_An_Valid_InOut_Type for $t {}
+                impl You_Should_Use_An_Valid_State_Type for $t {}
+                impl You_Should_Use_An_Valid_Element_Type for $t {}
+            } else {
+                impl You_Should_Use_An_Valid_Field_Type for $t {}
+            }
+        }
+        impl You_Should_Use_An_Valid_Event_Data_Type for $t {}
+        impl You_Should_Use_An_Valid_Return_Type for $t {}
+        impl You_Should_Use_An_Valid_Input_Type for $t {}
     };
 }
 
 macro_rules! gen_type_notations {
     ($t:ty) => {
-        gen_basic_type_notations!($t, crate);
+        gen_basic_type_notations!($t);
 
         impl You_Should_Use_An_Valid_Event_Topic_Type for $t {}
     };
@@ -184,22 +201,20 @@ impl_for_primitives!(
     u8, u16, u32, u64, u128, u256, i8, i16, i32, i64, i128, i256, bool, Address
 );
 
-gen_basic_type_notations!(Bytes, crate);
+gen_basic_type_notations!(Bytes);
+seq!(N in 1..=32 {
+    #(
+        gen_type_notations!(Bytes#N);
+    )*
+});
 
-gen_basic_type_notations!(String, crate);
-
+gen_basic_type_notations!(String);
 impl You_Should_Use_An_Valid_Event_Topic_Type for String {
     type T = Self;
     fn topic(&self) -> Hash {
         liquid_primitives::hash::hash(self.as_bytes()).into()
     }
 }
-
-seq!(N in 1..=32 {
-    #(
-        gen_type_notations!(Bytes#N);
-    )*
-});
 
 cfg_if! {
     if #[cfg(feature = "solidity-compatible")] {
@@ -219,8 +234,12 @@ cfg_if! {
             T: You_Should_Use_An_Valid_Element_Type
         {
         }
-        impl<T> You_Should_Use_An_Valid_Field_Type for Vec<T> where
+        impl<T> You_Should_Use_An_Valid_InOut_Type for Vec<T> where
             T: You_Should_Use_An_Valid_Element_Type
+        {
+        }
+        impl<T> You_Should_Use_An_Valid_State_Type for Vec<T> where
+        T: You_Should_Use_An_Valid_Element_Type
         {
         }
         impl<T, const N: usize> You_Should_Use_An_Valid_Element_Type for [T; N] where
@@ -235,8 +254,12 @@ cfg_if! {
             T: You_Should_Use_An_Valid_Element_Type
         {
         }
-        impl<T, const N: usize> You_Should_Use_An_Valid_Field_Type for [T; N] where
+        impl<T, const N: usize> You_Should_Use_An_Valid_InOut_Type for [T; N] where
             T: You_Should_Use_An_Valid_Element_Type
+        {
+        }
+        impl<T, const N: usize> You_Should_Use_An_Valid_State_Type for [T; N] where
+        T: You_Should_Use_An_Valid_Element_Type
         {
         }
         impl<T, const N: usize> You_Should_Use_An_Valid_Event_Data_Type for [T; N] where
@@ -284,7 +307,7 @@ cfg_if! {
         /// `()` can be used to indicate returning nothing.
         impl You_Should_Use_An_Valid_Return_Type for () {}
     } else {
-        gen_basic_type_notations!((), crate);
+        gen_basic_type_notations!(());
     }
 }
 

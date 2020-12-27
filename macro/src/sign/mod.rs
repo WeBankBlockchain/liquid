@@ -10,6 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![allow(dead_code)]
+
 use crate::utils::*;
 use proc_macro2::{
     token_stream::IntoIter as TokenIter, Ident, Spacing, Span,

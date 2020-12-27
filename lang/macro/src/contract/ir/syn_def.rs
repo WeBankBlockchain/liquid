@@ -266,7 +266,12 @@ pub struct Function {
 
 impl Function {
     pub fn is_external_fn(&self) -> bool {
-        matches!(self.kind, FunctionKind::External(_))
+        matches!(self.kind, FunctionKind::External(..))
+    }
+
+    pub fn is_internal_fn(&self) -> bool {
+        let name = self.sig.ident.to_string();
+        name.starts_with("__liquid")
     }
 }
 
@@ -279,7 +284,7 @@ impl Spanned for Function {
 pub enum FunctionKind {
     Constructor,
     Normal,
-    External(usize),
+    External(usize, bool),
 }
 
 pub struct Signature {

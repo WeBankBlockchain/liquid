@@ -3,13 +3,13 @@ setlocal enabledelayedexpansion
 
 rem Please execute this script from the root of the project's directory.
 
-set all_crates=(abi-codec macro primitives alloc core lang lang\macro lang\derive ty_mapping)
+set all_crates=(abi-codec macro primitives alloc core lang ty_mapping)
 set results=()
 
 set results[0].name=check_all_features
 set results[0].result=0
 for %%c in %all_crates% do (
-    cargo +nightly check --verbose --features "contract" --manifest-path %%c\Cargo.toml
+    cargo +nightly check --verbose --manifest-path %%c\Cargo.toml
     if !errorlevel! neq 0 (
         set results[0].result=1
     )

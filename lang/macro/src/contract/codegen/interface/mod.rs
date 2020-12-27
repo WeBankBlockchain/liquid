@@ -39,16 +39,20 @@ impl GenerateCode for Interface {
         let foreign_contract = self.generate_foreign_contract();
         let mockable_contract = mockable.generate_code();
         let cfg_checker = match self.lang_type {
-            LangType::Solidity => quote! {
-                #[cfg(not(feature = "solidity-interface"))]
-                mod __liquid_cfg_checker {
-                    #[cfg(not(feature = "solidity-compatible"))]
-                    compile_error! {
-                        "in order to call interface implemented via Solidity, \
-                         please enable compilation feature `solidity-interface`"
+            LangType::Solidity => {
+                if cfg!(not(feature = "solidity-interface"))
+                    && cfg!(not(feature = "solidity-compatible"))
+                {
+                    quote! {
+                        compile_error! {
+                            "in order to call interface implemented via Solidity, \
+                             please enable compilation feature `solidity-interface`"
+                        }
                     }
+                } else {
+                    quote! {}
                 }
-            },
+            }
             _ => quote! {},
         };
 
@@ -332,6 +336,17 @@ impl Interface {
         let (overriding_idents, overriding_impls): (Vec<_>, Vec<_>) =
             overriding_fns.into_iter().unzip();
 
+        let type_notations = if cfg!(feature = "solidity-compatible") {
+            quote! {
+                impl liquid_lang::You_Should_Use_An_Valid_InOut_Type for Interface {}
+                impl liquid_lang::You_Should_Use_An_Valid_State_Type for Interface {}
+                impl liquid_lang::You_Should_Use_An_Valid_Element_Type for Interface {}
+            }
+        } else {
+            quote! {
+                impl liquid_lang::You_Should_Use_An_Valid_Field_Type for Interface {}
+            }
+        };
         let mut impls = quote_spanned! { span =>
             pub struct InterfaceImpl {
                 __liquid_address: liquid_primitives::types::Address,
@@ -400,7 +415,10 @@ impl Interface {
                     <liquid_primitives::types::Address as liquid_ty_mapping::MappingToSolidityType>::MAPPED_TYPE_NAME;
             }
 
-            liquid_lang::gen_basic_type_notations!(Interface, liquid_lang);
+            #type_notations
+            impl liquid_lang::You_Should_Use_An_Valid_Event_Data_Type for Interface {}
+            impl liquid_lang::You_Should_Use_An_Valid_Return_Type for Interface {}
+            impl liquid_lang::You_Should_Use_An_Valid_Input_Type for Interface {}
 
             impl InterfaceImpl {
                 #(#trivial_fns)*

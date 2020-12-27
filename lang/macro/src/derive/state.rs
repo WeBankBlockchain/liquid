@@ -44,7 +44,7 @@ fn generate_encode_shadow_struct(
 
         quote_spanned! { ty.span() =>
             #[allow(non_camel_case_types)]
-            struct #field_checker(<#ty as liquid_lang::You_Should_Use_An_Valid_Field_Type>::T);
+            struct #field_checker(<#ty as liquid_lang::You_Should_Use_An_Valid_State_Type>::T);
         }
     });
 
@@ -122,6 +122,6 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
         #encode_shadow_struct
         #decode_shadow_struct
 
-        liquid_lang::gen_basic_type_notations!(#ident, liquid_lang);
+        impl liquid_lang::You_Should_Use_An_Valid_State_Type for #ident {}
     })
 }

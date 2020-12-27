@@ -82,7 +82,6 @@ where
         ret[i + j] = b[j];
         j += 1;
     }
-
     ret
 }
 

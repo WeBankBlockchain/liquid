@@ -2,11 +2,12 @@
 #![feature(unboxed_closures, fn_traits)]
 
 use lazy_static::lazy_static;
+use liquid::storage;
 use liquid_lang as liquid;
 
 #[liquid::interface(name = auto)]
 mod entry {
-    extern "liquid" {
+    extern "solidity" {
         fn getInt(&self, key: String) -> i256;
         fn getUint(&self, key: String) -> u256;
         fn getAddress(&self, key: String) -> address;
@@ -23,7 +24,7 @@ mod entry {
 mod kv_table {
     use super::entry::*;
 
-    extern "liquid" {
+    extern "solidity" {
         fn get(&self, primary_key: String) -> (bool, Entry);
         #[liquid(mock_context_getter = "liquid_is_fun")]
         fn set(&mut self, primary_key: String, entry: Entry) -> i256;
@@ -35,7 +36,7 @@ mod kv_table {
 mod kv_table_factory {
     use super::kv_table::*;
 
-    extern "liquid" {
+    extern "solidity" {
         fn openTable(&self, name: String) -> KvTable;
         fn createTable(
             &mut self,
@@ -49,7 +50,6 @@ mod kv_table_factory {
 #[liquid::contract]
 mod kv_table_test {
     use super::{kv_table_factory::*, *};
-    use liquid_core::storage;
 
     #[liquid(storage)]
     struct KvTableTest {
@@ -158,7 +158,14 @@ mod kv_table_test {
         fn set_works() {
             use std::collections::HashMap;
 
-            static mut ENTRY: HashMap<String, Vec<u8>> = HashMap::new();
+            fn entries() -> &'static mut HashMap<String, Vec<u8>> {
+                thread_local!(
+                    static ENTRIES: ::core::cell::RefCell<HashMap<String, Vec<u8>>> =
+                        std::cell::RefCell::new(HashMap::new());
+                );
+
+                ENTRIES.with(|entries| unsafe { &mut (*entries.as_ptr()) })
+            }
 
             // EXPECTATIONS SETUP
             let create_table_ctx = KvTableFactory::createTable_context();
@@ -178,12 +185,12 @@ mod kv_table_test {
             entry_set_ctx
                 .expect::<(String, String)>()
                 .returns_fn(|key, value| {
-                    ENTRY.insert(key, value.into_bytes());
+                    entries().insert(key, value.into_bytes());
                 });
             entry_set_ctx
                 .expect::<(String, i256)>()
                 .returns_fn(|key, value| {
-                    ENTRY.insert(key, value.to_be_bytes().to_vec());
+                    entries().insert(key, value.to_be_bytes().to_vec());
                 });
 
             let get_ctx = KvTable::get_context();
@@ -193,13 +200,13 @@ mod kv_table_test {
                 .returns((true, Entry::at(Default::default())));
 
             let get_int_ctx = Entry::getInt_context();
-            get_int_ctx
-                .expect()
-                .returns_fn(|key| i256::from_signed_be_bytes(ENTRY.get(&key).unwrap()));
+            get_int_ctx.expect().returns_fn(|key| {
+                i256::from_signed_be_bytes(entries().get(&key).unwrap())
+            });
 
             let get_string_ctx = Entry::getString_context();
             get_string_ctx.expect().returns_fn(|key| {
-                String::from_utf8(ENTRY.get(&key).unwrap().clone()).unwrap()
+                String::from_utf8(entries().get(&key).unwrap().clone()).unwrap()
             });
 
             let kv_table_set_ctx = KvTable::liquid_is_fun();

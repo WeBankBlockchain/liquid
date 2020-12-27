@@ -94,7 +94,7 @@ impl<'a> ABIGen<'a> {
 
     fn generate_external_fn_abis(&self) -> TokenStream2 {
         let external_fns = &self.contract.functions;
-        let fn_abis = external_fns.iter().filter(|func| func.is_external_fn()).map(|external_fn| {
+        let fn_abis = external_fns.iter().filter(|func| func.is_external_fn() && !func.is_internal_fn()).map(|external_fn| {
             let ident = external_fn.sig.ident.to_string();
             let input_args = generate_fn_inputs(&external_fn.sig);
             let output = &external_fn.sig.output;

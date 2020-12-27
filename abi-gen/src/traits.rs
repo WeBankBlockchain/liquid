@@ -15,6 +15,8 @@ use cfg_if::cfg_if;
 use liquid_macro::seq;
 use liquid_prelude::{string::String, vec::Vec};
 use liquid_primitives::types::*;
+#[cfg(feature = "contract")]
+use liquid_primitives::__LIQUID_GETTER_INDEX_PLACEHOLDER;
 
 pub trait GenerateParamABI {
     fn generate_ty_name() -> String;
@@ -146,7 +148,9 @@ macro_rules! impl_generate_outputs_for_tuple {
         where
             $first: GenerateParamABI
         {
-            fn generate_outputs(builder: &mut ExternalFnABIBuilder) {
+            fn generate_outputs<B>(builder: &mut B)
+            where B: FnOutputBuilder
+            {
                 builder.output(
                     {
                         let param_abi = <$first as GenerateParamABI>::generate_param_abi("".into());
@@ -181,6 +185,8 @@ macro_rules! impl_generate_outputs_for_tuple {
                 )+
             }
         }
+
+        impl_generate_outputs_for_tuple!($($rest,)+);
     }
 }
 

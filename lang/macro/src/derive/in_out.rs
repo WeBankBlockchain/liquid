@@ -36,13 +36,13 @@ fn generate_abi_gen(
         .zip(field_tys.iter())
         .map(|(field_name, field_ty)| {
             quote! {
-                <#field_ty as GenerateParamABI>::generate_param_abi(#field_name.to_owned())
+                <#field_ty as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi(#field_name.to_owned())
             }
         });
 
     quote! {
         #[cfg(feature = "liquid-abi-gen")]
-        impl liquid_abi_gen::GenerateParamABI for #ident {
+        impl liquid_abi_gen::traits::GenerateParamABI for #ident {
             fn generate_ty_name() -> liquid_prelude::string::String {
                 String::from("tuple")
             }
@@ -50,17 +50,22 @@ fn generate_abi_gen(
             fn generate_param_abi(name: String) -> liquid_abi_gen::ParamABI {
                 let mut components = __std::Vec::new();
                 #(components.push(#field_param_abis);)*
-                liquid_abi_gen::CompositeABI {
-                    trivial: liquid_abi_gen::TrivialABI::new(Self::generate_ty_name(), name),
-                    components,
-                }
+                liquid_abi_gen::ParamABI::Composite(
+                    liquid_abi_gen::CompositeABI {
+                        trivial: liquid_abi_gen::TrivialABI::new(Self::generate_ty_name(), name),
+                        components,
+                    }
+                )
             }
         }
 
         #[cfg(feature = "liquid-abi-gen")]
-        impl liquid_abi_gen::GenerateOutputs for #ident {
-            fn generate_outputs(builder: &mut liquid_abi_gen::ExternalFnABIBuilder) {
-                let param_abi = <Self as GenerateParamABI>::generate_param_abi("".into());
+        impl liquid_abi_gen::traits::GenerateOutputs for #ident {
+            fn generate_outputs<B>(builder: &mut B)
+            where
+                B: liquid_abi_gen::traits::FnOutputBuilder
+            {
+                let param_abi = <Self as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi("".into());
                 builder.output(param_abi);
             }
         }
@@ -94,7 +99,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
         );
         field_checkers.push(quote_spanned! { ty.span() =>
             #[allow(non_camel_case_types)]
-            struct #field_checker(<#ty as liquid_lang::You_Should_Use_An_Valid_Field_Type>::T);
+            struct #field_checker(<#ty as liquid_lang::You_Should_Use_An_Valid_InOut_Type>::T);
         })
     }
 
@@ -106,7 +111,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
         impl liquid_abi_codec::TypeInfo for #ident {
             #[inline(always)]
             fn is_dynamic() -> bool {
-                #(<<#field_tys as liquid_lang::You_Should_Use_An_Valid_Field_Type>::T as liquid_abi_codec::TypeInfo>::is_dynamic() ||)* false
+                #(<<#field_tys as liquid_lang::You_Should_Use_An_Valid_InOut_Type>::T as liquid_abi_codec::TypeInfo>::is_dynamic() ||)* false
             }
 
             #[inline]
@@ -114,7 +119,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
                 if Self::is_dynamic() {
                     unreachable!();
                 } else {
-                    #(<<#field_tys as liquid_lang::You_Should_Use_An_Valid_Field_Type>::T as liquid_abi_codec::TypeInfo>::size_hint() +)* 0
+                    #(<<#field_tys as liquid_lang::You_Should_Use_An_Valid_InOut_Type>::T as liquid_abi_codec::TypeInfo>::size_hint() +)* 0
                 }
             }
         }
@@ -132,7 +137,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
         }
 
         impl liquid_abi_codec::MediateDecode for #ident {
-            fn decode(slices: &[liquid_abi_codec::Word], offset: usize) -> ::core::result::Result::Result<liquid_abi_codec::DecodeResult<Self>, liquid_primitives::Error>{
+            fn decode(slices: &[liquid_abi_codec::Word], offset: usize) -> ::core::result::Result<liquid_abi_codec::DecodeResult<Self>, liquid_primitives::Error>{
                 let is_dynamic = <Self as liquid_abi_codec::TypeInfo>::is_dynamic();
 
                 // The first element in a dynamic Tuple is an offset to the Tuple's data
@@ -164,8 +169,12 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
             };
         }
 
-        liquid_lang::gen_basic_type_notations!(#ident, liquid_lang);
-
         #abi_gen_helper
+
+        impl liquid_lang::You_Should_Use_An_Valid_InOut_Type for #ident {}
+        impl liquid_lang::You_Should_Use_An_Valid_Element_Type for #ident {}
+        impl liquid_lang::You_Should_Use_An_Valid_Event_Data_Type for #ident {}
+        impl liquid_lang::You_Should_Use_An_Valid_Return_Type for #ident {}
+        impl liquid_lang::You_Should_Use_An_Valid_Input_Type for #ident {}
     })
 }

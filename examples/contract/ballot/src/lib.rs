@@ -1,12 +1,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use liquid::{storage, InOut, State};
 use liquid_lang as liquid;
 
 /// This example is inspired by [Solidity by Example](https://solidity.readthedocs.io/en/latest/solidity-by-example.html).
 /// Voting with delegation.
 #[liquid::contract]
 mod ballot {
-    use liquid_lang::{InOut, State};
+    use super::*;
 
     /// This declares a new complex type which will
     /// be used for variables later.
@@ -33,8 +34,6 @@ mod ballot {
         /// number of accumulated votes
         vote_count: u32,
     }
-
-    use liquid_core::storage;
 
     #[liquid(storage)]
     struct Ballot {
@@ -203,7 +202,7 @@ mod ballot {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use liquid_core::env::test;
+        use liquid::env::test;
 
         fn deploy_contract() -> Ballot {
             let accounts = test::default_accounts();

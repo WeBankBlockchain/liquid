@@ -15,6 +15,7 @@
 #![allow(incomplete_features)]
 #![feature(min_const_generics)]
 #![feature(specialization)]
+#![feature(const_panic)]
 
 mod traits;
 
