@@ -56,3 +56,6 @@ fn generate_impl(
         }
     }
 }
+
+pub const SUPPORTS_ASSET_NAME: &'static str = "__liquid_supports_asset";
+pub const SUPPORTS_ASSET_SIGNATURE: &'static str = "__liquid_supports_asset(string)";

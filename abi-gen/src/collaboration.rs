@@ -15,13 +15,14 @@ use derive_more::From;
 use serde::Serialize;
 
 pub struct CollaborationABI {
-    pub contracts: Vec<ContractABI>,
+    pub contract_abis: Vec<ContractABI>,
 }
 
+#[derive(Serialize)]
 pub struct ContractABI {
     pub name: String,
     pub data: Vec<ParamABI>,
-    pub rights: Vec<RightsABI>,
+    pub rights: Vec<RightABI>,
 }
 
 #[derive(Serialize)]
@@ -73,16 +74,16 @@ pub enum ParamABI {
 
 #[derive(Serialize)]
 #[allow(non_snake_case)]
-pub struct RightsABI {
+pub struct RightABI {
     pub constant: bool,
     pub inputs: Vec<ParamABI>,
     pub name: String,
     pub outputs: Vec<ParamABI>,
 }
 
-impl RightsABI {
-    pub fn new_builder(name: String, constant: bool) -> RightsABIBuilder {
-        RightsABIBuilder {
+impl RightABI {
+    pub fn new_builder(name: String, constant: bool) -> RightABIBuilder {
+        RightABIBuilder {
             abi: Self {
                 constant,
                 inputs: Vec::new(),
@@ -93,11 +94,11 @@ impl RightsABI {
     }
 }
 
-pub struct RightsABIBuilder {
-    abi: RightsABI,
+pub struct RightABIBuilder {
+    abi: RightABI,
 }
 
-impl RightsABIBuilder {
+impl RightABIBuilder {
     pub fn input(&mut self, param_abi: ParamABI) {
         self.abi.inputs.push(param_abi);
     }
@@ -106,12 +107,12 @@ impl RightsABIBuilder {
         self.abi.outputs.push(param_abi);
     }
 
-    pub fn done(self) -> RightsABI {
+    pub fn done(self) -> RightABI {
         self.abi
     }
 }
 
-impl FnOutputBuilder for RightsABIBuilder {
+impl FnOutputBuilder for RightABIBuilder {
     fn output(&mut self, param_abi: ParamABI) {
         self.abi.outputs.push(param_abi);
     }

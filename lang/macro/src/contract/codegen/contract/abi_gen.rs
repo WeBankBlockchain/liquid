@@ -11,8 +11,8 @@
 // limitations under the License.
 
 use crate::{
-    contract::ir::{Contract, FnArg, Signature},
     common::GenerateCode,
+    contract::ir::{Contract, FnArg, Signature},
 };
 use derive_more::From;
 use proc_macro2::TokenStream as TokenStream2;
@@ -51,29 +51,14 @@ impl<'a> GenerateCode for ABIGen<'a> {
     }
 }
 
-fn generate_details(ty: &syn::Type) -> TokenStream2 {
-    quote! {
-        <#ty as liquid_abi_gen::GenerateDetails>::generate_details()
-    }
-}
-
-fn generate_ty_name(ty: &syn::Type) -> TokenStream2 {
-    quote! {
-        <#ty as liquid_abi_gen::TyName>::ty_name()
-    }
-}
-
 fn generate_fn_inputs(sig: &Signature) -> impl Iterator<Item = TokenStream2> + '_ {
     sig.inputs.iter().skip(1).map(|arg| match arg {
         FnArg::Typed(ident_type) => {
             let ident = &ident_type.ident.to_string();
             let ty = &ident_type.ty;
 
-            let ty_name = generate_ty_name(ty);
-            let details = generate_details(ty);
-
             quote! {
-                #details, String::from(#ident), #ty_name
+                <#ty as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi(#ident.to_owned())
             }
         }
         _ => unreachable!(),
@@ -102,17 +87,26 @@ impl<'a> ABIGen<'a> {
                 syn::ReturnType::Default => quote! {},
                 syn::ReturnType::Type(_, ty) => {
                     quote! {
-                        <#ty as liquid_abi_gen::GenerateOutputs>::generate_outputs(&mut builder);
+                        <#ty as liquid_abi_gen::traits::GenerateOutputs>::generate_outputs(&mut builder);
                     }
                 }
             };
 
             let constant = !external_fn.sig.is_mut();
-            let state_mutability = if constant { "view" } else { "nonpayable" };
+            let build_args = if cfg!(feature = "solidity-compatible") {
+                let state_mutability = if constant { "view" } else { "nonpayable" };
+                quote! {
+                    String::from(#ident), String::from(#state_mutability), #constant
+                }
+            } else {
+                quote! {
+                    String::from(#ident), #constant
+                }
+            };
 
             quote! {
                 {
-                    let mut builder = liquid_abi_gen::ExternalFnABI::new_builder(String::from(#ident), String::from(#state_mutability), #constant);
+                    let mut builder = liquid_abi_gen::ExternalFnABI::new_builder(#build_args);
                     #(builder.input(#input_args);)*
                     #output_args
                     builder.done()
@@ -134,15 +128,15 @@ impl<'a> ABIGen<'a> {
         let abis = events.iter().map(|event| {
             let event_name = event.ident.to_string();
             let inputs = event.fields.iter().enumerate().map(|(i, field)|{
-                let field_name = field.ident.as_ref().unwrap().to_string();
+                let name = match &field.ident {
+                    Some(ident) => ident.to_string(),
+                    _ => String::new(),
+                };
                 let field_ty = &field.ty;
                 let is_indexed = event.indexed_fields.iter().any(|index| *index == i);
 
-                let ty_name = generate_ty_name(field_ty);
-                let details = generate_details(field_ty);
-
                 quote!{
-                    #details, String::from(#field_name), #ty_name, #is_indexed
+                    <#field_ty as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi(#name.to_owned()), #is_indexed
                 }});
 
             quote! {

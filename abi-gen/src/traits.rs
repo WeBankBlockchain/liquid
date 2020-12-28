@@ -24,8 +24,14 @@ pub trait GenerateParamABI {
     fn generate_param_abi(name: String) -> ParamABI;
 }
 
+pub trait FnOutputBuilder {
+    fn output(&mut self, param_abi: ParamABI);
+}
+
 pub trait GenerateOutputs {
-    fn generate_outputs(builder: &mut ExternalFnABIBuilder);
+    fn generate_outputs<B>(builder: &mut B)
+    where
+        B: FnOutputBuilder;
 }
 
 macro_rules! impl_for_primitive_tys {
@@ -48,7 +54,10 @@ macro_rules! impl_for_primitive_tys {
 
             impl GenerateOutputs for $t
             {
-                fn generate_outputs(builder: &mut ExternalFnABIBuilder) {
+                fn generate_outputs<B>(builder: &mut B)
+                where
+                    B: FnOutputBuilder,
+                {
                     let param_abi = <Self as GenerateParamABI>::generate_param_abi("".into());
                     builder.output(param_abi);
                 }
@@ -98,7 +107,10 @@ impl<T> GenerateOutputs for Vec<T>
 where
     T: GenerateParamABI,
 {
-    fn generate_outputs(builder: &mut ExternalFnABIBuilder) {
+    fn generate_outputs<B>(builder: &mut B)
+    where
+        B: FnOutputBuilder,
+    {
         let param_abi = <Self as GenerateParamABI>::generate_param_abi("".into());
         builder.output(param_abi);
     }
@@ -136,9 +148,23 @@ impl<T, const N: usize> GenerateOutputs for [T; N]
 where
     T: GenerateParamABI,
 {
-    fn generate_outputs(builder: &mut ExternalFnABIBuilder) {
+    fn generate_outputs<B>(builder: &mut B)
+    where
+        B: FnOutputBuilder,
+    {
         let param_abi = <Self as GenerateParamABI>::generate_param_abi("".into());
         builder.output(param_abi);
+    }
+}
+
+#[cfg(feature = "contract")]
+impl GenerateParamABI for __LIQUID_GETTER_INDEX_PLACEHOLDER {
+    fn generate_ty_name() -> String {
+        String::new()
+    }
+
+    fn generate_param_abi(_: String) -> ParamABI {
+        ParamABI::None
     }
 }
 
@@ -149,7 +175,8 @@ macro_rules! impl_generate_outputs_for_tuple {
             $first: GenerateParamABI
         {
             fn generate_outputs<B>(builder: &mut B)
-            where B: FnOutputBuilder
+            where
+                B: FnOutputBuilder,
             {
                 builder.output(
                     {
@@ -168,7 +195,10 @@ macro_rules! impl_generate_outputs_for_tuple {
                 $rest: GenerateParamABI,
             )*
         {
-            fn generate_outputs(builder: &mut ExternalFnABIBuilder) {
+            fn generate_outputs<B>(builder: &mut B)
+            where
+                B: FnOutputBuilder
+            {
                 builder.output(
                     {
                         let param_abi = <$first as GenerateParamABI>::generate_param_abi("".into());

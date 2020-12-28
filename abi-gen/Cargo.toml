@@ -25,3 +25,10 @@ std = [
     "liquid_primitives/std",
 ]
 solidity-compatible = []
+contract = [
+    "liquid_primitives/contract",
+    "liquid_ty_mapping/contract",
+]
+collaboration = [
+    "liquid_macro/collaboration",
+]

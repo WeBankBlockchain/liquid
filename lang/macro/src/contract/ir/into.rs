@@ -12,7 +12,10 @@
 
 use crate::{
     common::AttrValue,
-    contract::ir::{self, utils as ir_utils},
+    contract::{
+        ir::{self, utils as ir_utils},
+        SUPPORTS_ASSET_NAME, SUPPORTS_ASSET_SIGNATURE,
+    },
     utils as lang_utils,
 };
 use core::convert::TryFrom;
@@ -192,7 +195,7 @@ impl TryFrom<(ir::ContractParams, syn::ItemMod)> for ir::Contract {
         })
         .unwrap();
         constants.push(supports_asset_constant);
-        let supports_asset_name = Ident::new(lang_utils::SUPPORTS_ASSET_NAME, span);
+        let supports_asset_name = Ident::new(SUPPORTS_ASSET_NAME, span);
         let supports_asset_fn = syn::parse2::<syn::ItemFn>(quote! {
             pub fn #supports_asset_name(&self, asset: String) -> bool {
                 Self::SUPPORTS_ASSET.contains(&asset)
@@ -202,7 +205,7 @@ impl TryFrom<(ir::ContractParams, syn::ItemMod)> for ir::Contract {
         functions.push(ir::Function {
             attrs: supports_asset_fn.attrs,
             kind: ir::FunctionKind::External(
-                lang_utils::calculate_fn_id(&lang_utils::SUPPORTS_ASSET_SIGNATURE),
+                lang_utils::calculate_fn_id(&SUPPORTS_ASSET_SIGNATURE),
                 false,
             ),
             sig: ir::Signature::try_from(&supports_asset_fn.sig).unwrap(),

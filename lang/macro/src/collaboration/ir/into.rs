@@ -115,10 +115,17 @@ impl TryFrom<syn::ItemMod> for ir::Collaboration {
 
         let span = item_mod.span();
         let (contracts, impl_blocks) = split_items(liquid_items, span)?;
+        let mod_ident = item_mod.ident;
+        use heck::CamelCase;
+        let collaboration_ident = Ident::new(
+            &format!("__Liquid{}", mod_ident.to_string().to_camel_case()),
+            Span::call_site(),
+        );
 
         Ok(Self {
             mod_token: item_mod.mod_token,
-            ident: item_mod.ident,
+            mod_ident,
+            collaboration_ident,
             contracts,
             rust_items,
             all_item_rights: impl_blocks,

@@ -450,7 +450,16 @@ cfg_if! {
     }
 }
 
-#[cfg(feature = "liquid-abi-gen")]
-pub trait GenerateABI {
-    fn generate_abi() -> liquid_abi_gen::ContractABI;
+cfg_if! {
+    if #[cfg(feature = "contract")] {
+        #[cfg(feature = "liquid-abi-gen")]
+        pub trait GenerateABI {
+            fn generate_abi() -> liquid_abi_gen::ContractABI;
+        }
+    } else if #[cfg(feature = "collaboration")] {
+        #[cfg(feature = "liquid-abi-gen")]
+        pub trait GenerateABI {
+            fn generate_abi() -> liquid_abi_gen::CollaborationABI;
+        }
+    }
 }

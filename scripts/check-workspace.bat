@@ -5,6 +5,7 @@ rem Please execute this script from the root of the project's directory.
 
 set all_crates=(abi-codec macro primitives alloc core lang ty_mapping)
 set results=()
+set feature=("contract,solidity-compatible", "collaboration")
 
 set results[0].name=check_all_features
 set results[0].result=0

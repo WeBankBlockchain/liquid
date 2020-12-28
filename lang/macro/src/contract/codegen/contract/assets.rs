@@ -10,9 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::contract::ir::Contract;
-use crate::common::GenerateCode;
-use crate::utils as lang_utils;
+use crate::{
+    common::GenerateCode,
+    contract::{ir::Contract, SUPPORTS_ASSET_SIGNATURE},
+    utils as lang_utils,
+};
 use cfg_if::cfg_if;
 use derive_more::From;
 use proc_macro2::TokenStream as TokenStream2;
@@ -54,7 +56,7 @@ impl<'a> Assets<'a> {
             let issuer = &asset.issuer;
             let span = asset.span;
             let description = asset.description.clone();
-            let supports_asset_signature = lang_utils::SUPPORTS_ASSET_SIGNATURE;
+            let supports_asset_signature = SUPPORTS_ASSET_SIGNATURE;
             let call_supports_asset = if cfg!(feature = "std") {
                 quote! {}
             } else {

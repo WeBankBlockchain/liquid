@@ -1,28 +1,10 @@
 fn main() -> Result<(), std::io::Error> {
-    let contract_abi = <collaboration::Voting as liquid_lang::GenerateABI>::generate_abi();
-    let mut final_abi = Vec::with_capacity(
-        contract_abi.event_abis.len() + contract_abi.external_fn_abis.len() + 1,
-    );
-    final_abi.extend(
-        contract_abi
-            .event_abis
-            .iter()
-            .map(|abi| serde_json::to_string(abi))
-            .collect::<Result<Vec<_>, _>>()
-            .expect("the ABI of event must be a well-formatted JSON object"),
-    );
-    final_abi.push(serde_json::to_string(&contract_abi.constructor_abi)?);
-    final_abi.extend(
-        contract_abi
-            .external_fn_abis
-            .iter()
-            .map(|abi| serde_json::to_string(abi))
-            .collect::<Result<Vec<_>, _>>()
-            .expect("the ABI of external functions must be a well-formatted JSON object"),
-    );
-    let contents = final_abi.join(",");
-    let contents = format!("[{}]", contents);
+    let collaboration_abi =
+        <collaboration::__LiquidIou as liquid_lang::GenerateABI>::generate_abi();
     std::fs::create_dir("target").ok();
-    std::fs::write("target/ballot.abi", contents)?;
+    std::fs::write(
+        "target/role.abi",
+        serde_json::to_string(&collaboration_abi.contract_abis)?,
+    )?;
     Ok(())
 }

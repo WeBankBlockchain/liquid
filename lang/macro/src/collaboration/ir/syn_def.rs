@@ -130,6 +130,13 @@ impl Spanned for Right {
     }
 }
 
+impl Right {
+    pub fn is_internal_fn(&self) -> bool {
+        let name = self.sig.ident.to_string();
+        name.starts_with("__liquid")
+    }
+}
+
 pub struct Signature {
     /// The `fn` token.
     pub fn_token: Token![fn],
@@ -244,7 +251,9 @@ pub struct Collaboration {
     /// The `mod` token.
     pub mod_token: Token![mod],
     /// The modules snake case identifier.
-    pub ident: Ident,
+    pub mod_ident: Ident,
+    /// The modules camel case identifier.
+    pub collaboration_ident: Ident,
     /// All contracts.
     pub contracts: Vec<ItemContract>,
     /// All rights for each contract.

@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod abi_gen;
 mod contract_id;
 mod contracts;
 mod dispatch;
@@ -21,18 +22,21 @@ mod utils;
 use crate::{
     collaboration::ir::Collaboration, common::GenerateCode, utils as macro_utils,
 };
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::quote;
 
+use abi_gen::ABIGen;
 use contract_id::ContractId;
 use contracts::Contracts;
 use dispatch::Dispatch;
+use heck::CamelCase;
 use rights::Rights;
 use storage::Storage;
 
 impl GenerateCode for Collaboration {
     fn generate_code(&self) -> TokenStream2 {
-        let ident = &self.ident;
+        let mod_ident = &self.mod_ident;
+        let collaboration_ident = &self.collaboration_ident;
         let rust_items = &self.rust_items;
         let types = macro_utils::generate_primitive_types();
         let storage = Storage::from(self).generate_code();
@@ -40,9 +44,10 @@ impl GenerateCode for Collaboration {
         let dispatch = Dispatch::from(self).generate_code();
         let rights = Rights::from(self).generate_code();
         let contract_id = ContractId::generate_code();
+        let abi_gen = ABIGen::from(self).generate_code();
 
         quote! {
-            mod #ident {
+            mod #mod_ident {
                 #[allow(unused_imports)]
                 use liquid_lang::intrinsics::*;
                 #[allow(unused_imports)]
@@ -67,8 +72,12 @@ impl GenerateCode for Collaboration {
                 use __liquid_private::__liquid_acquire_authorizers;
                 use __liquid_private::__liquid_authorization_check;
 
+                #abi_gen
                 #(#rust_items)*
             }
+
+            #[cfg(feature = "liquid-abi-gen")]
+            pub use crate::#mod_ident::#collaboration_ident;
         }
     }
 }

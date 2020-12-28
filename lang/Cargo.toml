@@ -57,10 +57,12 @@ contract = [
     "liquid_ty_mapping/contract",
     "liquid_primitives/contract",
     "liquid_lang_macro/contract",
+    "liquid_abi_gen/contract",
 ]
 solidity-compatible = [
     "liquid_abi_codec",
     "liquid_lang_macro/solidity-compatible",
+    "liquid_abi_gen/solidity-compatible",
 ]
 solidity-interface = [
     "liquid_abi_codec",
@@ -70,6 +72,7 @@ collaboration = [
     "liquid_abi_codec",
     "liquid_lang_macro/collaboration",
     "liquid_macro/collaboration",
+    "liquid_abi_gen/collaboration",
 ]
 
 [[test]]
