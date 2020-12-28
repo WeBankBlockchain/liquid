@@ -237,7 +237,7 @@ cfg_if! {
             fn generate_param_abi(name: String) -> ParamABI {
                 OptionABI {
                     trivial: TrivialABI::new(Self::generate_ty_name(), name),
-                    some: Box::new(<T as GenerateParamABI>::generate_param_abi("".into()).into())
+                    some: Box::new(<T as GenerateParamABI>::generate_param_abi("".into()))
                 }
                 .into()
             }
@@ -255,8 +255,8 @@ cfg_if! {
             fn generate_param_abi(name: String) -> ParamABI {
                 ResultABI {
                     trivial: TrivialABI::new(Self::generate_ty_name(), name),
-                    ok: Box::new(<T as GenerateParamABI>::generate_param_abi("".into()).into()),
-                    err: Box::new(<E as GenerateParamABI>::generate_param_abi("".into()).into()),
+                    ok: Box::new(<T as GenerateParamABI>::generate_param_abi("".into())),
+                    err: Box::new(<E as GenerateParamABI>::generate_param_abi("".into())),
                 }
                 .into()
             }

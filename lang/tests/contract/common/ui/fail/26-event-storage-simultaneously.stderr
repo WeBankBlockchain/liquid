@@ -1,4 +1,4 @@
-error: a struct can not be marked as `liquid(event)` and `liquid(storage)` simultaneously
+error: a struct can be marked by only one of the followings: `liquid(storage)`, `liquid(event)` or `liquid(asset)` at the same time
  --> $DIR/26-event-storage-simultaneously.rs:5:5
   |
 5 | /     #[liquid(event)]

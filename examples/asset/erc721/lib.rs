@@ -1,13 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![feature(trace_macros)]
 
-trace_macros!(true);
 use liquid_lang as liquid;
-
-/// This declaration aims at importing `format!` macro used by `get` method.
-/// If you don't need that, just remove this declaration freely.
-#[macro_use]
-extern crate alloc;
 
 #[liquid::contract(version = "0.2.0")]
 mod asset_erc20 {
@@ -15,7 +8,7 @@ mod asset_erc20 {
 
     /// Defines the storage of your contract.
     #[liquid(storage)]
-    struct AssetErc721 {
+    struct Erc721 {
         allowances: storage::Mapping<u64, (address, address)>,
         ownership: storage::Mapping<address, Vec<u64>>,
         operators: storage::Mapping<(address, address), bool>,
@@ -30,7 +23,7 @@ mod asset_erc20 {
 
     /// Defines the methods of your contract.
     #[liquid(methods)]
-    impl AssetErc721 {
+    impl Erc721 {
         /// Constructor that initializes your storage.
         /// # Note
         /// 1. The name of constructor must be `new`;

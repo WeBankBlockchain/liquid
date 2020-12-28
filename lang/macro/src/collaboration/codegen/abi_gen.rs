@@ -61,9 +61,7 @@ fn generate_fn_inputs(sig: &Signature) -> impl Iterator<Item = TokenStream2> + '
     })
 }
 
-fn generate_right_abis<'a>(
-    rights: &'a [Right],
-) -> impl Iterator<Item = TokenStream2> + 'a {
+fn generate_right_abis(rights: &[Right]) -> impl Iterator<Item = TokenStream2> + '_ {
     rights.iter().filter(|right| !right.is_internal_fn()).map(|right| {
         let sig = &right.sig;
         let ident = sig.ident.to_string();

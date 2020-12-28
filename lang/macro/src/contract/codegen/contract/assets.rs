@@ -66,17 +66,16 @@ impl<'a> Assets<'a> {
                         _  => true,
                     };
                     if is_contract {
-                        use crate::alloc::string::ToString;
                         type Input = (String,);
                         const SUPPORTS_ASSET: liquid_primitives::Selector = {
                             let hash = liquid_primitives::hash::hash(&#supports_asset_signature.as_bytes());
                             [hash[0], hash[1], hash[2], hash[3]]
                         };
                         let mut encoded = SUPPORTS_ASSET.to_vec();
-                        encoded.extend(<Input as liquid_abi_codec::Encode>::encode(&(Self::ASSET_NAME.to_string(),)));
+                        encoded.extend(<Input as liquid_abi_codec::Encode>::encode(&(String::from(Self::ASSET_NAME),)));
                         match liquid_lang::env::call::<bool>(&to, &encoded) {
                             Ok(true) =>(),
-                            _ => require(false, "the contract doesn't know ".to_string() + Self::ASSET_NAME)
+                            _ => require(false, String::from("the contract doesn't know ") + Self::ASSET_NAME)
                         }
                     }
                 }

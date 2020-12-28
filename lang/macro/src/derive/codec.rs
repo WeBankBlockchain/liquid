@@ -67,9 +67,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
                 generate_abi_struct(field_names.as_slice(), &field_tys, ident);
 
             let mut field_checkers = Vec::new();
-            for i in 0..field_names.len() {
-                let ty = &field_tys[i];
-
+            for (i, ty) in field_tys.iter().enumerate() {
                 let field_checker = Ident::new(
                     &format!("__LIQUID_FIELD_CHECKER_{}", i),
                     Span::call_site(),
@@ -93,7 +91,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
             }
 
             for variant in &enum_data.variants {
-                if let Some(_) = variant.discriminant {
+                if variant.discriminant.is_some() {
                     bail!(variant, "custom discriminant is not supported")
                 }
             }
@@ -374,19 +372,17 @@ fn generate_decode_shadow_enum<'a>(
             quote! {
                 DecodeShadow::#variant_ident{} => Ok(#ident::#variant_ident),
             }
-        } else {
-            if variant.unnamed {
+        } else if variant.unnamed {
                 quote! {
                     DecodeShadow::#variant_ident{#(#field_names,)*} => Ok(#ident::#variant_ident (
                         #(#field_names,)*
                     )),
                 }
-            } else {
-                quote! {
-                    DecodeShadow::#variant_ident{#(#field_names,)*} => Ok(#ident::#variant_ident {
-                        #(#field_names,)*
-                    }),
-                }
+        } else {
+            quote! {
+                DecodeShadow::#variant_ident{#(#field_names,)*} => Ok(#ident::#variant_ident {
+                    #(#field_names,)*
+                }),
             }
         };
         (new_variants, arms)

@@ -18,7 +18,9 @@ use liquid_prelude::{
 
 pub const ADDRESS_LENGTH: usize = 20;
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, scale::Decode, scale::Encode, Hash)]
+#[derive(
+    Copy, Clone, PartialEq, Eq, PartialOrd, Ord, scale::Decode, scale::Encode, Hash,
+)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Address(pub [u8; ADDRESS_LENGTH]);
 

@@ -28,7 +28,7 @@ impl StaticBuffer {
 
     #[inline(always)]
     pub fn len(&self) -> usize {
-        return self.len;
+        self.len
     }
 
     #[inline(always)]

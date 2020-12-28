@@ -319,10 +319,7 @@ impl Interface {
 
     fn generate_foreign_contract(&self) -> TokenStream2 {
         let span = self.span;
-        let is_sol = match self.lang_type {
-            LangType::Solidity => true,
-            _ => false,
-        };
+        let is_sol = matches!(self.lang_type, LangType::Solidity);
 
         let (trivial_fns, overriding_fns): (Vec<_>, Vec<_>) =
             self.foreign_fns.iter().partition_map(|(ident, fns)| {

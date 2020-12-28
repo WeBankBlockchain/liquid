@@ -342,7 +342,7 @@ impl Env for EnvInstance {
             asset_id,
             &mut self.buffer[..],
         );
-        if size <= 0 {
+        if size == 0 {
             return String::new();
         }
         self.buffer.resize(size as usize);

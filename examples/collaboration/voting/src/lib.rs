@@ -129,7 +129,7 @@ mod voting {
             let charlie = default_accounts.charlie;
             let david = default_accounts.david;
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             let ballot_id = sign! { Ballot =>
                 government,
                 voters: Vec::new(),
@@ -143,19 +143,19 @@ mod voting {
             let mut ballot_id = ballot_id.take().add(david);
             test::pop_execution_context();
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             ballot_id.as_mut().vote(true);
             test::pop_execution_context();
 
-            test::push_execution_context(charlie);
+            test::set_caller(charlie);
             ballot_id.as_mut().vote(true);
             test::pop_execution_context();
 
-            test::push_execution_context(david);
+            test::set_caller(david);
             ballot_id.as_mut().vote(true);
             test::pop_execution_context();
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             let decision_id = ballot_id.exec(|ballot| ballot.decide());
             let decision = decision_id.fetch();
             assert_eq!(decision.government, government);
@@ -174,7 +174,7 @@ mod voting {
             let charlie = default_accounts.charlie;
             let david = default_accounts.david;
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             let ballot_id = sign! { Ballot =>
                 government,
                 voters: Vec::new(),
@@ -186,24 +186,24 @@ mod voting {
             let mut ballot_id = ballot_id.take().add(bob);
             test::pop_execution_context();
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             ballot_id.as_mut().vote(true);
             test::pop_execution_context();
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             let ballot_id = ballot_id.exec(|ballot| ballot.add(charlie));
             let mut ballot_id = ballot_id.exec(|ballot| ballot.add(david));
             test::pop_execution_context();
 
-            test::push_execution_context(charlie);
+            test::set_caller(charlie);
             ballot_id.as_mut().vote(false);
             test::pop_execution_context();
 
-            test::push_execution_context(david);
+            test::set_caller(david);
             ballot_id.as_mut().vote(false);
             test::pop_execution_context();
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             let decision_id = ballot_id.exec(|ballot| ballot.decide());
             let decision = decision_id.fetch();
             assert_eq!(decision.government, government);
@@ -221,7 +221,7 @@ mod voting {
             let government = default_accounts.alice;
             let bob = default_accounts.bob;
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             let ballot_id = sign! { Ballot =>
                 government,
                 voters: Vec::new(),
@@ -233,11 +233,11 @@ mod voting {
             let mut ballot_id = ballot_id.take().add(bob);
             test::pop_execution_context();
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             ballot_id.as_mut().vote(true);
             test::pop_execution_context();
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             ballot_id.as_mut().vote(false);
             test::pop_execution_context();
         }
@@ -249,7 +249,7 @@ mod voting {
             let government = default_accounts.alice;
             let bob = default_accounts.bob;
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             sign! { Ballot =>
                 government: bob,
                 voters: Vec::new(),
@@ -266,7 +266,7 @@ mod voting {
             let default_accounts = test::default_accounts();
             let government = default_accounts.alice;
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             let ballot = Ballot {
                 government: address::empty(),
                 voters: Vec::new(),
@@ -284,7 +284,7 @@ mod voting {
             let default_accounts = test::default_accounts();
             let government = default_accounts.alice;
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             let ballot_id = sign! {Ballot =>
                 government: address::empty(),
                 voters: Vec::new(),
@@ -305,7 +305,7 @@ mod voting {
             let government = default_accounts.alice;
             let bob = default_accounts.bob;
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             let ballot_id = sign! {Ballot =>
                 government,
                 voters: Vec::new(),
@@ -316,7 +316,7 @@ mod voting {
             };
             test::pop_execution_context();
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             ballot_id.exec(|ballot| ballot.decide());
             test::pop_execution_context();
         }
@@ -329,7 +329,7 @@ mod voting {
             let bob = default_accounts.bob;
             let charlie = default_accounts.charlie;
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             let ballot_id = sign! { Ballot =>
                 government,
                 voters: Vec::new(),
@@ -342,15 +342,15 @@ mod voting {
             let mut ballot_id = ballot_id.take().add(charlie);
             test::pop_execution_context();
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             ballot_id.as_mut().vote(true);
             test::pop_execution_context();
 
-            test::push_execution_context(charlie);
+            test::set_caller(charlie);
             ballot_id.as_mut().vote(false);
             test::pop_execution_context();
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             ballot_id.exec(|ballot| ballot.decide());
             test::pop_execution_context();
         }
@@ -363,7 +363,7 @@ mod voting {
             let bob = default_accounts.bob;
             let charlie = default_accounts.charlie;
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             let ballot_id = sign! { Ballot =>
                 government,
                 voters: Vec::new(),
@@ -376,11 +376,11 @@ mod voting {
             let mut ballot_id = ballot_id.take().add(charlie);
             test::pop_execution_context();
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             ballot_id.as_mut().vote(true);
             test::pop_execution_context();
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             ballot_id.exec(|ballot| ballot.decide());
             test::pop_execution_context();
         }
@@ -392,7 +392,7 @@ mod voting {
             let government = default_accounts.alice;
             let bob = default_accounts.bob;
 
-            test::push_execution_context(government);
+            test::set_caller(government);
             let mut ballot_id = sign! { Ballot =>
                 government,
                 voters: Vec::new(),
@@ -403,7 +403,7 @@ mod voting {
             };
             test::pop_execution_context();
 
-            test::push_execution_context(bob);
+            test::set_caller(bob);
             ballot_id.as_mut().vote(true);
             test::pop_execution_context();
         }

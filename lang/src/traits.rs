@@ -66,7 +66,7 @@ cfg_if! {
             T: IntoIterator<Item = &'a Address>
         {
             fn acquire_addrs(self) -> Vec<Address> {
-                self.into_iter().map(|addr| addr.clone()).collect()
+                self.into_iter().copied().collect()
             }
         }
 

@@ -244,7 +244,7 @@ impl Env for EnvInstance {
             return false;
         }
         if asset_info.issuer != caller {
-            //TODO: add some log
+            // TODO: add some log
             return false;
         }
         if asset_info.total_supply - asset_info.supplied < amount {
@@ -254,7 +254,7 @@ impl Env for EnvInstance {
         let account_balance = self
             .fungible_asset
             .entry(asset_name.to_string())
-            .or_insert(HashMap::new())
+            .or_insert_with(HashMap::new)
             .entry(*to)
             .or_insert(0);
         *account_balance += amount;
@@ -277,7 +277,7 @@ impl Env for EnvInstance {
             return 0;
         }
         if asset_info.issuer != caller {
-            //TODO: add some log
+            // TODO: add some log
             return 0;
         }
         if asset_info.total_supply == asset_info.supplied {
@@ -287,9 +287,9 @@ impl Env for EnvInstance {
         let tokens = self
             .not_fungible_asset
             .entry(asset_name.to_string())
-            .or_insert(HashMap::new())
+            .or_insert_with(HashMap::new)
             .entry(*to)
-            .or_insert(HashMap::new());
+            .or_insert_with(HashMap::new);
         tokens.insert(
             asset_info.supplied,
             str::from_utf8(uri).unwrap().to_string(),
@@ -343,7 +343,7 @@ impl Env for EnvInstance {
                 .get_mut(asset_name)
                 .unwrap()
                 .entry(from)
-                .or_insert(HashMap::new());
+                .or_insert_with(HashMap::new);
             if !from_balance.contains_key(&token_id) {
                 return false;
             }
@@ -353,7 +353,7 @@ impl Env for EnvInstance {
                 .get_mut(asset_name)
                 .unwrap()
                 .entry(*to)
-                .or_insert(HashMap::new());
+                .or_insert_with(HashMap::new);
             to_balance.insert(token_id, token_uri);
             true
         }
@@ -424,7 +424,7 @@ impl Env for EnvInstance {
         match accounts.get(account) {
             None => (),
             Some(tokens) => {
-                for (key, _) in tokens {
+                for key in tokens.keys() {
                     ret.push(*key)
                 }
             }

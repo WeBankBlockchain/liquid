@@ -32,10 +32,8 @@ impl EnvAccess {
         api::get_address()
     }
 
+    #[allow(clippy::wrong_self_convention)]
     pub fn is_contract(self, account: &Address) -> bool {
-        match api::get_external_code_size(account) {
-            0 => true,
-            _ => false,
-        }
+        matches!(api::get_external_code_size(account), 0)
     }
 }

@@ -88,7 +88,7 @@ impl Parse for ir::Marker {
                 ident,
                 value: ir::AttrValue::None,
             })
-        } else if ident.to_string() == "asset" {
+        } else if ident == "asset" {
             let attributes_content;
             syn::parenthesized!(attributes_content in content);
             let fields = attributes_content
@@ -226,7 +226,9 @@ impl TryFrom<(ir::ContractParams, syn::ItemMod)> for ir::Contract {
                     constructor = Some(pos);
                 }
                 ir::FunctionKind::External(..) => {
-                    external_func_count += 1;
+                    if !func.is_internal_fn() {
+                        external_func_count += 1;
+                    }
                 }
                 _ => (),
             }

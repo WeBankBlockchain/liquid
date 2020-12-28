@@ -48,7 +48,7 @@ impl<'a> PathVisitor<'a> {
         self.visit(self.arena, root);
         let last_var = self.last_var();
         let final_stmts = &self.stmts;
-        if let Some(_) = self.from {
+        if self.from.is_some() {
             quote! {
                 {
                     #(#final_stmts)*
@@ -293,7 +293,7 @@ impl<'a> AstVisitor for PathVisitor<'a> {
 
     fn after_visiting_left_expr(&mut self) {
         let last_var = self.last_var();
-        self.current_left_expr = Some(last_var.clone());
+        self.current_left_expr = Some(last_var);
     }
 
     fn before_visiting_predicate(&mut self) {

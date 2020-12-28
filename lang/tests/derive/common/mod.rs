@@ -22,5 +22,4 @@ fn compile_tests() {
     t.compile_fail("tests/derive/common/ui/fail/01-union.rs");
     t.compile_fail("tests/derive/common/ui/fail/02-not-public.rs");
     t.compile_fail("tests/derive/common/ui/fail/03-generic.rs");
-    t.compile_fail("tests/derive/common/ui/fail/04-invalid-field-type.rs");
 }

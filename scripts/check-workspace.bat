@@ -3,19 +3,18 @@ setlocal enabledelayedexpansion
 
 rem Please execute this script from the root of the project's directory.
 
-set all_crates=(abi-codec macro primitives alloc core lang ty_mapping)
+set features=("contract,solidity-compatible", "collaboration")
 set results=()
-set feature=("contract,solidity-compatible", "collaboration")
 
-set results[0].name=check_all_features
+set results[0].name=basic_check
 set results[0].result=0
-for %%c in %all_crates% do (
-    cargo +nightly check --verbose --manifest-path %%c\Cargo.toml
+for %%f in %features% do (
+    cargo +nightly check --verbose --features %%f --manifest-path lang\Cargo.toml
     if !errorlevel! neq 0 (
         set results[0].result=1
     )
 
-    cargo +nightly check --verbose --no-default-features --features "contract" --manifest-path %%c\Cargo.toml --target=wasm32-unknown-unknown
+    cargo +nightly check --verbose --no-default-features --features %%f --target=wasm32-unknown-unknown --manifest-path lang\Cargo.toml
     if !errorlevel! neq 0 (
         set results[0].result=1
     )
@@ -23,8 +22,8 @@ for %%c in %all_crates% do (
 
 set results[1].name=build_wasm
 set results[1].result=0
-for %%c in %all_crates% do (
-    cargo +nightly build --verbose --manifest-path %%c\Cargo.toml --no-default-features --release --target=wasm32-unknown-unknown
+for %%f in %features% do (
+    cargo +nightly build --verbose --no-default-features --features %%f --release --target=wasm32-unknown-unknown --manifest-path lang\Cargo.toml
     if !errorlevel! neq 0 (
         set results[1].result=1
     )
@@ -37,16 +36,29 @@ if !errorlevel! neq 0 (
     set result[2].result=1
 )
 
-set results[3].name=clippy_all_features
+set results[3].name=clippy
 set results[3].result=0
-cargo +nightly clippy --verbose --all --all-features -- -D warnings
+for %%f in %features% do (
+    cargo +nightly clippy --verbose --all --features %%f --manifest-path lang\Cargo.toml -- -D warnings 
+    if !errorlevel! neq 0 (
+        set results[3].result=1
+    )
+
+    cargo +nightly clippy --verbose --all --no-default-features --features %%f --target=wasm32-unknown-unknown --manifest-path lang\Cargo.toml -- -D warnings 
+    if !errorlevel! neq 0 (
+        set results[3].result=1
+    )
+)
 if !errorlevel! neq 0 (
     set results[3].result=1
 )
 
-set results[4].name=test_all_features
+set results[4].name=unit_tests
 set results[4].result=0
-cargo +nightly test --verbose --all --all-features --release
+cargo +nightly test --verbose --all --features "contract,solidity-compatible" --release --manifest-path lang/Cargo.toml
+cargo +nightly test --verbose --all --features "collaboration" --release --manifest-path lang/Cargo.toml
+cargo +nightly test --verbose --release --manifest-path ty_mapping/Cargo.toml
+cargo +nightly test --verbose --release --manifest-path primitives/Cargo.toml
 if !errorlevel! neq 0 (
     set results[4].result=1
 )

@@ -23,7 +23,8 @@ fn compile_tests() {
     t.compile_fail("tests/derive/sol/ui/fail/02-enum.rs");
     t.compile_fail("tests/derive/sol/ui/fail/03-not-public.rs");
     t.compile_fail("tests/derive/sol/ui/fail/04-generic.rs");
-    t.compile_fail("tests/derive/sol/ui/fail/05-invalid-field-type.rs");
+    t.compile_fail("tests/derive/sol/ui/fail/05-invalid-state-type.rs");
+    t.compile_fail("tests/derive/sol/ui/fail/06-invalid-inout-type.rs");
 }
 
 #[cfg(all(test, feature = "solidity-compatible"))]

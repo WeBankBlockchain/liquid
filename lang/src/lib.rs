@@ -48,7 +48,7 @@ cfg_if! {
     if #[cfg(feature = "collaboration")] {
         pub trait Fetch {
             type Target;
-            fn fetch(&self) -> Self::Target; 
+            fn fetch(&self) -> Self::Target;
         }
 
         pub use liquid_lang_macro::{collaboration, InOut};

@@ -59,7 +59,7 @@ mod sys {
 
         pub fn getReturnData(result_offset: u32);
         pub fn getAddress(result_offset: u32);
-        pub fn getExternalCodeSize(address_offset: u32) ->u32;
+        pub fn getExternalCodeSize(address_offset: u32) -> u32;
         pub fn registerAsset(
             asset_name_offset: u32,
             asset_name_length: u32,
@@ -240,9 +240,7 @@ pub fn get_address(result_offset: &mut [u8]) {
 }
 
 pub fn get_external_code_size(account: &[u8]) -> u32 {
-    unsafe {
-        sys::getExternalCodeSize(account.as_ptr() as u32)
-    }
+    unsafe { sys::getExternalCodeSize(account.as_ptr() as u32) }
 }
 
 pub fn get_block_timestamp() -> u64 {
@@ -281,33 +279,32 @@ pub fn register_asset(
     description: &[u8],
 ) -> bool {
     unsafe {
-        match sys::registerAsset(
-            asset_name.as_ptr() as u32,
-            asset_name.len() as u32,
-            issuer.as_ptr() as u32,
-            fungible as u32,
-            total,
-            description.as_ptr() as u32,
-            description.len() as u32,
-        ) {
-            0 => false,
-            _ => true,
-        }
+        !matches!(
+            sys::registerAsset(
+                asset_name.as_ptr() as u32,
+                asset_name.len() as u32,
+                issuer.as_ptr() as u32,
+                fungible as u32,
+                total,
+                description.as_ptr() as u32,
+                description.len() as u32,
+            ),
+            0
+        )
     }
 }
 
 pub fn issue_fungible_asset(to: &[u8], asset_name: &[u8], amount: u64) -> bool {
     unsafe {
-        let ret = match sys::issueFungibleAsset(
-            to.as_ptr() as u32,
-            asset_name.as_ptr() as u32,
-            asset_name.len() as u32,
-            amount,
-        ) {
-            0 => false,
-            _ => true,
-        };
-        ret
+        !matches!(
+            sys::issueFungibleAsset(
+                to.as_ptr() as u32,
+                asset_name.as_ptr() as u32,
+                asset_name.len() as u32,
+                amount,
+            ),
+            0
+        )
     }
 }
 
@@ -330,16 +327,16 @@ pub fn transfer_asset(
     from_self: bool,
 ) -> bool {
     unsafe {
-        match sys::transferAsset(
-            to.as_ptr() as u32,
-            asset_name.as_ptr() as u32,
-            asset_name.len() as u32,
-            amount_or_id,
-            from_self as u32,
-        ) {
-            0 => false,
-            _ => true,
-        }
+        !matches!(
+            sys::transferAsset(
+                to.as_ptr() as u32,
+                asset_name.as_ptr() as u32,
+                asset_name.len() as u32,
+                amount_or_id,
+                from_self as u32,
+            ),
+            0
+        )
     }
 }
 
