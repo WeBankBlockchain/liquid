@@ -39,62 +39,42 @@ impl<'a> GenerateCode for Storage<'a> {
 impl<'a> Storage<'a> {
     fn generate_storage_struct(&self) -> TokenStream2 {
         let contracts = &self.collaboration.contracts;
-        let ptrs_field_names = contracts
+        let (field_idents, fields): (Vec<_>, Vec<_>) = contracts
             .iter()
             .map(|contract| {
-                let storage_field_name = &contract.storage_field_name;
-                Ident::new(
-                    &format!("{}_ptrs", storage_field_name.to_string()),
-                    Span::call_site(),
-                )
-            })
-            .collect::<Vec<_>>();
-        let (storage_field_idents, fields): (Vec<_>, Vec<_>) = contracts
-            .iter()
-            .enumerate()
-            .map(|(i, contract)| {
-                let contract_ident = &contract.ident;
-                let storage_field_name = &contract.storage_field_name;
-                let ptrs_field_name = &ptrs_field_names[i];
+                let mated_name = &contract.mated_name;
+                let state_name = &contract.state_name;
                 (
-                    storage_field_name,
+                    state_name,
                     quote! {
                         // The 2nd field in value is used to mark whether the contract is abolished.
-                        pub #storage_field_name: liquid_lang::storage::Mapping<u32, (#contract_ident, bool)>,
-                        pub #ptrs_field_name: Vec<*const #contract_ident>,
+                        pub #state_name: liquid_lang::storage::Mapping<u32, (#mated_name, bool)>,
                     },
                 )
             })
             .unzip();
 
-        let keys = storage_field_idents
+        let keys = field_idents
             .iter()
             .map(|ident| syn::LitStr::new(ident.to_string().as_str(), Span::call_site()))
             .collect::<Punctuated<syn::LitStr, Token![,]>>();
         let keys_count = keys.len();
 
-        let bind_stats = storage_field_idents.iter().enumerate().map(|(i, ident)| {
+        let bind_stats = field_idents.iter().enumerate().map(|(i, ident)| {
             quote! {
                 #ident: liquid_lang::storage::Bind::bind_with(Self::STORAGE_KEYS[#i].as_bytes()),
-            }
-        });
-        let ptrs_inits = ptrs_field_names.iter().map(|ident| {
-            quote! {
-                #ident: Vec::new(),
             }
         });
 
         quote! {
             pub struct Storage {
                 pub __liquid_authorizers: liquid_prelude::vec::Vec<address>,
-                #[cfg(test)]
-                pub __liquid_under_exec: bool,
                 #(#fields)*
             }
 
             impl liquid_lang::storage::Flush for Storage {
                 fn flush(&mut self) {
-                    #(liquid_lang::storage::Flush::flush(&mut self.#storage_field_idents);)*
+                    #(liquid_lang::storage::Flush::flush(&mut self.#field_idents);)*
                 }
             }
 
@@ -107,26 +87,49 @@ impl<'a> Storage<'a> {
                 fn new() -> Self {
                     let mut storage = Self {
                         __liquid_authorizers: liquid_prelude::vec::Vec::new(),
-                        #[cfg(test)]
-                        __liquid_under_exec: false,
                         #(#bind_stats)*
-                        #(#ptrs_inits)*
                     };
                     #[cfg(test)]
                     {
-                        #(storage.#storage_field_idents.initialize();)*
+                        #(storage.#field_idents.initialize();)*
                     }
                     storage
                 }
             }
 
-            pub fn __liquid_acquire_authorizers() -> &'static mut liquid_prelude::vec::Vec<address> {
+            pub struct AuthorizersGuard {
+                authorizers: &'static mut liquid_prelude::vec::Vec<address>,
+                len: usize,
+            }
+
+            impl  AuthorizersGuard {
+                pub fn authorizers(&mut self) -> &mut liquid_prelude::vec::Vec<address> {
+                    self.authorizers
+                }
+            }
+
+            impl ::core::ops::Drop for AuthorizersGuard {
+                fn drop(&mut self) {
+                    self.authorizers.truncate(self.len);
+                }
+            }
+
+            fn acquire_authorizers() -> &'static mut liquid_prelude::vec::Vec<address> {
                 let storage = __liquid_acquire_storage_instance();
                 &mut storage.__liquid_authorizers
             }
 
+            pub fn __liquid_acquire_authorizers_guard() -> AuthorizersGuard {
+                let authorizers = acquire_authorizers();
+                let len = authorizers.len();
+                AuthorizersGuard {
+                    authorizers,
+                    len,
+                }
+            }
+
             pub fn __liquid_authorization_check(parties: &liquid_prelude::collections::BTreeSet<address>) -> bool {
-                let authorizers = __liquid_acquire_authorizers();
+                let authorizers = acquire_authorizers();
                 if authorizers.is_empty() {
                     let caller = liquid_lang::env::get_caller();
                     for party in parties {

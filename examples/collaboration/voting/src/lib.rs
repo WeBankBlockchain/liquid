@@ -138,25 +138,25 @@ mod voting {
                     content: String::from("take a holiday"),
                 },
             };
-            let ballot_id = ballot_id.take().add(bob);
-            let ballot_id = ballot_id.take().add(charlie);
-            let mut ballot_id = ballot_id.take().add(david);
+            let ballot_id = ballot_id.add(bob);
+            let ballot_id = ballot_id.add(charlie);
+            let ballot_id = ballot_id.add(david);
             test::pop_execution_context();
 
             test::set_caller(bob);
-            ballot_id.as_mut().vote(true);
+            ballot_id.vote(true);
             test::pop_execution_context();
 
             test::set_caller(charlie);
-            ballot_id.as_mut().vote(true);
+            ballot_id.vote(true);
             test::pop_execution_context();
 
             test::set_caller(david);
-            ballot_id.as_mut().vote(true);
+            ballot_id.vote(true);
             test::pop_execution_context();
 
             test::set_caller(government);
-            let decision_id = ballot_id.exec(|ballot| ballot.decide());
+            let decision_id = ballot_id.decide();
             let decision = decision_id.fetch();
             assert_eq!(decision.government, government);
             assert_eq!(decision.voters, vec![bob, charlie, david]);
@@ -183,28 +183,28 @@ mod voting {
                     content: String::from("let's 996"),
                 },
             };
-            let mut ballot_id = ballot_id.take().add(bob);
+            let ballot_id = ballot_id.add(bob);
             test::pop_execution_context();
 
             test::set_caller(bob);
-            ballot_id.as_mut().vote(true);
+            ballot_id.vote(true);
             test::pop_execution_context();
 
             test::set_caller(government);
-            let ballot_id = ballot_id.exec(|ballot| ballot.add(charlie));
-            let mut ballot_id = ballot_id.exec(|ballot| ballot.add(david));
+            let ballot_id = ballot_id.add(charlie);
+            let ballot_id = ballot_id.add(david);
             test::pop_execution_context();
 
             test::set_caller(charlie);
-            ballot_id.as_mut().vote(false);
+            ballot_id.vote(false);
             test::pop_execution_context();
 
             test::set_caller(david);
-            ballot_id.as_mut().vote(false);
+            ballot_id.vote(false);
             test::pop_execution_context();
 
             test::set_caller(government);
-            let decision_id = ballot_id.exec(|ballot| ballot.decide());
+            let decision_id = ballot_id.decide();
             let decision = decision_id.fetch();
             assert_eq!(decision.government, government);
             assert_eq!(decision.voters, vec![bob, charlie, david]);
@@ -230,15 +230,15 @@ mod voting {
                     content: String::from("let's 996"),
                 },
             };
-            let mut ballot_id = ballot_id.take().add(bob);
+            let ballot_id = ballot_id.add(bob);
             test::pop_execution_context();
 
             test::set_caller(bob);
-            ballot_id.as_mut().vote(true);
+            ballot_id.vote(true);
             test::pop_execution_context();
 
             test::set_caller(bob);
-            ballot_id.as_mut().vote(false);
+            ballot_id.vote(false);
             test::pop_execution_context();
         }
 
@@ -258,42 +258,6 @@ mod voting {
                     content: String::from("let's 996"),
                 },
             };
-        }
-
-        #[test]
-        #[should_panic(expected = "DO NOT excise right on an inexistent `Ballot`contract")]
-        fn exercise_on_a_temporary_contract() {
-            let default_accounts = test::default_accounts();
-            let government = default_accounts.alice;
-
-            test::set_caller(government);
-            let ballot = Ballot {
-                government: address::empty(),
-                voters: Vec::new(),
-                proposal: Proposal {
-                    proposer: government,
-                    content: String::from("take a holiday"),
-                },
-            };
-            ballot.add(government);
-        }
-
-        #[test]
-        #[should_panic(expected = "DO NOT excise right on an inexistent `Ballot`contract")]
-        fn exercise_on_fetch() {
-            let default_accounts = test::default_accounts();
-            let government = default_accounts.alice;
-
-            test::set_caller(government);
-            let ballot_id = sign! {Ballot =>
-                government: address::empty(),
-                voters: Vec::new(),
-                proposal: Proposal {
-                    proposer: government,
-                    content: String::from("take a holiday"),
-                },
-            };
-            ballot_id.fetch().add(government);
         }
 
         #[test]
@@ -317,7 +281,7 @@ mod voting {
             test::pop_execution_context();
 
             test::set_caller(bob);
-            ballot_id.exec(|ballot| ballot.decide());
+            ballot_id.decide();
             test::pop_execution_context();
         }
 
@@ -338,20 +302,20 @@ mod voting {
                     content: String::from("take a holiday"),
                 },
             };
-            let ballot_id = ballot_id.take().add(bob);
-            let mut ballot_id = ballot_id.take().add(charlie);
+            let ballot_id = ballot_id.add(bob);
+            let ballot_id = ballot_id.add(charlie);
             test::pop_execution_context();
 
             test::set_caller(bob);
-            ballot_id.as_mut().vote(true);
+            ballot_id.vote(true);
             test::pop_execution_context();
 
             test::set_caller(charlie);
-            ballot_id.as_mut().vote(false);
+            ballot_id.vote(false);
             test::pop_execution_context();
 
             test::set_caller(government);
-            ballot_id.exec(|ballot| ballot.decide());
+            ballot_id.decide();
             test::pop_execution_context();
         }
 
@@ -372,16 +336,16 @@ mod voting {
                     content: String::from("take a holiday"),
                 },
             };
-            let ballot_id = ballot_id.take().add(bob);
-            let mut ballot_id = ballot_id.take().add(charlie);
+            let ballot_id = ballot_id.add(bob);
+            let ballot_id = ballot_id.add(charlie);
             test::pop_execution_context();
 
             test::set_caller(bob);
-            ballot_id.as_mut().vote(true);
+            ballot_id.vote(true);
             test::pop_execution_context();
 
             test::set_caller(government);
-            ballot_id.exec(|ballot| ballot.decide());
+            ballot_id.decide();
             test::pop_execution_context();
         }
 
@@ -393,7 +357,7 @@ mod voting {
             let bob = default_accounts.bob;
 
             test::set_caller(government);
-            let mut ballot_id = sign! { Ballot =>
+            let ballot_id = sign! { Ballot =>
                 government,
                 voters: Vec::new(),
                 proposal: Proposal {
@@ -404,7 +368,7 @@ mod voting {
             test::pop_execution_context();
 
             test::set_caller(bob);
-            ballot_id.as_mut().vote(true);
+            ballot_id.vote(true);
             test::pop_execution_context();
         }
     }

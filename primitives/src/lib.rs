@@ -13,7 +13,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![feature(const_fn)]
 #![feature(const_mut_refs)]
-#![feature(min_const_generics)]
 
 #[macro_use]
 extern crate lazy_static;

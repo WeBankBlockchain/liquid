@@ -55,7 +55,7 @@ impl GenerateCode for Collaboration {
                 #[allow(unused_imports)]
                 use liquid_lang::Env;
                 #[allow(unused_imports)]
-                use liquid_lang::FetchContract;
+                use liquid_lang::{ContractVisitor, ContractName};
                 #types
                 #contract_id
 
@@ -69,7 +69,7 @@ impl GenerateCode for Collaboration {
                 }
 
                 use __liquid_private::__liquid_acquire_storage_instance;
-                use __liquid_private::__liquid_acquire_authorizers;
+                use __liquid_private::__liquid_acquire_authorizers_guard;
                 use __liquid_private::__liquid_authorization_check;
 
                 #abi_gen

@@ -321,10 +321,18 @@ impl<'a> OwnersParser<'a> {
     }
 }
 
-pub fn generate_storage_field_name(ident: &Ident) -> Ident {
+pub fn generate_state_name(ident: &Ident) -> Ident {
     use heck::SnakeCase;
     Ident::new(
         &format!("__liquid_{}", ident.to_string().to_snake_case()),
-        Span::call_site(),
+        ident.span(),
+    )
+}
+
+pub fn generate_mated_name(ident: &Ident) -> Ident {
+    use heck::CamelCase;
+    Ident::new(
+        &format!("__Liquid{}", ident.to_string().to_camel_case()),
+        ident.span(),
     )
 }

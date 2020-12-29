@@ -33,6 +33,7 @@ impl<'a> GenerateCode for Rights<'a> {
         let all_item_rights = &self.collaboration.all_item_rights;
         let impls = all_item_rights.iter().map(|item_rights| {
             let contract_ident = &item_rights.ident;
+            let mated_name = &item_rights.mated_name;
             let contract_ident_str = contract_ident.to_string();
             let rights = &item_rights.rights;
             let fns = rights.iter().map(|right| {
@@ -41,23 +42,22 @@ impl<'a> GenerateCode for Rights<'a> {
                     let from = &owner.from;
                     let with = &owner.with;
                     let span = from.span();
-                    let ident = match from {
+                    let from_ident = match from {
                         SelectFrom::This(ident) => quote! { self.#ident },
                         SelectFrom::Argument(ident) => quote! { #ident },
                     };
-
                     match with {
                         None => {
-                            quote_spanned! { span => &#ident }
+                            quote_spanned! { span => &#from_ident }
                         }
                         Some(SelectWith::Func(path)) => {
                             quote_spanned! { path.span() =>
-                                #path(#ident)
+                                #path(#from_ident)
                             }
                         }
                         Some(SelectWith::Obj(ast)) => {
                             let mut path_visitor =
-                                PathVisitor::new(Some(ident), &ast.arena);
+                                PathVisitor::new(Some(from_ident), &ast.arena);
                             let stmts = path_visitor.eval(ast.root);
                             quote_spanned! { span =>
                                 #stmts
@@ -66,7 +66,9 @@ impl<'a> GenerateCode for Rights<'a> {
                         _ => unreachable!(),
                     }
                 });
-                let attrs = filter_non_liquid_attributes(&right.attrs).collect::<Vec<_>>();
+
+                let attrs =
+                    filter_non_liquid_attributes(&right.attrs).collect::<Vec<_>>();
                 let sig = &right.sig;
                 let fn_ident = &sig.ident;
                 let fn_ident_str = fn_ident.to_string();
@@ -74,40 +76,17 @@ impl<'a> GenerateCode for Rights<'a> {
                 let output = &sig.output;
                 let body = &right.body;
                 let stmts = &body.stmts;
-                let (self_ref, rm_from_ptrs) = if sig.is_self_ref() {
-                    (quote! { self }, quote! {})
+                let self_ref = if sig.is_self_ref() {
+                    quote! { self }
                 } else {
-                    (quote! { &self }, quote! { ptrs.swap_remove(pos); })
+                    quote! { &self }
                 };
 
                 quote_spanned! { right.span =>
                     #(#attrs)*
                     #[cfg_attr(feature = "std", allow(dead_code))]
                     pub fn #fn_ident(#inputs) #output {
-                        loop {
-                            #[cfg(test)]
-                            if __liquid_acquire_storage_instance().__liquid_under_exec {
-                                break;
-                            }
-
-                            // Validity check.
-                            let self_addr = #self_ref as *const #contract_ident;
-                            let ptrs = <ContractId::<#contract_ident> as FetchContract<#contract_ident>>::fetch_ptrs();
-                            let pos = ptrs.iter().position(|&ptr| ptr == self_addr);
-                            #[allow(unused_variables)]
-                            if let Some(pos) = pos {
-                                #rm_from_ptrs
-                                break;
-                            } else {
-                                let mut error_info = String::from("DO NOT excise right on an inexistent `");
-                                error_info.push_str(#contract_ident_str);
-                                error_info.push_str("`contract");
-                                liquid_lang::env::revert(&error_info);
-                                unreachable!();
-                            }
-                        }
-                        let __liquid_authorizers = __liquid_acquire_authorizers();
-                        let __liquid_count = __liquid_authorizers.len();
+                        let mut __liquid_guard = __liquid_acquire_authorizers_guard();
                         {
                             // Authorization checking.
                             #[allow(unused_imports)]
@@ -124,23 +103,20 @@ impl<'a> GenerateCode for Rights<'a> {
                                 liquid_lang::env::revert(&error_info);
                                 unreachable!();
                             }
-                            let signers = <#contract_ident as AcquireSigners>::acquire_signers(#self_ref);
-                            __liquid_authorizers.extend(signers);
-                            __liquid_authorizers.extend(owners);
-                            __liquid_authorizers.sort();
-                            __liquid_authorizers.dedup();
+                            let signers = <#mated_name as AcquireSigners>::acquire_signers(#self_ref);
+                            let authorizers = __liquid_guard.authorizers();
+                            authorizers.extend(signers);
+                            authorizers.extend(owners);
+                            authorizers.sort();
+                            authorizers.dedup();
                         }
-                        let result = {
-                            #(#stmts)*
-                        };
-                        __liquid_authorizers.truncate(__liquid_count);
-                        result
+                        #(#stmts)*
                     }
                 }
             });
 
             quote! {
-                impl #contract_ident {
+                impl #mated_name {
                     #(#fns)*
                 }
             }
@@ -148,10 +124,10 @@ impl<'a> GenerateCode for Rights<'a> {
 
         let contracts = &self.collaboration.contracts;
         let envs = contracts.iter().map(|contract| {
-            let ident = &contract.ident;
+            let mated_name = &contract.mated_name;
 
             quote! {
-                impl liquid_lang::Env for #ident {}
+                impl liquid_lang::Env for #mated_name {}
             }
         });
 

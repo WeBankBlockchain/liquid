@@ -70,44 +70,39 @@ cfg_if! {
             }
         }
 
-        use crate::storage::Mapping;
-
-        pub trait FetchContract<Contract>: Sized
-        where
-            Contract: scale::Codec,
-        {
+        pub trait ContractName {
             const CONTRACT_NAME: &'static str;
-            fn fetch_collection() -> &'static mut Mapping<u32, (Contract, bool)>;
-            fn fetch_ptrs() -> &'static mut liquid_prelude::vec::Vec<*const Contract>;
+        }
 
-            fn fetch(id: u32) -> (&'static mut Contract, &'static mut bool) {
-                let collection = Self::fetch_collection();
+        pub trait ContractType: Sized {
+            type T = Self;
+        }
 
-                // Existence checking.
-                if !collection.contains_key(&id) {
-                    let mut error_info = String::from("the contract `");
-                    error_info.push_str(Self::CONTRACT_NAME);
-                    error_info.push_str("` with id `");
-                    use liquid_prelude::string::ToString;
-                    error_info.push_str(&id.to_string());
-                    error_info.push_str("` is not exist");
-                    crate::env::revert(&error_info);
-                    unreachable!();
-                }
+        pub trait ContractVisitor
+        {
+            type Contract: ContractName;
+            type ContractId;
+            fn fetch(&self) -> Self::Contract;
+            fn sign_new_contract(contract: Self::Contract) -> Self::ContractId;
 
-                let item = collection.get_mut(&id).unwrap();
-                (&mut item.0, &mut item.1)
-            }
-
-            fn revert_abolished(id: u32) {
+            fn inexistent_error(id: u32) {
                 let mut error_info = String::from("the contract `");
-                error_info.push_str(Self::CONTRACT_NAME);
+                error_info.push_str(Self::Contract::CONTRACT_NAME);
                 error_info.push_str("` with id `");
                 use liquid_prelude::string::ToString;
                 error_info.push_str(&id.to_string());
-                error_info.push_str("` had been abolished");
+                error_info.push_str("` is not exist");
                 crate::env::revert(&error_info);
-                unreachable!();
+            }
+
+            fn abolished_error(id: u32) {
+                let mut error_info = String::from("the contract `");
+                error_info.push_str(Self::Contract::CONTRACT_NAME);
+                error_info.push_str("` with id `");
+                use liquid_prelude::string::ToString;
+                error_info.push_str(&id.to_string());
+                error_info.push_str("` had been abolished already");
+                crate::env::revert(&error_info);
             }
         }
     }

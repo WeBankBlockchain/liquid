@@ -11,11 +11,12 @@
 // limitations under the License.
 
 use crate::types::uint256::u256;
-#[cfg(feature = "std")]
-use core::fmt;
-use core::ops::{
-    Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub,
-    SubAssign,
+use core::{
+    fmt,
+    ops::{
+        Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub,
+        SubAssign,
+    },
 };
 use liquid_prelude::vec::{from_elem, Vec};
 use num::{
@@ -113,7 +114,6 @@ impl<'a> From<&'a i256> for i256 {
     }
 }
 
-#[cfg(feature = "std")]
 impl fmt::Display for i256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", &self.to_str_radix(10))

@@ -13,10 +13,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![feature(const_fn)]
 #![allow(incomplete_features)]
-#![feature(min_const_generics)]
 #![feature(specialization)]
 #![feature(const_panic)]
 
 mod traits;
-
 pub use traits::*;

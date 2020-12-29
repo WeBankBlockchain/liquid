@@ -15,7 +15,6 @@
 #![feature(const_fn)]
 #![feature(associated_type_defaults)]
 #![feature(const_panic)]
-#![feature(min_const_generics)]
 #![feature(specialization)]
 
 mod dispatch_error;

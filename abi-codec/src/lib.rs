@@ -12,7 +12,6 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![feature(associated_type_defaults)]
-#![feature(min_const_generics)]
 
 mod codec;
 

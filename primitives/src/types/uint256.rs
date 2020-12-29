@@ -11,10 +11,9 @@
 // limitations under the License.
 
 pub use crate::types::int256::i256;
-#[cfg(feature = "std")]
-use core::fmt;
 use core::{
     default::Default,
+    fmt,
     ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
     str::FromStr,
 };
@@ -79,7 +78,6 @@ impl FromStr for u256 {
     }
 }
 
-#[cfg(feature = "std")]
 impl fmt::Display for u256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", &self.0.to_str_radix(10))

@@ -219,12 +219,6 @@ impl<'a> Dispatch<'a> {
                 quote! { (mut contract_id, (#(#input_idents,)*)) }
             };
 
-            let construct = match (sig.is_self_ref(), sig.is_mut()) {
-                (true, true) => quote! { as_mut },
-                (true, false) => quote! { as_ref },
-                (false, _) => quote! { take },
-            };
-
             let flush = if !sig.is_self_ref() || sig.is_mut() {
                 quote! {
                     <Storage as liquid_lang::storage::Flush>::flush(storage);
@@ -239,7 +233,7 @@ impl<'a> Dispatch<'a> {
                         .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
 
                     #[allow(unused_mut)]
-                    let result = contract_id.#construct().#right_name(#(#input_idents,)*);
+                    let result = contract_id.#right_name(#(#input_idents,)*);
 
                     #flush
 
@@ -272,7 +266,7 @@ impl<'a> Dispatch<'a> {
             .iter()
             .map(|field| &field.ident)
             .collect::<Vec<_>>();
-        let storage_field_name = &item_contract.storage_field_name;
+        let state_name = &item_contract.state_name;
         let abolish_selector = Self::generate_contract_selector(item_contract, true);
         quote! {
             if selector == <#contract_marker as liquid_lang::FnSelector>::SELECTOR {
@@ -291,7 +285,7 @@ impl<'a> Dispatch<'a> {
 
                 use liquid_prelude::string::ToString;
 
-                if !storage.#storage_field_name.contains_key(&id) {
+                if !storage.#state_name.contains_key(&id) {
                     let mut error_info = String::from("the contract `");
                     error_info.push_str(#contract_ident_str);
                     error_info.push_str("` with id `");
@@ -301,7 +295,7 @@ impl<'a> Dispatch<'a> {
                     unreachable!();
                 }
 
-                let abolished = &mut storage.#storage_field_name.get_mut(&id).unwrap().1;
+                let abolished = &mut storage.#state_name.get_mut(&id).unwrap().1;
                 if *abolished {
                     let mut error_info = String::from("the contract `");
                     error_info.push_str(#contract_ident_str);

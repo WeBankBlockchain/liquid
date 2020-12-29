@@ -116,11 +116,7 @@ impl TryFrom<syn::ItemMod> for ir::Collaboration {
         let span = item_mod.span();
         let (contracts, impl_blocks) = split_items(liquid_items, span)?;
         let mod_ident = item_mod.ident;
-        use heck::CamelCase;
-        let collaboration_ident = Ident::new(
-            &format!("__Liquid{}", mod_ident.to_string().to_camel_case()),
-            Span::call_site(),
-        );
+        let collaboration_ident = generate_mated_name(&mod_ident);
 
         Ok(Self {
             mod_token: item_mod.mod_token,
@@ -225,15 +221,18 @@ impl TryFrom<syn::ItemStruct> for ir::ItemContract {
             bail!(item_struct, "this contract has no signers")
         }
 
-        let storage_field_name = generate_storage_field_name(&item_struct.ident);
+        let ident = item_struct.ident;
+        let state_name = generate_state_name(&ident);
+        let mated_name = generate_mated_name(&ident);
 
         Ok(ir::ItemContract {
             attrs: item_struct.attrs,
             struct_token: item_struct.struct_token,
-            ident: item_struct.ident,
+            ident,
             fields: fields.clone(),
             field_signers,
-            storage_field_name,
+            state_name,
+            mated_name,
             span,
         })
     }
@@ -542,13 +541,15 @@ impl TryFrom<(syn::ItemImpl, Selectors)> for ir::ItemRights {
             }
         }
 
-        let storage_field_name = generate_storage_field_name(&ident);
+        let state_name = generate_state_name(&ident);
+        let mated_name = generate_mated_name(&ident);
 
         Ok(Self {
             attrs: item_impl.attrs,
             impl_token: item_impl.impl_token,
             ident,
-            storage_field_name,
+            state_name,
+            mated_name,
             brace_token: item_impl.brace_token,
             rights: functions,
             constants,

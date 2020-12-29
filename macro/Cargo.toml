@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 proc-macro2 = "1.0.18"
 quote = "1.0.7"
+syn = { version = "1.0.33", features = ["full", "extra-traits", "parsing"] }
 
 liquid_prelude = { version = "0.2.0", path = "../prelude", default-features = false }
 

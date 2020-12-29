@@ -79,7 +79,8 @@ pub struct ItemContract {
     /// and the name of this field is composed in the form of "__liquid_"
     /// with contract name in snake case followed. In the example, the
     /// field name will be "__liquid_foo".
-    pub storage_field_name: Ident,
+    pub state_name: Ident,
+    pub mated_name: Ident,
     /// Span of the contract.
     pub span: Span,
 }
@@ -99,8 +100,10 @@ pub struct ItemRights {
     pub impl_token: Token![impl],
     /// The implementer type.
     pub ident: Ident,
-    /// Same to `storage_field_name` in `ItemContract`
-    pub storage_field_name: Ident,
+    /// Same to `state_name` in `ItemContract`
+    pub state_name: Ident,
+    /// Same to `mated_name` in `ItemContract`
+    pub mated_name: Ident,
     /// The `{` and `}` tokens.
     pub brace_token: syn::token::Brace,
     /// The rights.

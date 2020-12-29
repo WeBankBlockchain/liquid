@@ -11,10 +11,8 @@
 // limitations under the License.
 
 use crate::Error;
-use liquid_prelude::{
-    str::FromStr,
-    string::{String, ToString},
-};
+use core::fmt;
+use liquid_prelude::{str::FromStr, string::String};
 
 pub const ADDRESS_LENGTH: usize = 20;
 
@@ -40,8 +38,8 @@ impl Default for Address {
     }
 }
 
-impl ToString for Address {
-    fn to_string(&self) -> String {
+impl fmt::Display for Address {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut ret = String::with_capacity(ADDRESS_LENGTH * 2 + 2);
         ret.push_str("0x");
 
@@ -51,7 +49,7 @@ impl ToString for Address {
             ret.push(core::char::from_digit(high.into(), 16).unwrap());
             ret.push(core::char::from_digit(low.into(), 16).unwrap());
         }
-        ret
+        write!(f, "{}", ret)
     }
 }
 

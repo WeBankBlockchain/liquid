@@ -24,33 +24,50 @@ pub fn sign_impl(input: TokenStream2) -> Result<TokenStream2> {
     let ident = expect_ident(&mut iter)?;
     expect_right_arrow(&mut iter)?;
 
+    let mut expr_construct = quote! { #(#iter)* };
+    let expr_struct = syn::parse2::<syn::ExprStruct>({
+        let expr = expr_construct.clone();
+        quote! {
+            #ident {
+                #expr
+            }
+        }
+    })
+    .map_err(|err| {
+        let message = err.to_string();
+        let span = err.span();
+        SyntaxError { message, span }
+    })?;
+    if expr_struct.dot2_token.is_some() {
+        if let Some(rest) = &expr_struct.rest {
+            if let syn::Expr::Path(expr_path) = rest.as_ref() {
+                if let Some(path) = expr_path.path.get_ident() {
+                    if path == "self" {
+                        let fields = &expr_struct.fields;
+                        expr_construct = quote! {
+                            ..{
+                                let cloned = Self {
+                                    #fields
+                                    ..self
+                                };
+                                unsafe {
+                                    core::mem::transmute::<_, #ident>(cloned)
+                                }
+                            }
+                        };
+                    }
+                }
+            }
+        }
+    };
+
     Ok(quote! {
         {
-            let collection = <ContractId::<#ident> as liquid_lang::FetchContract<#ident>>::fetch_collection();
-            let contract = #ident {
-                #(#iter)*
+            type ContractType = <#ident as liquid_lang::ContractType>::T;
+            let contract = ContractType {
+                #expr_construct
             };
-
-            let signers = <#ident as liquid_lang::AcquireSigners>::acquire_signers(&contract);
-            if signers.is_empty() {
-                liquid_lang::env::revert(&String::from(ContractId::<#ident>::NO_AVAILABLE_SIGNERS_ERROR));
-            }
-
-            if !__liquid_authorization_check(&signers) {
-                liquid_lang::env::revert(&String::from(ContractId::<#ident>::UNAUTHORIZED_SIGNING_ERROR));
-                unreachable!();
-            }
-
-            let len = collection.len();
-            collection.insert(&len, (contract, false));
-            let (__liquid_contract, _) = collection.get_mut(&len).unwrap();
-            let ptrs = <ContractId::<#ident> as FetchContract<#ident>>::fetch_ptrs();
-            ptrs.push(__liquid_contract as *const #ident);
-
-            ContractId::<#ident> {
-                __liquid_id: len,
-                __liquid_marker: Default::default(),
-            }
+            <ContractId<ContractType> as liquid_lang::ContractVisitor>::sign_new_contract(contract)
         }
     })
 }
