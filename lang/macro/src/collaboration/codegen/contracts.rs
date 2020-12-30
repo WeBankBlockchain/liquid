@@ -80,9 +80,10 @@ impl<'a> Contracts<'a> {
                     #(#fields)*
                 }
 
-                impl liquid_lang::ContractType for #ident {}
+                impl liquid_lang::ContractType for #ident {
+                    type T = #ident;
+                }
 
-                #(#attrs)*
                 #[allow(non_camel_case_types)]
                 #[derive(liquid_lang::InOut)]
                 pub struct #mated_name {
@@ -91,6 +92,26 @@ impl<'a> Contracts<'a> {
 
                 impl liquid_lang::ContractType for #mated_name {
                     type T = #ident;
+                }
+
+                impl ::core::convert::AsRef<#ident> for #mated_name {
+                    fn as_ref(&self) -> &#ident {
+                        let ptr = self as *const #mated_name;
+                        unsafe {
+                            let ptr = ::core::mem::transmute::<_, *const #ident>(ptr);
+                            &(*ptr)
+                        }
+                    }
+                }
+
+                impl ::core::convert::AsMut<#ident> for #mated_name {
+                    fn as_mut(&mut self) -> &mut #ident {
+                        let ptr = self as *mut #mated_name;
+                        unsafe {
+                            let ptr = ::core::mem::transmute::<_, *mut #ident>(ptr);
+                            &mut (*ptr)
+                        }
+                    }
                 }
             }
         })
@@ -240,7 +261,7 @@ impl<'a> Contracts<'a> {
                 .collaboration
                 .all_item_rights
                 .iter()
-                .filter(|item_rights| item_rights.ident == ident.to_string())
+                .filter(|item_rights| item_rights.ident == *ident)
                 .map(|item_rights| item_rights.rights.iter())
                 .flatten();
 

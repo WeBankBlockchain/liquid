@@ -200,7 +200,7 @@ impl<'a> OwnersParser<'a> {
                     )
                 }
 
-                let end = end.unwrap();
+                let end = end.unwrap() + self.cur_pos;
                 let select_path =
                     String::from_utf8(self.input[self.cur_pos..end].to_vec()).unwrap();
                 let with = parse_select_path(&select_path, self.span)?;

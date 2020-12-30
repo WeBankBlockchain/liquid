@@ -74,8 +74,8 @@ cfg_if! {
             const CONTRACT_NAME: &'static str;
         }
 
-        pub trait ContractType: Sized {
-            type T = Self;
+        pub trait ContractType {
+            type T;
         }
 
         pub trait ContractVisitor

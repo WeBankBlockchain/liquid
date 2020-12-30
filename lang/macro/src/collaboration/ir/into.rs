@@ -116,12 +116,10 @@ impl TryFrom<syn::ItemMod> for ir::Collaboration {
         let span = item_mod.span();
         let (contracts, impl_blocks) = split_items(liquid_items, span)?;
         let mod_ident = item_mod.ident;
-        let collaboration_ident = generate_mated_name(&mod_ident);
 
         Ok(Self {
             mod_token: item_mod.mod_token,
             mod_ident,
-            collaboration_ident,
             contracts,
             rust_items,
             all_item_rights: impl_blocks,

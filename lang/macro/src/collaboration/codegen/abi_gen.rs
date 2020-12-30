@@ -25,15 +25,15 @@ pub struct ABIGen<'a> {
 
 impl<'a> GenerateCode for ABIGen<'a> {
     fn generate_code(&self) -> TokenStream2 {
-        let collaboration_ident = &self.collaboration.collaboration_ident;
         let contract_abis = self.generate_contract_abis();
 
         quote! {
             #[cfg(feature = "liquid-abi-gen")]
-            pub struct #collaboration_ident;
+            #[allow(non_camel_case_types)]
+            pub struct __LIQUID_ABI_GEN;
 
             #[cfg(feature = "liquid-abi-gen")]
-            impl liquid_lang::GenerateABI for #collaboration_ident {
+            impl liquid_lang::GenerateABI for __LIQUID_ABI_GEN {
                 fn generate_abi() -> liquid_abi_gen::CollaborationABI {
                     let mut contract_abis = Vec::new();
                     #(contract_abis.push(#contract_abis);)*

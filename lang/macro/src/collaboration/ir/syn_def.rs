@@ -255,8 +255,6 @@ pub struct Collaboration {
     pub mod_token: Token![mod],
     /// The modules snake case identifier.
     pub mod_ident: Ident,
-    /// The modules camel case identifier.
-    pub collaboration_ident: Ident,
     /// All contracts.
     pub contracts: Vec<ItemContract>,
     /// All rights for each contract.

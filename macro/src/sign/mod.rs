@@ -40,7 +40,11 @@ pub fn sign_impl(input: TokenStream2) -> Result<TokenStream2> {
     })?;
     if expr_struct.dot2_token.is_some() {
         if let Some(rest) = &expr_struct.rest {
-            if let syn::Expr::Path(expr_path) = rest.as_ref() {
+            let mut expr = rest.as_ref();
+            while let syn::Expr::Paren(expr_paren) = expr {
+                expr = expr_paren.expr.as_ref();
+            }
+            if let syn::Expr::Path(expr_path) = expr {
                 if let Some(path) = expr_path.path.get_ident() {
                     if path == "self" {
                         let fields = &expr_struct.fields;
@@ -51,7 +55,7 @@ pub fn sign_impl(input: TokenStream2) -> Result<TokenStream2> {
                                     ..self
                                 };
                                 unsafe {
-                                    core::mem::transmute::<_, #ident>(cloned)
+                                    ::core::mem::transmute::<_, #ident>(cloned)
                                 }
                             }
                         };
@@ -63,11 +67,11 @@ pub fn sign_impl(input: TokenStream2) -> Result<TokenStream2> {
 
     Ok(quote! {
         {
-            type ContractType = <#ident as liquid_lang::ContractType>::T;
-            let contract = ContractType {
+            type T = <#ident as liquid_lang::ContractType>::T;
+            let contract = T {
                 #expr_construct
             };
-            <ContractId<ContractType> as liquid_lang::ContractVisitor>::sign_new_contract(contract)
+            <ContractId<T> as liquid_lang::ContractVisitor>::sign_new_contract(contract)
         }
     })
 }

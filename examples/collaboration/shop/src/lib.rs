@@ -30,7 +30,7 @@ mod shop {
     impl Iou {
         #[liquid(belongs_to = "owner")]
         pub fn transfer_iou(self, new_owner: address) -> ContractId<Iou> {
-            sign! { Self =>
+            sign! { Iou =>
                 owner: new_owner,
                 ..self
             }
@@ -51,14 +51,14 @@ mod shop {
     #[liquid(rights_belong_to = "owner")]
     impl Item {
         pub fn transfer_item(self, new_owner: address) -> ContractId<Item> {
-            sign! { Self =>
+            sign! { Item =>
                 owner: new_owner,
                 ..self
             }
         }
 
         pub fn disclose(self, users: Vec<address>) -> ContractId<Item> {
-            sign! { Self =>
+            sign! { Item =>
                 observers: users,
                 ..self
             }
@@ -81,8 +81,7 @@ mod shop {
     impl Offer {
         #[liquid(belongs_to = "owner")]
         pub fn settle(self, buyer: address) -> ContractId<Item> {
-            let item = self.item_id.take();
-            item.transfer_item(buyer)
+            self.item_id.transfer_item(buyer)
         }
     }
 
@@ -103,7 +102,7 @@ mod shop {
         ) -> (ContractId<Shop>, ContractId<VendorInvite>) {
             self.vendors.push(vendor);
             (
-                sign! { Self =>
+                sign! { Shop =>
                     ..self
                 },
                 sign! { VendorInvite =>
@@ -119,7 +118,7 @@ mod shop {
         ) -> (ContractId<Shop>, ContractId<UserInvite>) {
             self.users.push(user);
             (
-                sign! { Self =>
+                sign! { Shop =>
                     ..self
                 },
                 sign! { UserInvite =>
@@ -167,11 +166,10 @@ mod shop {
             currency: String,
         ) -> (ContractId<Shop>, ContractId<Offer>) {
             let shop = shop_id.fetch();
-            let item = item_id.take();
 
             let mut users = shop.users.clone();
             users.push(self.owner);
-            let disclosed_item = item.disclose(users);
+            let disclosed_item = item_id.disclose(users);
 
             let offer_id = sign! { Offer =>
                 item_id: disclosed_item,
@@ -229,8 +227,8 @@ mod shop {
             iou_id: ContractId<Iou>,
         ) -> (ContractId<Shop>, ContractId<Item>, ContractId<Iou>) {
             let shop = shop_id.fetch();
-            let offer = offer_id.take();
-            let iou = iou_id.take();
+            let offer = offer_id.fetch();
+            let iou = iou_id.fetch();
 
             assert_eq!(offer.price, iou.amount);
             assert_eq!(offer.currency, iou.currency);
@@ -248,8 +246,8 @@ mod shop {
                 ..shop
             };
             let vendor = offer.vendor;
-            let new_item = offer.settle(self.user);
-            let new_iou = iou.transfer_iou(vendor);
+            let new_item = offer_id.settle(self.user);
+            let new_iou = iou_id.transfer_iou(vendor);
             (new_shop, new_item, new_iou)
         }
     }

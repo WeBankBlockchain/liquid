@@ -19,13 +19,15 @@ mod tic_tac_toe {
     use super::*;
 
     #[derive(InOut)]
+    #[cfg_attr(feature = "std", derive(Debug))]
     pub struct Move {
         player: address,
         x: u8,
         y: u8,
     }
 
-    #[derive(InOut)]
+    #[derive(InOut, PartialEq)]
+    #[cfg_attr(feature = "std", derive(Debug))]
     pub enum Outcome {
         Winner(address),
         Tie,
@@ -65,6 +67,7 @@ mod tic_tac_toe {
     }
 
     #[liquid(contract)]
+    #[cfg_attr(feature = "std", derive(Debug))]
     pub struct Game {
         #[liquid(signers)]
         player1: address,
@@ -101,11 +104,11 @@ mod tic_tac_toe {
                 self.player1
             };
 
-            if has_won(&self, self.current) {
+            if has_won(self.as_ref(), self.current) {
                 let result = sign! { Result =>
                     outcome: Outcome::Winner(self.current),
                     player1: self.player1,
-                    player2: self.player1,
+                    player2: self.player2,
                     moves: self.moves,
                     size: self.size,
                 };
@@ -114,14 +117,14 @@ mod tic_tac_toe {
                 let result = sign! { Result =>
                     outcome: Outcome::Tie,
                     player1: self.player1,
-                    player2: self.player1,
+                    player2: self.player2,
                     moves: self.moves,
                     size: self.size,
                 };
                 TurnResult::Result(result)
             } else {
                 self.current = opponent;
-                TurnResult::Game(sign! { Self =>
+                TurnResult::Game(sign! { Game =>
                     ..self
                 })
             }
@@ -135,25 +138,184 @@ mod tic_tac_toe {
             |i| get_moves().filter(|m| m.x == i).count() == game.size as usize;
         let has_all_vertical =
             |i| get_moves().filter(|m| m.y == i).count() == game.size as usize;
-        let has_all_diagonal = |i| {
-            get_moves().filter(|m| m.y == i && m.x == i).count() == game.size as usize
-        };
-        let has_all_counter_diagonal = |i| {
-            get_moves()
-                .filter(|m| m.y == i && m.x == game.size - 1 - i)
-                .count()
+        let has_all_diagonal =
+            || get_moves().filter(|m| m.y == m.x).count() == game.size as usize;
+        let has_all_counter_diagonal = || {
+            get_moves().filter(|m| m.y == game.size - 1 - m.x).count()
                 == game.size as usize
         };
 
-        let has_won_horizontal = (0..game.size).all(|i| has_all_horizontal(i));
-        let has_won_vertical = (0..game.size).all(|i| has_all_vertical(i));
-        let has_won_diagonal = (0..game.size).all(|i| has_all_diagonal(i));
-        let has_won_counter_diagonal =
-            (0..game.size).all(|i| has_all_counter_diagonal(i));
+        let has_won_horizontal = (0..game.size).any(|i| has_all_horizontal(i));
+        let has_won_vertical = (0..game.size).any(|i| has_all_vertical(i));
+        let has_won_diagonal = has_all_diagonal();
+        let has_won_counter_diagonal = has_all_counter_diagonal();
 
         has_won_horizontal
             || has_won_vertical
             || has_won_diagonal
             || has_won_counter_diagonal
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use liquid::env::test;
+
+        fn setup(player1: address, player2: address) -> ContractId<Game> {
+            test::set_caller(player1);
+            let invite_id = sign! { GameInvite =>
+                player1,
+                player2,
+                size: 3,
+            };
+            test::pop_execution_context();
+
+            test::set_caller(player2);
+            let game_id = invite_id.accept();
+            test::pop_execution_context();
+            game_id
+        }
+
+        fn play(
+            mut game_id: ContractId<Game>,
+            moves: Vec<(u8, u8)>,
+        ) -> ContractId<Result> {
+            let game = game_id.fetch();
+            let players = [game.player1, game.player2];
+
+            for (i, m) in moves.iter().enumerate() {
+                let x = m.0;
+                let y = m.1;
+                let player = players[i % 2];
+                test::set_caller(player);
+                let turn_result = game_id.play(x, y);
+                test::pop_execution_context();
+
+                match turn_result {
+                    TurnResult::Game(new_game_id) => game_id = new_game_id,
+                    TurnResult::Result(res_id) => {
+                        if i != moves.len() - 1 {
+                            panic!("the game ends unexpectedly at step {}", i + 1);
+                        }
+                        return res_id;
+                    }
+                }
+            }
+            panic!("then game is not over yet...");
+        }
+
+        #[test]
+        fn won_horizontal() {
+            let default_accounts = test::default_accounts();
+            let alice = default_accounts.alice;
+            let bob = default_accounts.bob;
+            let game_id = setup(alice, bob);
+
+            let res_id = play(game_id, vec![(0, 0), (1, 1), (0, 1), (2, 2), (0, 2)]);
+
+            let result = res_id.fetch();
+            assert_eq!(result.player1, alice);
+            assert_eq!(result.player2, bob);
+            assert_eq!(result.outcome, Outcome::Winner(alice));
+            assert_eq!(result.size, 3);
+        }
+        #[test]
+        fn won_vertical() {
+            let default_accounts = test::default_accounts();
+            let alice = default_accounts.alice;
+            let bob = default_accounts.bob;
+            let game_id = setup(alice, bob);
+
+            let res_id = play(game_id, vec![(0, 0), (1, 1), (1, 0), (2, 2), (2, 0)]);
+
+            let result = res_id.fetch();
+            assert_eq!(result.player1, alice);
+            assert_eq!(result.player2, bob);
+            assert_eq!(result.outcome, Outcome::Winner(alice));
+            assert_eq!(result.size, 3);
+        }
+
+        #[test]
+        fn won_diagonal() {
+            let default_accounts = test::default_accounts();
+            let alice = default_accounts.alice;
+            let bob = default_accounts.bob;
+            let game_id = setup(alice, bob);
+
+            let res_id = play(game_id, vec![(0, 0), (0, 1), (1, 1), (0, 2), (2, 2)]);
+
+            let result = res_id.fetch();
+            assert_eq!(result.player1, alice);
+            assert_eq!(result.player2, bob);
+            assert_eq!(result.outcome, Outcome::Winner(alice));
+            assert_eq!(result.size, 3);
+        }
+
+        #[test]
+        fn won_counter_diagonal() {
+            let default_accounts = test::default_accounts();
+            let alice = default_accounts.alice;
+            let bob = default_accounts.bob;
+            let game_id = setup(alice, bob);
+
+            let res_id = play(game_id, vec![(0, 2), (0, 1), (1, 1), (0, 0), (2, 0)]);
+
+            let result = res_id.fetch();
+            assert_eq!(result.player1, alice);
+            assert_eq!(result.player2, bob);
+            assert_eq!(result.outcome, Outcome::Winner(alice));
+            assert_eq!(result.size, 3);
+        }
+
+        #[test]
+        fn tie() {
+            let default_accounts = test::default_accounts();
+            let alice = default_accounts.alice;
+            let bob = default_accounts.bob;
+            let game_id = setup(alice, bob);
+
+            let res_id = play(
+                game_id,
+                vec![
+                    (0, 0),
+                    (0, 1),
+                    (0, 2),
+                    (1, 0),
+                    (1, 1),
+                    (2, 0),
+                    (2, 1),
+                    (2, 2),
+                    (1, 2),
+                ],
+            );
+
+            let result = res_id.fetch();
+            assert_eq!(result.player1, alice);
+            assert_eq!(result.player2, bob);
+            assert_eq!(result.outcome, Outcome::Tie);
+            assert_eq!(result.size, 3);
+        }
+
+        #[test]
+        #[should_panic]
+        fn repeat_move() {
+            let default_accounts = test::default_accounts();
+            let alice = default_accounts.alice;
+            let bob = default_accounts.bob;
+            let game_id = setup(alice, bob);
+
+            let _ = play(game_id, vec![(0, 2), (0, 2)]);
+        }
+
+        #[test]
+        #[should_panic]
+        fn out_of_bounds() {
+            let default_accounts = test::default_accounts();
+            let alice = default_accounts.alice;
+            let bob = default_accounts.bob;
+            let game_id = setup(alice, bob);
+
+            let _ = play(game_id, vec![(0, 3)]);
+        }
     }
 }

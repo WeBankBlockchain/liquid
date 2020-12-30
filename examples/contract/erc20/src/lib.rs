@@ -163,7 +163,7 @@ mod erc20 {
             );
             assert_eq!(
                 transfer_event.topics[1],
-                "0x0000000000000000000000000000000000000000000000000000000000000000"
+                "0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff"
                     .parse()
                     .unwrap()
             );
@@ -225,7 +225,7 @@ mod erc20 {
             );
             assert_eq!(
                 approval_event.topics[1],
-                "0x0000000000000000000000000000000000000000000000000000000000000000"
+                "0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff"
                     .parse()
                     .unwrap()
             );

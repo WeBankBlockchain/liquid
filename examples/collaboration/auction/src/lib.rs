@@ -84,7 +84,7 @@ mod auction {
         pub fn invite_bidder(&self, buyer: address) -> ContractId<AuctionInvitation> {
             sign! { AuctionInvitation =>
                 buyer,
-                auction: self.clone(),
+                auction: self.as_ref().clone(),
             }
         }
 
@@ -106,7 +106,7 @@ mod auction {
             }
 
             sign! { AuctionResult =>
-                auction: self.clone(),
+                auction: self.as_ref().clone(),
                 allocations: final_allocs,
             }
         }

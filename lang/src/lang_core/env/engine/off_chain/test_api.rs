@@ -68,7 +68,7 @@ pub struct DefaultAccounts {
 /// Alice, Bob, Charlie, David, Eve and Frank
 pub fn default_accounts() -> DefaultAccounts {
     DefaultAccounts {
-        alice: [0x00u8; ADDRESS_LENGTH].into(),
+        alice: [0xffu8; ADDRESS_LENGTH].into(),
         bob: [0x01u8; ADDRESS_LENGTH].into(),
         charlie: [0x02u8; ADDRESS_LENGTH].into(),
         david: [0x03u8; ADDRESS_LENGTH].into(),

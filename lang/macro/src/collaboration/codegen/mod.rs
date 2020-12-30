@@ -36,7 +36,6 @@ use storage::Storage;
 impl GenerateCode for Collaboration {
     fn generate_code(&self) -> TokenStream2 {
         let mod_ident = &self.mod_ident;
-        let collaboration_ident = &self.collaboration_ident;
         let rust_items = &self.rust_items;
         let types = macro_utils::generate_primitive_types();
         let storage = Storage::from(self).generate_code();
@@ -77,7 +76,7 @@ impl GenerateCode for Collaboration {
             }
 
             #[cfg(feature = "liquid-abi-gen")]
-            pub use crate::#mod_ident::#collaboration_ident;
+            pub use crate::#mod_ident::__LIQUID_ABI_GEN;
         }
     }
 }
