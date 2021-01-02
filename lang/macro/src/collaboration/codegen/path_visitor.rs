@@ -24,7 +24,7 @@ pub struct PathVisitor<'a> {
 
     ident_count: u32,
     is_array_now: bool,
-    current_left_expr: Option<Ident>,
+    current_left_expr: Vec<Ident>,
     predicate_start_point: usize,
 }
 
@@ -37,7 +37,7 @@ impl<'a> PathVisitor<'a> {
 
             ident_count: 1,
             is_array_now: false,
-            current_left_expr: None,
+            current_left_expr: Vec::new(),
             predicate_start_point: 0,
         }
     }
@@ -48,6 +48,8 @@ impl<'a> PathVisitor<'a> {
         self.visit(self.arena, root);
         let last_var = self.last_var();
         let final_stmts = &self.stmts;
+
+        debug_assert!(self.current_left_expr.is_empty());
         if self.from.is_some() {
             quote! {
                 {
@@ -88,7 +90,7 @@ impl<'a> AstVisitor for PathVisitor<'a> {
                 self.ident_count += 1;
 
                 self.stmts.push(quote! {
-                    let #current_var = &#from;
+                    let #current_var = #from;
                 });
             }
             AstNodeType::Field(field) => {
@@ -180,15 +182,18 @@ impl<'a> AstVisitor for PathVisitor<'a> {
                 if indexes.len() > 1 {
                     let elements = indexes.iter().map(|index| {
                         if *index < 0 {
-                            quote! { #last_var[(len + (#index)) as usize] }
+                            quote! { &#last_var[(len + (#index)) as usize] }
                         } else {
-                            quote! { #last_var[#index as usize] }
+                            quote! { &#last_var[#index as usize] }
                         }
                     });
                     self.stmts.push(quote! {
                         let #current_var = {
                             let len = #last_var.len() as i64;
                             [#(#elements,)*]
+                                .iter()
+                                .map(|val| **val)
+                                .collect::<Vec<_>>()
                         };
                     })
                 } else {
@@ -206,7 +211,7 @@ impl<'a> AstVisitor for PathVisitor<'a> {
                             } as usize;
                             // if the index is greater than the length,
                             // the program will be aborted immediately.
-                            #last_var[index]
+                            &#last_var[index]
                         };
                     });
                 }
@@ -253,30 +258,34 @@ impl<'a> AstVisitor for PathVisitor<'a> {
                     RelOp::GreaterEqual => quote! { >= },
                 };
 
-                let current_left_expr = self.current_left_expr.as_ref().unwrap();
+                let current_left_expr = self.current_left_expr.pop().unwrap();
                 let current_right_expr = self.last_var();
                 let current_var = self.current_var();
                 self.ident_count += 1;
                 self.stmts.push(quote! {
                     let #current_var = &(#current_left_expr #op #current_right_expr);
                 });
-                self.current_left_expr = None;
             }
             AstNodeType::LogicExpr(op) => {
-                let op = match op {
-                    LogicOp::And => quote! { && },
-                    LogicOp::Or => quote! { || },
-                    LogicOp::Not => quote! { ! },
-                };
-
-                let current_left_expr = self.current_left_expr.as_ref().unwrap();
-                let current_right_expr = self.last_var();
                 let current_var = self.current_var();
-                self.ident_count += 1;
-                self.stmts.push(quote! {
-                    let #current_var = &(*#current_left_expr #op *#current_right_expr);
-                });
-                self.current_left_expr = None;
+                let current_right_expr = self.last_var();
+                if matches!(op, LogicOp::Not) {
+                    self.current_left_expr.pop().unwrap();
+                    self.stmts.push(quote! {
+                        let #current_var = &(! *#current_right_expr);
+                    });
+                } else {
+                    let op = match op {
+                        LogicOp::And => quote! { && },
+                        LogicOp::Or => quote! { || },
+                        _ => unreachable!(),
+                    };
+                    let current_left_expr = self.current_left_expr.pop().unwrap();
+                    self.ident_count += 1;
+                    self.stmts.push(quote! {
+                        let #current_var = &(*#current_left_expr #op *#current_right_expr);
+                    });
+                }
             }
         }
     }
@@ -287,13 +296,13 @@ impl<'a> AstVisitor for PathVisitor<'a> {
         let head = quote! { |&&_0| #body };
         let call = Group::new(Delimiter::Parenthesis, head);
         self.stmts.push(quote! {
-            #call.collect::<Vec<_>>();
+            #call.map(|val| *val).collect::<Vec<_>>();
         });
     }
 
     fn after_visiting_left_expr(&mut self) {
         let last_var = self.last_var();
-        self.current_left_expr = Some(last_var);
+        self.current_left_expr.push(last_var);
     }
 
     fn before_visiting_predicate(&mut self) {
@@ -373,7 +382,7 @@ mod tests {
     ) -> String {
         let parser = Parser::new(selector);
         let ast = parser.parse().unwrap();
-        let mut visitor = PathVisitor::new(Some(quote! { #obj_var }), &ast.arena);
+        let mut visitor = PathVisitor::new(Some(quote! { &#obj_var }), &ast.arena);
         let final_stmts = visitor.eval(ast.root);
         compile_and_execute(obj_ty, obj_var, obj_init, final_stmts)
     }

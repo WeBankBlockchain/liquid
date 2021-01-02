@@ -1,0 +1,5 @@
+error: around "3]@(?"(at position 16), expected one of `.`, `[`, `(?`, `END`, `)`, `&&`, `||`, `<`, `<=`, `>`, `>=`, `==` or `!=`, but found `@`
+ --> $DIR/04-invalid-signers-syntax.rs:7:28
+  |
+7 |         #[liquid(signers = "$[..][..][1,2,3]@(?true)[..][..]")]
+  |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -33,7 +33,7 @@ impl From<TokenizeError> for ParseError {
     fn from(err: TokenizeError) -> Self {
         match err {
             TokenizeError::IllegalNumber { provided, pos } => Self::new(
-                format!("found illegal representation of number: `{}`", provided),
+                format!("illegal representation of number: `{}`", provided),
                 Span::new(pos, provided.len()),
             ),
             TokenizeError::UnexpectedCharacter {
@@ -188,7 +188,14 @@ impl<'a> Parser<'a> {
 
                 self.selectors(node)
             }
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!("expected one of `$` but found `{}`", other.get_str(),),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -208,7 +215,7 @@ impl<'a> Parser<'a> {
                 });
                 self.selectors(node)
             }
-            Ok(Token::End)
+            Ok(Token::End(..))
             | Ok(Token::RParen(..))
             | Ok(Token::And(..))
             | Ok(Token::Or(..))
@@ -218,7 +225,18 @@ impl<'a> Parser<'a> {
             | Ok(Token::GreaterEqual(..))
             | Ok(Token::Equal(..))
             | Ok(Token::NotEqual(..)) => Ok(prev),
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!(
+                        "expected one of `.`, `[`, `(?`, `END`, `)`, `&&`, `||`, `<`, \
+                         `<=`, `>`, `>=`, `==` or `!=`, but found `{}`",
+                        other.get_str(),
+                    ),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -229,7 +247,14 @@ impl<'a> Parser<'a> {
             Ok(Token::Dot(..)) => self.field_selector(),
             Ok(Token::LBracket(..)) => self.array_selector(),
             Ok(Token::PredicateStart(..)) => self.predicate_selector(),
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!("expected `.`, `[` or `(?` but found `{}`", other.get_str()),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -250,7 +275,6 @@ impl<'a> Parser<'a> {
                 _ => unreachable!(),
             }
         }
-
         self.eat_token();
         let expressions = self.expressions()?;
         match self.token_reader.peek_token() {
@@ -262,7 +286,14 @@ impl<'a> Parser<'a> {
                     right: Some(expressions),
                 }))
             }
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!("expected `)` but found `{}`", other.get_str(),),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -290,7 +321,17 @@ impl<'a> Parser<'a> {
                 self.other_expressions(node)
             }
             Ok(Token::RParen(..)) => Ok(prev),
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!(
+                        "expected one of `&&`, `||` or `)` but found `{}`",
+                        other.get_str(),
+                    ),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -323,7 +364,18 @@ impl<'a> Parser<'a> {
                 self.other_expression(node)
             }
             Ok(Token::And(..)) | Ok(Token::Or(..)) | Ok(Token::RParen(..)) => Ok(prev),
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!(
+                        "expected one of `<`, `<=`, `==`, `>`, `>=`, `&&`, `||` or `)` \
+                         but found `{}`",
+                        other.get_str(),
+                    ),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -388,7 +440,17 @@ impl<'a> Parser<'a> {
                     _ => unimplemented!(),
                 }
             }
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!(
+                        "expected one of `-`, number, boolean, `@` or `(` but found `{}`",
+                        other.get_str(),
+                    ),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -406,7 +468,14 @@ impl<'a> Parser<'a> {
                     right: Some(elements),
                 }))
             }
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!("expected `]` but found `{}`", other.get_str()),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -423,7 +492,17 @@ impl<'a> Parser<'a> {
                 self.eat_token();
                 self.range_tail(None)
             }
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!(
+                        "expected one of `-`, number or `..` but found `{}`",
+                        other.get_str(),
+                    ),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -448,7 +527,17 @@ impl<'a> Parser<'a> {
                     right: None,
                 }))
             }
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!(
+                        "expected one of `,`, `..` or `]` but found `{}`",
+                        other.get_str(),
+                    ),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -483,7 +572,14 @@ impl<'a> Parser<'a> {
                 left: None,
                 right: None,
             })),
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!("expected one of `,` or `]` but found `{}`", other.get_str()),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -497,7 +593,17 @@ impl<'a> Parser<'a> {
                 Ok(Some(to))
             }
             Ok(Token::Semicolon(..)) | Ok(Token::RBracket(..)) => Ok(None),
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!(
+                        "expected one of `-`, number, `;` or `]` but found `{}`",
+                        other.get_str(),
+                    ),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -512,7 +618,14 @@ impl<'a> Parser<'a> {
                 Ok(Some(step as i64))
             }
             Ok(Token::RBracket(..)) => Ok(None),
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!("expected one of `;` or `]` but found `{}`", other.get_str()),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -527,7 +640,17 @@ impl<'a> Parser<'a> {
                 Ok(-num)
             }
             Ok(Token::Number(..)) => Ok(self.number()? as i64),
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!(
+                        "expected one of `-` or number but found `{}`",
+                        other.get_str(),
+                    ),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -558,7 +681,17 @@ impl<'a> Parser<'a> {
                     right: None,
                 }))
             }
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!(
+                        "expected one of identifier or number but found `{}`",
+                        other.get_str(),
+                    ),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -566,7 +699,14 @@ impl<'a> Parser<'a> {
         debug!("#identifier");
         match self.token_reader.next_token() {
             Ok(Token::Identifier(_, ident)) => Ok(ident),
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!("expected identifier but found `{}`", other.get_str()),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -574,7 +714,14 @@ impl<'a> Parser<'a> {
         debug!("#number");
         match self.token_reader.next_token() {
             Ok(Token::Number(_, num)) => Ok(num),
-            _ => unimplemented!(),
+            Ok(other) => {
+                let span = other.get_span();
+                Err(ParseError::new(
+                    format!("expected number but found `{}`", other.get_str(),),
+                    span,
+                ))
+            }
+            Err(err) => Err(err.into()),
         }
     }
 
@@ -676,9 +823,8 @@ mod tests {
     }
 
     fn setup() {
-        let _ = env_logger::try_init();
+        let _ = env_logger::builder().is_test(true).try_init();
     }
-
     #[test]
     fn parse_field() {
         assert_eq!(run("$"), Ok(vec![AstNodeType::Root]));

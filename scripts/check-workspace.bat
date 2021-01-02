@@ -55,10 +55,11 @@ if !errorlevel! neq 0 (
 
 set results[4].name=unit_tests
 set results[4].result=0
-cargo +nightly test --verbose --all --features "contract,solidity-compatible" --release --manifest-path lang/Cargo.toml
-cargo +nightly test --verbose --all --features "collaboration" --release --manifest-path lang/Cargo.toml
+cargo +nightly test --verbose --features "contract,solidity-compatible" --release --manifest-path lang/Cargo.toml
+cargo +nightly test --verbose --features "collaboration" --release --manifest-path lang/Cargo.toml
 cargo +nightly test --verbose --release --manifest-path ty_mapping/Cargo.toml
 cargo +nightly test --verbose --release --manifest-path primitives/Cargo.toml
+cargo +nightly test --verbose --release --features "collaboration" --manifest-path lang/macro/Cargo.toml
 if !errorlevel! neq 0 (
     set results[4].result=1
 )

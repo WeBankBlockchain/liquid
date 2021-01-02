@@ -1,0 +1,14 @@
+error[E0277]: `&u8` is not an iterator
+  --> $DIR/03-invalid-signers.rs:8:9
+   |
+8  |         addr: u8,
+   |         ^^^^ `&u8` is not an iterator
+   |
+  ::: $WORKSPACE/lang/src/traits.rs
+   |
+   |             T: Parties_Should_Be_Address_Or_Address_Collection<'a>,
+   |                --------------------------------------------------- required by this bound in `liquid_lang::acquire_addrs`
+   |
+   = help: the trait `Iterator` is not implemented for `&u8`
+   = note: required because of the requirements on the impl of `IntoIterator` for `&u8`
+   = note: required because of the requirements on the impl of `Parties_Should_Be_Address_Or_Address_Collection<'_>` for `&u8`

@@ -20,10 +20,8 @@ use crate::{
     },
     utils as lang_utils,
 };
-use core::{
-    cmp::{max, min},
-    convert::TryFrom,
-};
+use colored::Colorize;
+use core::{cmp::min, convert::TryFrom};
 use proc_macro2::{Group, Ident, Span, TokenStream, TokenTree};
 use syn::Result;
 
@@ -109,7 +107,7 @@ pub fn parse_select_path(path: &str, span: Span) -> Result<SelectWith> {
         token
     }
 
-    if path.starts_with("::") {
+    if path.starts_with("::") || path.starts_with("crate::") {
         let stream = syn::parse_str(&path)?;
         let tokens = respan_token_stream(stream, span);
         let expr_path = syn::parse2::<syn::ExprPath>(tokens)?;
@@ -123,18 +121,15 @@ pub fn parse_select_path(path: &str, span: Span) -> Result<SelectWith> {
             Err(err) => {
                 let err_span = err.span;
                 let path_len = path.len();
-                let start = max(0, err_span.start - 3);
-                let end = min(path_len, err_span.end + 3);
-
-                let snippet = format!(
-                    "{}{}{}",
-                    if start == 0 { "" } else { ".." },
-                    &path[start..end],
-                    if end == path_len { "" } else { ".." },
-                );
+                let start = if err_span.start < 2 {
+                    0
+                } else {
+                    err_span.start - 2
+                };
+                let end = min(path_len, err_span.end + 2);
                 bail_span! {
                     span,
-                    "around \"{}\", {}", snippet, err.msg
+                    "around \"{}\"(at position {}), {}", &path[start..end], err_span.start, err.msg
                 }
             }
         }
@@ -245,11 +240,11 @@ impl<'a> OwnersParser<'a> {
             '^' if self.allow_select_from_arg => {
                 self.next_char();
                 let ident = self.parse_ident()?;
-                Ok(SelectFrom::Argument(Ident::new(&ident, Span::call_site())))
+                Ok(SelectFrom::Argument(Ident::new(&ident, self.span)))
             }
             ch if ch.is_ascii_alphabetic() || ch == '_' => {
                 let ident = self.parse_ident()?;
-                Ok(SelectFrom::This(Ident::new(&ident, Span::call_site())))
+                Ok(SelectFrom::This(Ident::new(&ident, self.span)))
             }
             ch => bail_span!(
                 self.span,

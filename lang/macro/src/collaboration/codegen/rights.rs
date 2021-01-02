@@ -43,12 +43,16 @@ impl<'a> GenerateCode for Rights<'a> {
                     let with = &owner.with;
                     let span = from.span();
                     let from_ident = match from {
-                        SelectFrom::This(ident) => quote! { self.#ident },
-                        SelectFrom::Argument(ident) => quote! { #ident },
+                        SelectFrom::This(ident) => quote_spanned! { ident.span() =>
+                            &self.#ident
+                        },
+                        SelectFrom::Argument(ident) => quote_spanned! { ident.span() =>
+                            &#ident
+                        },
                     };
                     match with {
                         None => {
-                            quote_spanned! { span => &#from_ident }
+                            quote_spanned! { span => #from_ident }
                         }
                         Some(SelectWith::Func(path)) => {
                             quote_spanned! { path.span() =>
@@ -90,10 +94,10 @@ impl<'a> GenerateCode for Rights<'a> {
                         {
                             // Authorization checking.
                             #[allow(unused_imports)]
-                            use liquid_lang::{Can_Not_Select_Any_Account_Address_From_It, AcquireSigners};
+                            use liquid_lang::AcquireSigners;
                             #[allow(unused_mut)]
-                            let mut owners = liquid_prelude::collections::BTreeSet::<address>::new();
-                            #(owners.extend((#selectors).acquire_addrs());)*
+                            let mut owners = liquid_prelude::collections::BTreeSet::<&'_ address>::new();
+                            #(owners.extend(liquid_lang::acquire_addrs(#selectors));)*
                             if !__liquid_authorization_check(&owners) {
                                 let mut error_info = String::from("exercising right `");
                                 error_info.push_str(#fn_ident_str);

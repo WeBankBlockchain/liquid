@@ -20,6 +20,7 @@ paste = "0.1.17"
 id-arena = "2.2.1"
 log = "0.4"
 env_logger = "0.7"
+colored = "2.0.0"
 
 liquid_prelude = { version = "0.2.0", path = "../../prelude", default-features = false }
 liquid_primitives = { version = "0.2.0", path = "../../primitives", default-features = false }

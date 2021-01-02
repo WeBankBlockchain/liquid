@@ -56,7 +56,70 @@ pub enum Token {
     Not(Span),
     PredicateStart(Span),
     Semicolon(Span),
-    End,
+    End(Span),
+}
+
+impl Token {
+    pub fn get_span(&self) -> Span {
+        let span = match self {
+            Self::Root(span) => span,
+            Self::Dot(span) => span,
+            Self::At(span) => span,
+            Self::LParen(span) => span,
+            Self::RParen(span) => span,
+            Self::LBracket(span) => span,
+            Self::RBracket(span) => span,
+            Self::Comma(span) => span,
+            Self::Equal(span) => span,
+            Self::NotEqual(span) => span,
+            Self::Less(span) => span,
+            Self::LessEqual(span) => span,
+            Self::Greater(span) => span,
+            Self::GreaterEqual(span) => span,
+            Self::And(span) => span,
+            Self::Or(span) => span,
+            Self::DotDot(span) => span,
+            Self::Number(span, _) => span,
+            Self::Bool(span, _) => span,
+            Self::Identifier(span, _) => span,
+            Self::Neg(span) => span,
+            Self::Not(span) => span,
+            Self::PredicateStart(span) => span,
+            Self::Semicolon(span) => span,
+            Self::End(span) => span,
+        };
+        span.clone()
+    }
+
+    pub fn get_str(&self) -> String {
+        match self {
+            Self::Root(_) => "$".to_owned(),
+            Self::Dot(_) => ".".to_owned(),
+            Self::At(_) => "@".to_owned(),
+            Self::LParen(_) => "(".to_owned(),
+            Self::RParen(_) => ")".to_owned(),
+            Self::LBracket(_) => "[".to_owned(),
+            Self::RBracket(_) => "]".to_owned(),
+            Self::Comma(_) => ",".to_owned(),
+            Self::Equal(_) => "==".to_owned(),
+            Self::NotEqual(_) => "!=".to_owned(),
+            Self::Less(_) => "<".to_owned(),
+            Self::LessEqual(_) => "<=".to_owned(),
+            Self::Greater(_) => ">".to_owned(),
+            Self::GreaterEqual(_) => ">=".to_owned(),
+            Self::And(_) => "&&".to_owned(),
+            Self::Or(_) => "||".to_owned(),
+            Self::DotDot(_) => "..".to_owned(),
+            Self::Number(_, number) => number.to_string(),
+            Self::Bool(_, bool) => bool.to_string(),
+            Self::Identifier(_, identifier) => identifier.clone(),
+            Self::Neg(_) => "-".to_owned(),
+            Self::Not(_) => "!".to_owned(),
+            Self::PredicateStart(_) => "(?".to_owned(),
+            Self::Semicolon(_) => ";".to_owned(),
+            Self::End(_) => "END".to_owned(),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -103,27 +166,28 @@ impl<'a> Tokenizer<'a> {
         }
 
         if self.cur_pos >= self.input.len() {
-            return Ok(Token::End);
+            return Ok(Token::End(Span::new(self.input.len(), 0)));
         }
 
         let next_ch = self.next_char()?;
-        let cur_pos = self.cur_pos;
+        let cur_pos = self.cur_pos - 1;
+        let span = Span::new(cur_pos, 1);
         match next_ch {
-            CH_DOLLAR => Ok(Token::Root(Span::new(cur_pos, 1))),
+            CH_DOLLAR => Ok(Token::Root(span)),
             CH_DOT => self.dot(cur_pos),
-            CH_AT => Ok(Token::At(Span::new(cur_pos, 1))),
+            CH_AT => Ok(Token::At(span)),
             CH_LPAREN => self.lparen(cur_pos),
-            CH_RPAREN => Ok(Token::RParen(Span::new(cur_pos, 1))),
-            CH_LBRACKET => Ok(Token::LBracket(Span::new(cur_pos, 1))),
-            CH_RBRACKET => Ok(Token::RBracket(Span::new(cur_pos, 1))),
-            CH_COMMA => Ok(Token::Comma(Span::new(cur_pos, 1))),
+            CH_RPAREN => Ok(Token::RParen(span)),
+            CH_LBRACKET => Ok(Token::LBracket(span)),
+            CH_RBRACKET => Ok(Token::RBracket(span)),
+            CH_COMMA => Ok(Token::Comma(span)),
             CH_EQUAL => self.equal(cur_pos),
             CH_LANGLE => self.less(cur_pos),
             CH_RANGLE => self.greater(cur_pos),
             CH_AMPERSAND => self.and(cur_pos),
             CH_PIPE => self.or(cur_pos),
-            CH_SEMICOLON => Ok(Token::Semicolon(Span::new(cur_pos, 1))),
-            CH_MINUS => Ok(Token::Neg(Span::new(cur_pos, 1))),
+            CH_SEMICOLON => Ok(Token::Semicolon(span)),
+            CH_MINUS => Ok(Token::Neg(span)),
             CH_EXCLAMATION => self.not(cur_pos),
             _ if next_ch.is_ascii_alphanumeric() || next_ch == '_' => {
                 self.ident_num(next_ch, cur_pos)
@@ -316,8 +380,8 @@ impl<'a> TokenReader<'a> {
         loop {
             let next_token = tokenizer.next_token();
             match next_token {
-                Ok(Token::End) => {
-                    tokens.push(Token::End);
+                Ok(Token::End(span)) => {
+                    tokens.push(Token::End(span));
                     tokens.reverse();
                     return Self {
                         input,

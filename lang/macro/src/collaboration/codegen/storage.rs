@@ -128,19 +128,19 @@ impl<'a> Storage<'a> {
                 }
             }
 
-            pub fn __liquid_authorization_check(parties: &liquid_prelude::collections::BTreeSet<address>) -> bool {
+            pub fn __liquid_authorization_check(parties: &liquid_prelude::collections::BTreeSet<&address>) -> bool {
                 let authorizers = acquire_authorizers();
                 if authorizers.is_empty() {
                     let caller = liquid_lang::env::get_caller();
                     for party in parties {
-                        if *party != caller {
+                        if *party != &caller {
                             return false;
                         }
                     }
                     true
                 } else {
                     for party in parties {
-                        if !authorizers.contains(party) {
+                        if !authorizers.contains(*party) {
                             return false;
                         }
                     }

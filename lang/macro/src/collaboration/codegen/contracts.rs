@@ -120,10 +120,11 @@ impl<'a> Contracts<'a> {
     fn generate_acquire_signers(&self) -> impl Iterator<Item = TokenStream2> + '_ {
         let contracts = &self.collaboration.contracts;
         contracts.iter().map(|contract| {
+            let span = contract.span;
             let ident = &contract.ident;
             let field_signers = &contract.field_signers;
             let mated_name = &contract.mated_name;
-            let selectors = field_signers.iter().map(|selector| {
+            let signers = field_signers.iter().map(|selector| {
                 let from = &selector.from;
                 let with = &selector.with;
                 let field_ident = match from {
@@ -144,7 +145,7 @@ impl<'a> Contracts<'a> {
                     }
                     Some(SelectWith::Obj(ast)) => {
                         let mut path_visitor =
-                            PathVisitor::new(Some(quote! { self.#field_ident }), &ast.arena);
+                            PathVisitor::new(Some(quote! { &self.#field_ident }), &ast.arena);
                         let stmts = path_visitor.eval(ast.root);
                         quote_spanned! { field_ident.span() =>
                             #stmts
@@ -158,12 +159,11 @@ impl<'a> Contracts<'a> {
                 }
             });
 
-            let acquire_signers = quote! {
-                fn acquire_signers(&self) -> liquid_prelude::collections::BTreeSet::<address> {
-                    use liquid_lang::Can_Not_Select_Any_Account_Address_From_It;
-
+            let acquire_signers = quote_spanned! { span =>
+                fn acquire_signers(&self) -> liquid_prelude::collections::BTreeSet::<&address> {
+                    #[allow(unused_imports)]
                     let mut signers = liquid_prelude::collections::BTreeSet::new();
-                    #(signers.extend((#selectors).acquire_addrs());)*
+                    #(signers.extend(liquid_lang::acquire_addrs(#signers));)*
                     signers
                 }
             };

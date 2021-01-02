@@ -52,22 +52,36 @@ cfg_if! {
             type T = Self;
         }
 
+        /// Every contract needs to implement this trait
+        /// to get signers from runtime.
         pub trait AcquireSigners {
-            fn acquire_signers(&self) -> liquid_prelude::collections::BTreeSet<Address>;
+            fn acquire_signers(&self) -> liquid_prelude::collections::BTreeSet<&Address>;
         }
 
         #[allow(non_camel_case_types)]
-        pub trait Can_Not_Select_Any_Account_Address_From_It {
-            fn acquire_addrs(self) -> Vec<Address>;
+        pub trait Parties_Should_Be_Address_Or_Address_Collection<'a>
+        {
+            fn acquire_addrs(self) -> Vec<&'a Address>;
         }
 
-        impl<'a, T> Can_Not_Select_Any_Account_Address_From_It for T
+        impl<'a, T: 'a> Parties_Should_Be_Address_Or_Address_Collection<'a> for T
         where
             T: IntoIterator<Item = &'a Address>
         {
-            fn acquire_addrs(self) -> Vec<Address> {
-                self.into_iter().copied().collect()
+            fn acquire_addrs(self) -> Vec<&'a Address> {
+                self.into_iter().collect()
             }
+        }
+
+        /// This function is used for type inference, because that in Rust there is no
+        /// equivalent of `decltype` in C++ for now. With the help of this function, the
+        /// error info can be simplified when the user want to acquire addresses from an
+        /// invalid data structure.
+        pub fn acquire_addrs<'a, T>(t: T) -> Vec<&'a Address>
+        where
+            T: Parties_Should_Be_Address_Or_Address_Collection<'a>,
+        {
+            <T as Parties_Should_Be_Address_Or_Address_Collection<'a>>::acquire_addrs(t)
         }
 
         pub trait ContractName {
