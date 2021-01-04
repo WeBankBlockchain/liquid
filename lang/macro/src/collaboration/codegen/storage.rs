@@ -89,10 +89,7 @@ impl<'a> Storage<'a> {
                         __liquid_authorizers: liquid_prelude::vec::Vec::new(),
                         #(#bind_stats)*
                     };
-                    #[cfg(test)]
-                    {
-                        #(storage.#field_idents.initialize();)*
-                    }
+                    #(storage.#field_idents.initialize();)*
                     storage
                 }
             }

@@ -21,7 +21,7 @@ liquid_abi_gen = { version = "0.2.0", path = "../../../abi-gen", default-feature
 predicates = "1.0.5"
 
 [lib]
-name = "ballot"
+name = "voting"
 crate-type = [
     # Used for normal contract Wasm blobs.
     "cdylib",

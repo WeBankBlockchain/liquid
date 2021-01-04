@@ -271,7 +271,7 @@ impl Env for EnvInstance {
 
     fn get_address(&mut self) -> Address {
         self.buffer.resize(ADDRESS_LENGTH);
-        ext::get_caller(&mut self.buffer[..ADDRESS_LENGTH]);
+        ext::get_address(&mut self.buffer[..ADDRESS_LENGTH]);
         let mut addr = [0u8; ADDRESS_LENGTH];
         addr.copy_from_slice(&self.buffer[..ADDRESS_LENGTH]);
         Address::new(addr)

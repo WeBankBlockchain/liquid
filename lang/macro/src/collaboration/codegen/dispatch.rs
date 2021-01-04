@@ -65,9 +65,9 @@ impl<'a> Dispatch<'a> {
         [hash[0], hash[1], hash[2], hash[3]]
     }
 
-    fn generate_contract_selector(contract: &ItemContract, for_abolish: bool) -> [u8; 4] {
+    fn generate_contract_selector(contract: &ItemContract, for_fetch: bool) -> [u8; 4] {
         let contract_name = &contract.ident;
-        let prefix = if for_abolish { "~" } else { "" };
+        let prefix = if for_fetch { "$" } else { "" };
         let hash = liquid_primitives::hash::hash(
             format!("{}{}", prefix, contract_name.to_string()).as_bytes(),
         );
@@ -239,7 +239,6 @@ impl<'a> Dispatch<'a> {
 
                     if core::any::TypeId::of::<<#right_marker as liquid_lang::FnOutput>::Output>() != core::any::TypeId::of::<()>() {
                         liquid_lang::env::finish(&result);
-                        unreachable!();
                     }
 
                     return Ok(());
@@ -257,7 +256,6 @@ impl<'a> Dispatch<'a> {
         item_contract: &ItemContract,
     ) -> TokenStream2 {
         let contract_ident = &item_contract.ident;
-        let contract_ident_str = contract_ident.to_string();
         let contract_id = Self::generate_contract_id(item_contract);
         let contract_marker = quote! { Marker::<[(); #contract_id as usize]> };
         let input_idents = item_contract
@@ -266,8 +264,7 @@ impl<'a> Dispatch<'a> {
             .iter()
             .map(|field| &field.ident)
             .collect::<Vec<_>>();
-        let state_name = &item_contract.state_name;
-        let abolish_selector = Self::generate_contract_selector(item_contract, true);
+        let fetch_selector = Self::generate_contract_selector(item_contract, true);
         quote! {
             if selector == <#contract_marker as liquid_lang::FnSelector>::SELECTOR {
                 let (#(#input_idents,)*) = <<#contract_marker as liquid_lang::FnInput>::Input as scale::Decode>::decode(&mut data.as_slice())
@@ -279,37 +276,13 @@ impl<'a> Dispatch<'a> {
                 return Ok(());
             }
 
-            if selector == [#(#abolish_selector,)*] {
-                let id = <u32 as scale::Decode>::decode(&mut data.as_slice())
+            if selector == [#(#fetch_selector,)*] {
+                let contract_id = <ContractId<#contract_ident> as scale::Decode>::decode(&mut data.as_slice())
                     .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
 
-                use liquid_prelude::string::ToString;
-
-                if !storage.#state_name.contains_key(&id) {
-                    let mut error_info = String::from("the contract `");
-                    error_info.push_str(#contract_ident_str);
-                    error_info.push_str("` with id `");
-                    error_info.push_str(&id.to_string());
-                    error_info.push_str("` is not exist");
-                    liquid_lang::env::revert(&error_info);
-                    unreachable!();
-                }
-
-                let abolished = &mut storage.#state_name.get_mut(&id).unwrap().1;
-                if *abolished {
-                    let mut error_info = String::from("the contract `");
-                    error_info.push_str(#contract_ident_str);
-                    error_info.push_str("` with id `");
-                    error_info.push_str(&id.to_string());
-                    error_info.push_str("` had been abolished already");
-                    liquid_lang::env::revert(&error_info);
-                    unreachable!();
-                }
-
-                *abolished = true;
-                <Storage as liquid_lang::storage::Flush>::flush(storage);
-
-                return Ok(())
+                let contract = <ContractId<#contract_ident> as liquid_lang::ContractVisitor>::fetch(&contract_id);
+                liquid_lang::env::finish(&contract);
+                return Ok(());
             }
         }
     }
@@ -367,8 +340,7 @@ impl<'a> Dispatch<'a> {
             let info = format!("fail to register contract `{}`", ident);
             quote! { &liquid_prelude::string::String::from(#info) }
         });
-        let version_0 = quote! { liquid_prelude::string::String::from("0") };
-        let empty_abi = quote! { liquid_prelude::string::String::from("") };
+        let version = quote! { liquid_prelude::string::String::from("collaboration") };
 
         let addr_check =
             contract_names
@@ -376,7 +348,7 @@ impl<'a> Dispatch<'a> {
                 .zip(existent_errors)
                 .map(|(name, error)| {
                     quote! {
-                        let addr = CNS::get_contract_address(#name, #version_0);
+                        let addr = CNS::get_contract_address(#name, #version);
                         if let Some(addr) = addr {
                             if addr != address::empty() {
                                 liquid_lang::env::revert(#error)
@@ -384,18 +356,20 @@ impl<'a> Dispatch<'a> {
                         }
                     }
                 });
-        let register = contract_names.iter().zip(register_errors).map(|(name, error)| {
-            quote! {
-                let ret = CNS::insert(#name, #version_0, self_addr.clone(), #empty_abi);
-                let error = #error;
-                match ret {
-                    Some(code) => if code == 0.into() {
-                        liquid_lang::env::revert(error);
+        let register = contract_names.iter().zip(register_errors).enumerate().map(
+            |(i, (name, error))| {
+                quote! {
+                    let ret = CNS::insert(#name, #version, self_addr.clone(), abis[#i as usize].clone());
+                    let error = #error;
+                    match ret {
+                        Some(code) => if code == 0.into() {
+                            liquid_lang::env::revert(error);
+                        }
+                        None => liquid_lang::env::revert(error),
                     }
-                    None => liquid_lang::env::revert(error),
                 }
-            }
-        });
+            },
+        );
         quote! {
             #[no_mangle]
             fn hash_type() -> u32 {
@@ -413,8 +387,22 @@ impl<'a> Dispatch<'a> {
 
                 let self_addr = liquid_lang::env::get_address().to_string();
 
-                #(#addr_check)*
-                #(#register)*
+                let call_data = liquid_lang::env::get_call_data(liquid_lang::env::CallMode::Deploy);
+                if let Ok(call_data) = call_data {
+                    let data = call_data.data;
+                    let abis = <Vec<String> as scale::Decode>::decode(&mut data.as_slice());
+                    if abis.is_err() {
+                        let ret_info = liquid_lang::DispatchRetInfo::from(liquid_lang::DispatchError::InvalidParams);
+                        liquid_lang::env::revert(&ret_info.get_info_string());
+                    }
+                    let abis = abis.unwrap();
+
+                    #(#addr_check)*
+                    #(#register)*
+                } else {
+                    let ret_info = liquid_lang::DispatchRetInfo::from(liquid_lang::DispatchError::CouldNotReadInput);
+                    liquid_lang::env::revert(&ret_info.get_info_string());
+                }
             }
 
             #[no_mangle]
