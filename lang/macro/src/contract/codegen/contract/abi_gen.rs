@@ -25,15 +25,18 @@ pub struct ABIGen<'a> {
 
 impl<'a> GenerateCode for ABIGen<'a> {
     fn generate_code(&self) -> TokenStream2 {
-        let storage_ident = &self.contract.storage.ident;
         let constructor_abi = self.generate_constructor_abi();
         let external_fn_abis = self.generate_external_fn_abis();
         let event_abis = self.generate_event_abis();
 
         quote! {
             #[cfg(feature = "liquid-abi-gen")]
+            #[allow(non_camel_case_types)]
+            pub struct __LIQUID_ABI_GEN;
+
+            #[cfg(feature = "liquid-abi-gen")]
             const _: () = {
-                impl liquid_lang::GenerateABI for #storage_ident {
+                impl liquid_lang::GenerateABI for __LIQUID_ABI_GEN {
                     fn generate_abi() -> liquid_abi_gen::ContractABI {
                         let constructor_abi = #constructor_abi;
                         let external_fn_abis = #external_fn_abis;

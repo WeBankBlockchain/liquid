@@ -70,13 +70,16 @@ impl GenerateCode for ir::Contract {
                 #[allow(non_snake_case)]
                 pub type #storage_ident = __liquid_private::Storage;
 
+                #[cfg(feature = "liquid-abi-gen")]
+                pub use __liquid_private::__LIQUID_ABI_GEN;
+
                 #event_struct
 
                 #(#rust_items)*
             }
 
             #[cfg(feature = "liquid-abi-gen")]
-            pub use crate::#ident::#storage_ident;
+            pub use crate::#ident::__LIQUID_ABI_GEN;
         }
     }
 }

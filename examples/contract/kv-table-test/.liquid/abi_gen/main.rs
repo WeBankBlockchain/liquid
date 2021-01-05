@@ -1,6 +1,6 @@
 fn main() -> Result<(), std::io::Error> {
     let contract_abi =
-        <contract::KvTableTest as liquid_lang::GenerateABI>::generate_abi();
+        <contract::__LIQUID_ABI_GEN as liquid_lang::GenerateABI>::generate_abi();
     let mut final_abi = Vec::with_capacity(
         contract_abi.event_abis.len() + contract_abi.external_fn_abis.len() + 1,
     );
