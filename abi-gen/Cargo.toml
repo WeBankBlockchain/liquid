@@ -1,6 +1,6 @@
 [package]
 name = "liquid_abi_gen"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
 edition = "2018"
 
@@ -11,10 +11,10 @@ serde = { version = "1.0.114", default-features = false, features = ["derive", "
 cfg-if = "0.1.10"
 derive_more = "0.99.9"
 
-liquid_macro = { version = "0.2.0", path = "../macro", default-features = false }
-liquid_prelude = { version = "0.2.0", path = "../prelude", default-features = false }
-liquid_ty_mapping = { version = "0.2.0", path = "../ty_mapping", default-features = false }
-liquid_primitives = { version = "0.2.0", path = "../primitives", default-features = false }
+liquid_macro = { version = "0.3.0", path = "../macro", default-features = false }
+liquid_prelude = { version = "0.3.0", path = "../prelude", default-features = false }
+liquid_ty_mapping = { version = "0.3.0", path = "../ty_mapping", default-features = false }
+liquid_primitives = { version = "0.3.0", path = "../primitives", default-features = false }
 
 [features]
 default = ["std"]

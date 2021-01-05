@@ -2,7 +2,7 @@
 
 use liquid_lang as liquid;
 
-#[liquid::contract(version = "0.2.0")]
+#[liquid::contract(version = "0.3.0")]
 mod asset_erc20 {
     use liquid_lang::storage;
 

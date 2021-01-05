@@ -279,7 +279,7 @@ impl TryFrom<ir::ContractParams> for ir::ContractMetaInfo {
         }
 
         let liquid_version = match liquid_version {
-            None => ir::MetaVersion::try_from(&"0.2.0".to_owned()).unwrap(),
+            None => ir::MetaVersion::try_from(&"0.3.0".to_owned()).unwrap(),
             Some(liquid_version) => liquid_version,
         };
 

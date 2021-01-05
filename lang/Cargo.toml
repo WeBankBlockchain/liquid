@@ -1,6 +1,6 @@
 [package]
 name = "liquid_lang"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
 edition = "2018"
 
@@ -15,14 +15,14 @@ chrono = { version = "0.4.13", optional = true }
 lazy_static = "1.4.0"
 spin = "0.7.0"
 
-liquid_macro = { version = "0.2.0", path = "../macro", default-features = false }
-liquid_abi_codec = { version = "0.2.0", path = "../abi-codec", default-features = false, optional = true }
-liquid_primitives = { version = "0.2.0", path = "../primitives", default-features = false }
-liquid_prelude = { version = "0.2.0", path = "../prelude", default-features = false }
-liquid_ty_mapping = { version = "0.2.0", path = "../ty_mapping", default-features = false }
-liquid_abi_gen = { version = "0.2.0", path = "../abi-gen", default-features = false, optional = true }
-liquid_lang_macro = { version = "0.2.0", path = "macro", default-features = false }
-liquid_alloc = { version = "0.2.0", path = "../alloc", default-features = false }
+liquid_macro = { version = "0.3.0", path = "../macro", default-features = false }
+liquid_abi_codec = { version = "0.3.0", path = "../abi-codec", default-features = false, optional = true }
+liquid_primitives = { version = "0.3.0", path = "../primitives", default-features = false }
+liquid_prelude = { version = "0.3.0", path = "../prelude", default-features = false }
+liquid_ty_mapping = { version = "0.3.0", path = "../ty_mapping", default-features = false }
+liquid_abi_gen = { version = "0.3.0", path = "../abi-gen", default-features = false, optional = true }
+liquid_lang_macro = { version = "0.3.0", path = "macro", default-features = false }
+liquid_alloc = { version = "0.3.0", path = "../alloc", default-features = false }
 
 [dev-dependencies]
 hex-literal = "0.2.1"
@@ -31,7 +31,7 @@ trybuild = "1.0.30"
 predicates = "1.0.5"
 serial_test = "0.5.1"
 
-liquid_abi_codec = { version = "0.2.0", path = "../abi-codec", default-features = false }
+liquid_abi_codec = { version = "0.3.0", path = "../abi-codec", default-features = false }
 
 [features]
 default = ["std"]
