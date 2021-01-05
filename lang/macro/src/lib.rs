@@ -26,7 +26,12 @@ use derive::wrapper;
 use proc_macro::TokenStream;
 
 cfg_if! {
-    if #[cfg(all(feature = "contract", feature = "collaboration"))] {
+    if #[cfg(all(not(feature = "contract"), not(feature = "collaboration")))] {
+        compile_error! {
+            "one of compilation feature `contract` and `collaboration` must \
+             be enabled"
+        }
+    } else if #[cfg(all(feature = "contract", feature = "collaboration"))] {
         compile_error! {
             "compilation feature `contract` and `collaboration` can not be \
              enabled simultaneously"

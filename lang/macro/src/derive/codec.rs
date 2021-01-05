@@ -441,7 +441,7 @@ fn generate_abi_struct(
             }
         }
 
-        #[cfg(feature = "liquid-abi-gen")]
+        #[cfg(feature = "collaboration-abi-gen")]
         impl liquid_abi_gen::traits::GenerateOutputs for #ident {
             fn generate_outputs<B>(builder: &mut B)
             where

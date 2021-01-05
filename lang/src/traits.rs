@@ -461,12 +461,12 @@ cfg_if! {
 
 cfg_if! {
     if #[cfg(feature = "contract")] {
-        #[cfg(feature = "liquid-abi-gen")]
+        #[cfg(feature = "contract-abi-gen")]
         pub trait GenerateABI {
             fn generate_abi() -> liquid_abi_gen::ContractABI;
         }
     } else if #[cfg(feature = "collaboration")] {
-        #[cfg(feature = "liquid-abi-gen")]
+        #[cfg(feature = "collaboration-abi-gen")]
         pub trait GenerateABI {
             fn generate_abi() -> liquid_abi_gen::CollaborationABI;
         }

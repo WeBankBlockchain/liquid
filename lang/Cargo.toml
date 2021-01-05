@@ -37,17 +37,12 @@ liquid_abi_codec = { version = "0.3.0", path = "../abi-codec", default-features 
 default = ["std"]
 std = [
     "liquid_macro/std",
-    "liquid_abi_gen/std",
     "liquid_abi_codec/std",
     "liquid_primitives/std",
     "liquid_prelude/std",
     "liquid_lang_macro/std",
     "liquid_alloc/std",
     "chrono",
-]
-liquid-abi-gen = [
-    "std",
-    "liquid_abi_gen",
 ]
 gm = [
     "liquid_lang_macro/gm",
@@ -57,12 +52,10 @@ contract = [
     "liquid_ty_mapping/contract",
     "liquid_primitives/contract",
     "liquid_lang_macro/contract",
-    "liquid_abi_gen/contract",
 ]
 solidity-compatible = [
     "liquid_abi_codec",
     "liquid_lang_macro/solidity-compatible",
-    "liquid_abi_gen/solidity-compatible",
 ]
 solidity-interface = [
     "liquid_abi_codec",
@@ -72,7 +65,15 @@ collaboration = [
     "liquid_abi_codec",
     "liquid_lang_macro/collaboration",
     "liquid_macro/collaboration",
-    "liquid_abi_gen/collaboration",
+]
+contract-abi-gen = [
+    "std",
+    "liquid_abi_gen/contract",
+    "liquid_abi_gen/solidity-compatible",
+]
+collaboration-abi-gen = [
+    "std",
+    "liquid_abi_gen/collaboration"
 ]
 
 [[test]]

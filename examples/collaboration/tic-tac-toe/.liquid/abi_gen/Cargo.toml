@@ -18,7 +18,7 @@ features = ["liquid-abi-gen"]
 [dependencies.liquid_lang]
 path = "../../../../../lang"
 default-features = false
-features = ["liquid-abi-gen", "collaboration"]
+features = ["collaboration-abi-gen"]
 
 [dependencies]
 serde = "1.0"

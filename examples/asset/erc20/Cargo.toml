@@ -41,7 +41,7 @@ std = [
 liquid-abi-gen = [
     "std",
     "liquid_abi_gen",
-    "liquid_lang/liquid-abi-gen",
+    "liquid_lang/contract-abi-gen",
 ]
 gm = [
     "liquid_lang/gm",
