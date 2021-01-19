@@ -9,12 +9,20 @@ set results=()
 set results[0].name=basic_check
 set results[0].result=0
 for %%f in %features% do (
-    cargo +nightly check --verbose --features %%f --manifest-path lang\Cargo.toml
+    cargo +nightly check ^
+        --verbose ^
+        --features %%f ^
+        --manifest-path lang\Cargo.toml
     if !errorlevel! neq 0 (
         set results[0].result=1
     )
 
-    cargo +nightly check --verbose --no-default-features --features %%f --target=wasm32-unknown-unknown --manifest-path lang\Cargo.toml
+    cargo +nightly check ^
+        --verbose ^
+        --no-default-features ^
+        --features %%f ^
+        --target=wasm32-unknown-unknown ^
+        --manifest-path lang\Cargo.toml
     if !errorlevel! neq 0 (
         set results[0].result=1
     )
@@ -23,7 +31,13 @@ for %%f in %features% do (
 set results[1].name=build_wasm
 set results[1].result=0
 for %%f in %features% do (
-    cargo +nightly build --verbose --no-default-features --features %%f --release --target=wasm32-unknown-unknown --manifest-path lang\Cargo.toml
+    cargo +nightly build ^
+        --verbose ^
+        --no-default-features ^
+        --features %%f ^
+        --release ^
+        --target=wasm32-unknown-unknown ^
+        --manifest-path lang\Cargo.toml
     if !errorlevel! neq 0 (
         set results[1].result=1
     )
@@ -39,12 +53,26 @@ if !errorlevel! neq 0 (
 set results[3].name=clippy
 set results[3].result=0
 for %%f in %features% do (
-    cargo +nightly clippy --verbose --all --features %%f --manifest-path lang\Cargo.toml -- -D warnings 
+    cargo +nightly clippy ^
+        --verbose ^
+        --all ^
+        --features %%f ^
+        --features "contract-abi-gen" ^
+        --manifest-path lang\Cargo.toml ^
+        -- -D warnings
     if !errorlevel! neq 0 (
         set results[3].result=1
     )
 
-    cargo +nightly clippy --verbose --all --no-default-features --features %%f --target=wasm32-unknown-unknown --manifest-path lang\Cargo.toml -- -D warnings 
+    cargo +nightly clippy ^
+        --verbose ^
+        --all ^
+        --no-default-features ^
+        --features %%f ^
+        --features "collaboration-abi-gen" ^
+        --target=wasm32-unknown-unknown ^
+        --manifest-path lang\Cargo.toml ^
+        -- -D warnings 
     if !errorlevel! neq 0 (
         set results[3].result=1
     )
@@ -57,9 +85,9 @@ set results[4].name=unit_tests
 set results[4].result=0
 cargo +nightly test --verbose --features "contract,solidity-compatible" --release --manifest-path lang/Cargo.toml
 cargo +nightly test --verbose --features "collaboration" --release --manifest-path lang/Cargo.toml
+cargo +nightly test --verbose --features "collaboration" --release --manifest-path lang/macro/Cargo.toml
 cargo +nightly test --verbose --release --manifest-path ty_mapping/Cargo.toml
 cargo +nightly test --verbose --release --manifest-path primitives/Cargo.toml
-cargo +nightly test --verbose --release --features "collaboration" --manifest-path lang/macro/Cargo.toml
 if !errorlevel! neq 0 (
     set results[4].result=1
 )
