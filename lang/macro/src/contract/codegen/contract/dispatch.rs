@@ -259,11 +259,17 @@ impl<'a> Dispatch<'a> {
         let input_tys = utils::generate_input_tys(sig);
         let ident = &sig.ident;
         let input_idents = utils::generate_input_idents(&sig.inputs);
-        let asset_idents: Vec<Ident> = self
+        let asset_registers: Vec<TokenStream2> = self
             .contract
             .assets
             .iter()
-            .map(|asset| asset.ident.clone())
+            .map(|asset| {
+                let ident = asset.ident.clone();
+                let err_message = format!("register {} failed", ident.to_string());
+                quote! {
+                    require(#ident::register(),#err_message);
+                }
+            })
             .collect();
         let pat_idents = if input_idents.is_empty() {
             quote! { _ }
@@ -302,7 +308,7 @@ impl<'a> Dispatch<'a> {
                 } else {
                     liquid_lang::env::revert(&String::from("could not read input"));
                 }
-                #(#asset_idents::register();)*
+                #(#asset_registers)*
             }
 
             #[no_mangle]
