@@ -10,48 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use proc_macro2::{Span, TokenStream as TokenStream2};
-use syn::{
-    parse::{Parse, ParseStream, Result},
-    spanned::Spanned,
-};
+use proc_macro2::TokenStream as TokenStream2;
 
 pub trait GenerateCode {
     fn generate_code(&self) -> TokenStream2;
-}
-
-#[derive(Debug)]
-pub enum AttrValue {
-    LitStr(syn::LitStr),
-    Ident(syn::Ident),
-    None,
-}
-
-impl Spanned for AttrValue {
-    fn span(&self) -> Span {
-        match self {
-            Self::LitStr(lit_str) => lit_str.span(),
-            Self::Ident(ident) => ident.span(),
-            Self::None => Span::call_site(),
-        }
-    }
-}
-
-impl Parse for AttrValue {
-    fn parse(input: ParseStream) -> Result<Self> {
-        if input.peek(syn::Ident) {
-            let ident = input.parse::<syn::Ident>()?;
-            return Ok(Self::Ident(ident));
-        }
-
-        if input.peek(syn::LitStr) {
-            let lit_str = input.parse::<syn::LitStr>()?;
-            return Ok(Self::LitStr(lit_str));
-        }
-
-        Err(input.error(
-            "invalid value of an liquid attribute, identifier or a literal string \
-             required",
-        ))
-    }
 }

@@ -11,8 +11,7 @@
 // limitations under the License.
 
 use crate::{
-    collaboration::{ir, ir::utils::*},
-    common::AttrValue,
+    collaboration::{ir, ir::utils::*, ir::AttrValue},
 };
 use core::convert::TryFrom;
 use either::Either;

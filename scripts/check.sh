@@ -92,7 +92,9 @@ main(){
     if [[ "${check_workspace_flag}" == "true" ]];then
         check_workspace
     fi
-    rm  "${build_log}"
+    if [ -f "${build_log}" ]; then
+        rm  "${build_log}"
+    fi
 }
 
 parse_params "$@"

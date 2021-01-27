@@ -18,3 +18,45 @@ pub use syn_def::{
     Collaboration, FnArg, IdentType, Item, ItemContract, ItemRights, LiquidItem, Marker,
     Right, RustItem, SelectFrom, SelectWith, Selector, Signature,
 };
+
+use proc_macro2::Span;
+use syn::{
+    parse::{Parse, ParseStream, Result},
+    spanned::Spanned,
+};
+
+#[derive(Debug)]
+pub enum AttrValue {
+    LitStr(syn::LitStr),
+    Ident(syn::Ident),
+    None,
+}
+
+impl Spanned for AttrValue {
+    fn span(&self) -> Span {
+        match self {
+            Self::LitStr(lit_str) => lit_str.span(),
+            Self::Ident(ident) => ident.span(),
+            Self::None => Span::call_site(),
+        }
+    }
+}
+
+impl Parse for AttrValue {
+    fn parse(input: ParseStream) -> Result<Self> {
+        if input.peek(syn::Ident) {
+            let ident = input.parse::<syn::Ident>()?;
+            return Ok(Self::Ident(ident));
+        }
+
+        if input.peek(syn::LitStr) {
+            let lit_str = input.parse::<syn::LitStr>()?;
+            return Ok(Self::LitStr(lit_str));
+        }
+
+        Err(input.error(
+            "invalid value of an liquid attribute, identifier or a literal string \
+             required",
+        ))
+    }
+}

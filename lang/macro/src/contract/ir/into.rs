@@ -11,7 +11,6 @@
 // limitations under the License.
 
 use crate::{
-    common::AttrValue,
     contract::{
         ir::{self, utils as ir_utils},
         SUPPORTS_ASSET_NAME, SUPPORTS_ASSET_SIGNATURE,
