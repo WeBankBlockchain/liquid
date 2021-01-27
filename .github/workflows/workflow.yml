@@ -1,4 +1,4 @@
-name: liquid GitHub Actions
+name: Liquid GitHub Actions
 on:
   push:
   pull_request:
@@ -24,6 +24,7 @@ jobs:
           toolchain: nightly
           override: true
           components: rustfmt, clippy
+          target: wasm32-unknown-unknown
       - name: check
         run: ./scripts/check.sh
 
@@ -43,6 +44,7 @@ jobs:
           toolchain: nightly
           override: true
           components: rustfmt, clippy
+          target: wasm32-unknown-unknown
       # - name: install ubuntu dependencies
         # run: sudo apt install -y git curl build-essential clang cmake openssl libssl-dev zlib1g-dev ccache libgmp-dev flex bison automake libtool
       - name: check
@@ -64,6 +66,7 @@ jobs:
           toolchain: nightly
           override: true
           components: rustfmt, clippy
+          target: wasm32-unknown-unknown
       # - name: install ubuntu dependencies
         # run: sudo apt install -y git curl build-essential clang cmake openssl libssl-dev zlib1g-dev ccache libgmp-dev flex bison automake libtool
       - name: check
