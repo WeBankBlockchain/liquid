@@ -182,14 +182,21 @@ impl<'a> Dispatch<'a> {
             quote! {}
         };
 
-        quote! {
-            if selector == <#namespace as liquid_lang::FnSelector>::SELECTOR {
-                #[cfg(feature = "solidity-compatible")]
+        let pat_idents_init = if cfg!(feature = "solidity-compatible") {
+            quote! {
                 let #pat_idents = <<#namespace as liquid_lang::FnInput>::Input as liquid_abi_codec::Decode>::decode(&mut data.as_slice())
                     .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
-                #[cfg(not(feature = "solidity-compatible"))]
+            }
+        } else {
+            quote! {
                 let #pat_idents = <<#namespace as liquid_lang::FnInput>::Input as scale::Decode>::decode(&mut data.as_slice())
-                    .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+                .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+            }
+        };
+
+        quote! {
+            if selector == <#namespace as liquid_lang::FnSelector>::SELECTOR {
+                #pat_idents_init
 
                 #attr
                 let result = storage.#fn_name(#(#input_idents,)*);
@@ -277,6 +284,16 @@ impl<'a> Dispatch<'a> {
             quote! { (#(#input_idents,)*) }
         };
 
+        let decode_result = if cfg!(feature = "solidity-compatible") {
+            quote! {
+                let result = <(#(#input_tys,)*) as liquid_abi_codec::Decode>::decode(&mut data.as_slice());
+            }
+        } else {
+            quote! {
+                let result = <(#(#input_tys,)*) as scale::Decode>::decode(&mut data.as_slice());
+            }
+        };
+
         quote! {
             #[no_mangle]
             fn hash_type() -> u32 {
@@ -293,10 +310,7 @@ impl<'a> Dispatch<'a> {
                 let result = liquid_lang::env::get_call_data(liquid_lang::env::CallMode::Deploy);
                 if let Ok(call_data) = result {
                     let data = call_data.data;
-                    #[cfg(feature = "solidity-compatible")]
-                    let result = <(#(#input_tys,)*) as liquid_abi_codec::Decode>::decode(&mut data.as_slice());
-                    #[cfg(not(feature = "solidity-compatible"))]
-                    let result = <(#(#input_tys,)*) as scale::Decode>::decode(&mut data.as_slice());
+                    #decode_result
 
                     if let Ok(data) = result {
                         let #pat_idents = data;
