@@ -83,98 +83,95 @@ impl<'a> Assets<'a> {
 
             if asset.fungible {
                 quote_spanned! {span =>
-                #[cfg_attr(test, derive(Debug))]
-                pub struct #ident{
-                    value: u64,
-                    stored: bool,
-                    from_self :bool,
-                }
-                impl Drop for #ident {
-                    fn drop(&mut self) {
-                        require(self.stored, "Asset must be deposited into an account");
+                    #[cfg_attr(test, derive(Debug))]
+                    pub struct #ident{
+                        value: u64,
+                        stored: bool,
+                        from_self :bool,
                     }
-                }
-                #[allow(unused)]
-                impl<'a> #ident{
-                    const TOTAL_SUPPLY : u64 = #total_supply;
-                    const ISSUER : &'a str = #issuer;
-                    const ASSET_NAME : &'a str = #asset_name;
-                    const DESCRIPTION: &'a str = #description;
-                    pub fn env(&self) -> liquid_lang::EnvAccess {
-                        liquid_lang::EnvAccess {}
-                    }
-                    pub fn value(&self) -> u64 {
-                        self.value
-                    }
-                    pub fn register() -> bool {
-                        liquid_lang::env::register_asset(
-                            Self::ASSET_NAME.as_bytes(),
-                            &Self::issuer(),
-                            true,
-                            Self::TOTAL_SUPPLY,
-                            Self::DESCRIPTION.as_bytes(),
-                        )
-                    }
-                    pub fn total_supply() -> u64 {
-                        Self::TOTAL_SUPPLY
-                    }
-                    pub fn issuer() -> address {
-                        Self::ISSUER.parse().unwrap()
-                    }
-                    pub fn description() -> &'a str {
-                        Self::DESCRIPTION
-                    }
-                    pub fn balance_of(owner: &address) -> u64 {
-                        liquid_lang::env::get_asset_balance(
-                            owner,
-                            Self::ASSET_NAME.as_bytes(),
-                        )
-                    }
-                    pub fn issue_to(to: &address, amount: u64) -> bool {
-                        liquid_lang::env::issue_fungible_asset(
-                            to,
-                            Self::ASSET_NAME.as_bytes(),
-                            amount,
-                        )
-                    }
-                    pub fn withdraw_from_caller(amount: u64) -> Option<Self> {
-                        let caller = liquid_lang::env::get_caller();
-                        let caller_balance = Self::balance_of(&caller);
-                        if caller_balance < amount {
-                            return None;
+
+                    impl Drop for #ident {
+                        fn drop(&mut self) {
+                            require(self.stored, "Asset must be deposited into an account");
                         }
-                        Some(#ident {
-                            value: amount,
-                            stored: false,
-                            from_self: false,
-                        })
                     }
-                    pub fn withdraw_from_self(amount: u64) -> Option<Self> {
-                        let self_address = liquid_lang::env::get_address();
-                        let self_balance = #ident::balance_of(&self_address);
-                        if self_balance < amount {
-                            return None;
+
+                    #[allow(unused)]
+                    impl<'a> #ident {
+                        const TOTAL_SUPPLY : u64 = #total_supply;
+                        const ISSUER : &'a str = #issuer;
+                        const ASSET_NAME : &'a str = #asset_name;
+                        const DESCRIPTION: &'a str = #description;
+                        pub fn env(&self) -> liquid_lang::EnvAccess {
+                            liquid_lang::EnvAccess {}
                         }
-                        Some(#ident {
-                            value: amount,
-                            stored: false,
-                            from_self: true,
-                        })
-                    }
-                    pub fn deposit(mut self, to: &address) {
-                        #call_supports_asset
-                        self.stored = liquid_lang::env::transfer_asset(
-                            to,
-                            Self::ASSET_NAME.as_bytes(),
-                            self.value,
-                            self.from_self,
-                        );
-                    }
-                    // #[allow(unused)]
-                    // pub fn destroy(&mut self) -> Option<Self>{
-                    //     // TODO:
-                    //     None
-                    // }
+                        pub fn value(&self) -> u64 {
+                            self.value
+                        }
+                        pub fn register() -> bool {
+                            liquid_lang::env::register_asset(
+                                Self::ASSET_NAME.as_bytes(),
+                                &Self::issuer(),
+                                true,
+                                Self::TOTAL_SUPPLY,
+                                Self::DESCRIPTION.as_bytes(),
+                            )
+                        }
+                        pub fn total_supply() -> u64 {
+                            Self::TOTAL_SUPPLY
+                        }
+                        pub fn issuer() -> address {
+                            Self::ISSUER.parse().unwrap()
+                        }
+                        pub fn description() -> &'a str {
+                            Self::DESCRIPTION
+                        }
+                        pub fn balance_of(owner: &address) -> u64 {
+                            liquid_lang::env::get_asset_balance(
+                                owner,
+                                Self::ASSET_NAME.as_bytes(),
+                            )
+                        }
+                        pub fn issue_to(to: &address, amount: u64) -> bool {
+                            liquid_lang::env::issue_fungible_asset(
+                                to,
+                                Self::ASSET_NAME.as_bytes(),
+                                amount,
+                            )
+                        }
+                        pub fn withdraw_from_caller(amount: u64) -> Option<Self> {
+                            let caller = liquid_lang::env::get_caller();
+                            let caller_balance = Self::balance_of(&caller);
+                            if caller_balance < amount {
+                                return None;
+                            }
+                            Some(#ident {
+                                value: amount,
+                                stored: false,
+                                from_self: false,
+                            })
+                        }
+                        pub fn withdraw_from_self(amount: u64) -> Option<Self> {
+                            let self_address = liquid_lang::env::get_address();
+                            let self_balance = #ident::balance_of(&self_address);
+                            if self_balance < amount {
+                                return None;
+                            }
+                            Some(#ident {
+                                value: amount,
+                                stored: false,
+                                from_self: true,
+                            })
+                        }
+                        pub fn deposit(mut self, to: &address) {
+                            #call_supports_asset
+                            self.stored = liquid_lang::env::transfer_asset(
+                                to,
+                                Self::ASSET_NAME.as_bytes(),
+                                self.value,
+                                self.from_self,
+                            );
+                        }
                     }
                 }
             } else {
@@ -290,15 +287,7 @@ impl<'a> Assets<'a> {
                                 self.id,
                                 self.from_self,
                             );
-
-
                         }
-                        // #[allow(unused)]
-                        // pub fn destroy(&mut self) -> Option<Self>{
-                        //     // TODO:
-                        //     None
-                        // }
-
                     }
                 }
             }

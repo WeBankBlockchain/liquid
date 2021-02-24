@@ -24,7 +24,9 @@ use liquid_primitives::types::address::*;
 /// nested calls.
 pub fn set_caller(caller: Address) {
     <EnvInstance as OnInstance>::on_instance(|instance| {
-        instance.exec_contexts.push(ExecContext::new(caller, Default::default()))
+        instance
+            .exec_contexts
+            .push(ExecContext::new(caller, Default::default()))
     });
 }
 
@@ -38,7 +40,9 @@ pub fn set_caller(caller: Address) {
 /// nested calls.
 pub fn set_caller_callee(caller: Address, callee: Address) {
     <EnvInstance as OnInstance>::on_instance(|instance| {
-        instance.exec_contexts.push(ExecContext::new(caller, callee))
+        instance
+            .exec_contexts
+            .push(ExecContext::new(caller, callee))
     });
 }
 

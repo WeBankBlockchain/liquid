@@ -418,23 +418,23 @@ fn generate_abi_struct(
         .zip(field_tys.iter())
         .map(|(field_name, field_ty)| {
             quote! {
-                <#field_ty as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi(#field_name.to_owned())
+                <#field_ty as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(#field_name.to_owned())
             }
         });
 
     quote! {
         #[cfg(feature = "liquid-abi-gen")]
-        impl liquid_abi_gen::traits::GenerateParamABI for #ident {
+        impl liquid_abi_gen::traits::GenerateParamAbi for #ident {
             fn generate_ty_name() -> liquid_prelude::string::String {
                 String::from("struct")
             }
 
-            fn generate_param_abi(name: String) -> liquid_abi_gen::ParamABI {
+            fn generate_param_abi(name: String) -> liquid_abi_gen::ParamAbi {
                 let mut components = __std::Vec::new();
                 #(components.push(#field_param_abis);)*
-                liquid_abi_gen::ParamABI::Composite(
-                    liquid_abi_gen::CompositeABI {
-                        trivial: liquid_abi_gen::TrivialABI::new(Self::generate_ty_name(), name),
+                liquid_abi_gen::ParamAbi::Composite(
+                    liquid_abi_gen::CompositeAbi {
+                        trivial: liquid_abi_gen::TrivialAbi::new(Self::generate_ty_name(), name),
                         components,
                     }
                 )
@@ -447,7 +447,7 @@ fn generate_abi_struct(
             where
                 B: liquid_abi_gen::traits::FnOutputBuilder
             {
-                let param_abi = <Self as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi("".into());
+                let param_abi = <Self as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi("".into());
                 builder.output(param_abi);
             }
         }
@@ -462,9 +462,9 @@ fn generate_abi_enum(ident: &Ident, variants: &[Variant]) -> TokenStream2 {
 
             if variant.is_unit {
                 return quote! {
-                    liquid_abi_gen::ParamABI::Composite(
-                        liquid_abi_gen::CompositeABI {
-                            trivial: liquid_abi_gen::TrivialABI::new(String::from(#ty), String::new()),
+                    liquid_abi_gen::ParamAbi::Composite(
+                        liquid_abi_gen::CompositeAbi {
+                            trivial: liquid_abi_gen::TrivialAbi::new(String::from(#ty), String::new()),
                             components: Vec::new(),
                         }
                     )
@@ -474,21 +474,21 @@ fn generate_abi_enum(ident: &Ident, variants: &[Variant]) -> TokenStream2 {
             let field_abis = if variant.unnamed {
                 variant.field_tys.iter().map(|field_ty| {
                     quote! {
-                        <#field_ty as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi(String::new())
+                        <#field_ty as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(String::new())
                     }
                 }).collect::<Vec<_>>()
             } else {
                 variant.field_names.iter().zip(variant.field_tys.iter()).map(|(field_name, field_ty)| {
                     quote! {
-                        <#field_ty as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi(#field_name.to_owned())
+                        <#field_ty as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(#field_name.to_owned())
                     }
                 }).collect::<Vec<_>>()
             };
 
             quote! {
-                liquid_abi_gen::ParamABI::Composite(
-                    liquid_abi_gen::CompositeABI {
-                        trivial: liquid_abi_gen::TrivialABI::new(String::from(#ty), String::new()),
+                liquid_abi_gen::ParamAbi::Composite(
+                    liquid_abi_gen::CompositeAbi {
+                        trivial: liquid_abi_gen::TrivialAbi::new(String::from(#ty), String::new()),
                         components: {
                             let mut components = Vec::new();
                             #(components.push(#field_abis);)*
@@ -501,17 +501,17 @@ fn generate_abi_enum(ident: &Ident, variants: &[Variant]) -> TokenStream2 {
 
     quote! {
         #[cfg(feature = "liquid-abi-gen")]
-        impl liquid_abi_gen::traits::GenerateParamABI for #ident {
+        impl liquid_abi_gen::traits::GenerateParamAbi for #ident {
             fn generate_ty_name() -> liquid_prelude::string::String {
                 String::from("enum")
             }
 
-            fn generate_param_abi(name: String) -> liquid_abi_gen::ParamABI {
+            fn generate_param_abi(name: String) -> liquid_abi_gen::ParamAbi {
                 let mut components = __std::Vec::new();
                 #(components.push(#variant_abis);)*
-                liquid_abi_gen::ParamABI::Composite(
-                    liquid_abi_gen::CompositeABI {
-                        trivial: liquid_abi_gen::TrivialABI::new(Self::generate_ty_name(), name),
+                liquid_abi_gen::ParamAbi::Composite(
+                    liquid_abi_gen::CompositeAbi {
+                        trivial: liquid_abi_gen::TrivialAbi::new(Self::generate_ty_name(), name),
                         components,
                     }
                 )
@@ -524,7 +524,7 @@ fn generate_abi_enum(ident: &Ident, variants: &[Variant]) -> TokenStream2 {
             where
                 B: liquid_abi_gen::traits::FnOutputBuilder
             {
-                let param_abi = <Self as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi("".into());
+                let param_abi = <Self as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi("".into());
                 builder.output(param_abi);
             }
         }

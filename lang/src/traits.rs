@@ -322,10 +322,10 @@ cfg_if! {
 
 cfg_if! {
     if #[cfg(feature = "contract")] {
-        /// `__LIQUID_GETTER_INDEX_PLACEHOLDER` can only be used in getter for
+        /// `__Liquid_Getter_Index_Placeholder` can only be used in getter for
         /// `liquid_lang::storage::Value`
-        use liquid_primitives::__LIQUID_GETTER_INDEX_PLACEHOLDER;
-        impl You_Should_Use_An_Valid_Input_Type for __LIQUID_GETTER_INDEX_PLACEHOLDER {}
+        use liquid_primitives::__Liquid_Getter_Index_Placeholder;
+        impl You_Should_Use_An_Valid_Input_Type for __Liquid_Getter_Index_Placeholder {}
     }
 }
 
@@ -462,13 +462,13 @@ cfg_if! {
 cfg_if! {
     if #[cfg(feature = "contract")] {
         #[cfg(feature = "contract-abi-gen")]
-        pub trait GenerateABI {
-            fn generate_abi() -> liquid_abi_gen::ContractABI;
+        pub trait GenerateAbi {
+            fn generate_abi() -> liquid_abi_gen::ContractAbi;
         }
     } else if #[cfg(feature = "collaboration")] {
         #[cfg(feature = "collaboration-abi-gen")]
-        pub trait GenerateABI {
-            fn generate_abi() -> liquid_abi_gen::CollaborationABI;
+        pub trait GenerateAbi {
+            fn generate_abi() -> liquid_abi_gen::CollaborationAbi;
         }
     }
 }

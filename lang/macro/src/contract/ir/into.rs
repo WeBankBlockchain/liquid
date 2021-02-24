@@ -32,7 +32,7 @@ use syn::{
     Error, Result, Token,
 };
 
-const MAX_ASSET_NAME_LENGTH : usize = 32;
+const MAX_ASSET_NAME_LENGTH: usize = 32;
 
 impl TryFrom<&String> for ir::MetaVersion {
     type Error = regex::Error;

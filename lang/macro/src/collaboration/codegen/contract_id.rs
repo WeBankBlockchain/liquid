@@ -102,16 +102,16 @@ impl ContractId {
             }
 
             #[cfg(feature = "liquid-abi-gen")]
-            impl<T> liquid_abi_gen::traits::GenerateParamABI for ContractId<T>
+            impl<T> liquid_abi_gen::traits::GenerateParamAbi for ContractId<T>
             where
                 T: liquid_lang::You_Should_Use_An_Valid_Contract_Type,
             {
                 fn generate_ty_name() -> String {
-                    <u32 as liquid_abi_gen::traits::GenerateParamABI>::generate_ty_name()
+                    <u32 as liquid_abi_gen::traits::GenerateParamAbi>::generate_ty_name()
                 }
 
-                fn generate_param_abi(name: String) -> liquid_abi_gen::ParamABI {
-                    <u32 as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi(name)
+                fn generate_param_abi(name: String) -> liquid_abi_gen::ParamAbi {
+                    <u32 as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(name)
                 }
             }
 
@@ -124,7 +124,7 @@ impl ContractId {
                 where
                     B: liquid_abi_gen::traits::FnOutputBuilder
                 {
-                    let param_abi = <Self as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi("".into());
+                    let param_abi = <Self as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi("".into());
                     builder.output(param_abi);
                 }
             }

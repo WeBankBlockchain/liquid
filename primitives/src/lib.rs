@@ -63,10 +63,10 @@ pub trait Topics {
 cfg_if! {
     if #[cfg(feature = "contract")] {
         #[allow(non_camel_case_types)]
-        pub struct __LIQUID_GETTER_INDEX_PLACEHOLDER;
+        pub struct __Liquid_Getter_Index_Placeholder;
 
         #[cfg(not(feature = "solidity-compatible"))]
-        impl scale::Decode for __LIQUID_GETTER_INDEX_PLACEHOLDER {
+        impl scale::Decode for __Liquid_Getter_Index_Placeholder {
             fn decode<I: scale::Input>(_: &mut I) -> Result<Self, scale::Error> {
                 Ok(Self {})
             }

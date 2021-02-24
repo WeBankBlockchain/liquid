@@ -154,7 +154,7 @@ impl Env for EnvInstance {
                 V: liquid_abi_codec::Encode,
             {
                 // Ensure that the type of `V` can only be String.
-                panic!(<String as liquid_abi_codec::Decode>::decode(
+                panic!("{}", <String as liquid_abi_codec::Decode>::decode(
                     &mut msg.encode().as_slice()
                 )
                 .unwrap());
@@ -186,7 +186,7 @@ impl Env for EnvInstance {
                 V: scale::Encode,
             {
                 // Ensure that the type of `V` can only be String.
-                panic!(<String as scale::Decode>::decode(
+                panic!("{}", <String as scale::Decode>::decode(
                     &mut msg.encode().as_slice()
                 )
                 .unwrap());
@@ -242,7 +242,6 @@ impl Env for EnvInstance {
             return false;
         }
         if asset_info.issuer != caller {
-            // TODO: add some log
             return false;
         }
         if asset_info.total_supply - asset_info.supplied < amount {
@@ -275,7 +274,6 @@ impl Env for EnvInstance {
             return 0;
         }
         if asset_info.issuer != caller {
-            // TODO: add some log
             return 0;
         }
         if asset_info.total_supply == asset_info.supplied {

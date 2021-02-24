@@ -16,7 +16,7 @@ use derive_more::From;
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum EnvError {
     ScaleDecode(scale::Error),
-    ABIDecode(liquid_primitives::Error),
+    AbiDecode(liquid_primitives::Error),
     UnableToReadFromStorage,
     UnableToReadCallData,
     FailToCallForeignContract,

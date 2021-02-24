@@ -230,7 +230,7 @@ impl<'a> Contracts<'a> {
                         if signers.is_empty() {
                             liquid_lang::env::revert(&String::from(Self::NO_AVAILABLE_SIGNERS_ERROR));
                         }
-            
+
                         if !__liquid_authorization_check(&signers) {
                             liquid_lang::env::revert(&String::from(Self::UNAUTHORIZED_SIGNING_ERROR));
                         }

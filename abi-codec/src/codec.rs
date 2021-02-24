@@ -642,14 +642,14 @@ impl TypeInfo for () {
     }
 }
 
-use liquid_primitives::__LIQUID_GETTER_INDEX_PLACEHOLDER;
+use liquid_primitives::__Liquid_Getter_Index_Placeholder;
 
-impl Decode for (__LIQUID_GETTER_INDEX_PLACEHOLDER,) {
+impl Decode for (__Liquid_Getter_Index_Placeholder,) {
     #[inline(always)]
     fn decode<I: Input>(
         _: &mut I,
-    ) -> Result<(__LIQUID_GETTER_INDEX_PLACEHOLDER,), Error> {
-        Ok((__LIQUID_GETTER_INDEX_PLACEHOLDER {},))
+    ) -> Result<(__Liquid_Getter_Index_Placeholder,), Error> {
+        Ok((__Liquid_Getter_Index_Placeholder {},))
     }
 }
 

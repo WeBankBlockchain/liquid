@@ -2,7 +2,7 @@ use liquid::storage;
 use liquid_lang as liquid;
 
 /// This trick is just used for testing. **DO NOT** use it in your own code.
-type GetterIndexPlaceHolder = liquid_primitives::__LIQUID_GETTER_INDEX_PLACEHOLDER;
+type GetterIndexPlaceHolder = liquid_primitives::__Liquid_Getter_Index_Placeholder;
 
 #[liquid::contract]
 mod noop {

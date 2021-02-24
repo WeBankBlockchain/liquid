@@ -11,11 +11,11 @@
 // limitations under the License.
 
 use crate::{
+    common::GenerateCode,
     contract::{
         codegen::utils as codegen_utils,
         ir::{FnArg, ForeignFn, Interface},
     },
-    common::GenerateCode,
     utils as lang_utils,
 };
 use derive_more::From;

@@ -25,7 +25,7 @@ use crate::{
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::quote;
 
-use abi_gen::ABIGen;
+use abi_gen::AbiGen;
 use contract_id::ContractId;
 use contracts::Contracts;
 use dispatch::Dispatch;
@@ -43,7 +43,7 @@ impl GenerateCode for Collaboration {
         let dispatch = Dispatch::from(self).generate_code();
         let rights = Rights::from(self).generate_code();
         let contract_id = ContractId::generate_code();
-        let abi_gen = ABIGen::from(self).generate_code();
+        let abi_gen = AbiGen::from(self).generate_code();
 
         quote! {
             mod #mod_ident {

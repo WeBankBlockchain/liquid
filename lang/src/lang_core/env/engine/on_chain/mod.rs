@@ -217,7 +217,7 @@ impl Env for EnvInstance {
                     self.buffer.clear();
                     self.decode_from_buffer_scale()
                 } else {
-                    // TODO: Optimize the performance of getting return data size
+                    // TODO(#1): Optimize the performance of getting return data size
                     let return_data_size = ext::get_return_data_size();
                     if return_data_size <= StaticBuffer::CAPACITY as u32 {
                         if return_data_size != 0 {

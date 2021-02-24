@@ -14,76 +14,76 @@ use crate::traits::*;
 use derive_more::From;
 use serde::Serialize;
 
-pub struct CollaborationABI {
-    pub contract_abis: Vec<ContractABI>,
+pub struct CollaborationAbi {
+    pub contract_abis: Vec<ContractAbi>,
 }
 
 #[derive(Serialize)]
-pub struct ContractABI {
+pub struct ContractAbi {
     pub name: String,
-    pub data: Vec<ParamABI>,
-    pub rights: Vec<RightABI>,
+    pub data: Vec<ParamAbi>,
+    pub rights: Vec<RightAbi>,
 }
 
 #[derive(Serialize)]
-pub struct TrivialABI {
+pub struct TrivialAbi {
     #[serde(rename = "type")]
     pub ty: String,
     #[serde(skip_serializing_if = "::std::string::String::is_empty")]
     pub name: String,
 }
 
-impl TrivialABI {
+impl TrivialAbi {
     pub fn new(ty: String, name: String) -> Self {
-        TrivialABI { ty, name }
+        TrivialAbi { ty, name }
     }
 }
 
 #[derive(Serialize)]
-pub struct CompositeABI {
+pub struct CompositeAbi {
     #[serde(flatten)]
-    pub trivial: TrivialABI,
+    pub trivial: TrivialAbi,
     #[serde(skip_serializing_if = "::std::vec::Vec::is_empty")]
-    pub components: Vec<ParamABI>,
+    pub components: Vec<ParamAbi>,
 }
 
 #[derive(Serialize)]
-pub struct OptionABI {
+pub struct OptionAbi {
     #[serde(flatten)]
-    pub trivial: TrivialABI,
-    pub some: Box<ParamABI>,
+    pub trivial: TrivialAbi,
+    pub some: Box<ParamAbi>,
 }
 
 #[derive(Serialize)]
-pub struct ResultABI {
+pub struct ResultAbi {
     #[serde(flatten)]
-    pub trivial: TrivialABI,
-    pub ok: Box<ParamABI>,
-    pub err: Box<ParamABI>,
+    pub trivial: TrivialAbi,
+    pub ok: Box<ParamAbi>,
+    pub err: Box<ParamAbi>,
 }
 
 #[derive(Serialize)]
 #[serde(untagged)]
 #[derive(From)]
-pub enum ParamABI {
-    Opt(OptionABI),
-    Res(ResultABI),
-    Composite(CompositeABI),
-    Trivial(TrivialABI),
+pub enum ParamAbi {
+    Opt(OptionAbi),
+    Res(ResultAbi),
+    Composite(CompositeAbi),
+    Trivial(TrivialAbi),
 }
 
 #[derive(Serialize)]
 #[allow(non_snake_case)]
-pub struct RightABI {
+pub struct RightAbi {
     pub constant: bool,
-    pub inputs: Vec<ParamABI>,
+    pub inputs: Vec<ParamAbi>,
     pub name: String,
-    pub outputs: Vec<ParamABI>,
+    pub outputs: Vec<ParamAbi>,
 }
 
-impl RightABI {
-    pub fn new_builder(name: String, constant: bool) -> RightABIBuilder {
-        RightABIBuilder {
+impl RightAbi {
+    pub fn new_builder(name: String, constant: bool) -> RightAbiBuilder {
+        RightAbiBuilder {
             abi: Self {
                 constant,
                 inputs: Vec::new(),
@@ -94,26 +94,26 @@ impl RightABI {
     }
 }
 
-pub struct RightABIBuilder {
-    abi: RightABI,
+pub struct RightAbiBuilder {
+    abi: RightAbi,
 }
 
-impl RightABIBuilder {
-    pub fn input(&mut self, param_abi: ParamABI) {
+impl RightAbiBuilder {
+    pub fn input(&mut self, param_abi: ParamAbi) {
         self.abi.inputs.push(param_abi);
     }
 
-    pub fn output(&mut self, param_abi: ParamABI) {
+    pub fn output(&mut self, param_abi: ParamAbi) {
         self.abi.outputs.push(param_abi);
     }
 
-    pub fn done(self) -> RightABI {
+    pub fn done(self) -> RightAbi {
         self.abi
     }
 }
 
-impl FnOutputBuilder for RightABIBuilder {
-    fn output(&mut self, param_abi: ParamABI) {
+impl FnOutputBuilder for RightAbiBuilder {
+    fn output(&mut self, param_abi: ParamAbi) {
         self.abi.outputs.push(param_abi);
     }
 }

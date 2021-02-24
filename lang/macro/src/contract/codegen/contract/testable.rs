@@ -11,8 +11,8 @@
 // limitations under the License.
 
 use crate::{
-    contract::ir::{Contract, FnArg},
     common::GenerateCode,
+    contract::ir::{Contract, FnArg},
     utils as lang_utils,
 };
 use derive_more::From;

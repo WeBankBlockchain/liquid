@@ -18,9 +18,9 @@ use liquid_abi_codec::{Decode, Encode};
 use liquid_prelude::string::String;
 use liquid_primitives::types::{u256, Address};
 
-pub struct CNS;
+pub struct Cns;
 
-impl CNS {
+impl Cns {
     pub fn insert(
         name: String,
         version: String,

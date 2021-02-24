@@ -13,7 +13,7 @@
 mod cns;
 
 use cfg_if::cfg_if;
-pub use cns::CNS;
+pub use cns::Cns;
 use liquid_prelude::vec::{self, Vec};
 use liquid_primitives::types::Address;
 

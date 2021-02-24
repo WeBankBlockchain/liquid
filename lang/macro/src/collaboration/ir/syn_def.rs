@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{collaboration::obj_path, collaboration::ir::AttrValue};
+use crate::collaboration::{ir::AttrValue, obj_path};
 use derive_more::From;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::ToTokens;

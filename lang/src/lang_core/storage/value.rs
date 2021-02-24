@@ -42,13 +42,13 @@ where
 cfg_if! {
     if #[cfg(feature = "contract")] {
         use crate::lang_core::storage::Getter;
-        use liquid_primitives::__LIQUID_GETTER_INDEX_PLACEHOLDER;
+        use liquid_primitives::__Liquid_Getter_Index_Placeholder;
 
         impl<T> Getter for Value<T>
         where
             T: scale::Codec + Clone,
         {
-            type Index = __LIQUID_GETTER_INDEX_PLACEHOLDER;
+            type Index = __Liquid_Getter_Index_Placeholder;
             type Output = T;
             fn getter_impl(&self, _: Self::Index) -> Self::Output {
                 self.get().clone()

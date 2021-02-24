@@ -18,7 +18,7 @@ mod storage;
 mod testable;
 
 use crate::{common::GenerateCode, contract::ir, utils};
-use abi_gen::ABIGen;
+use abi_gen::AbiGen;
 use assets::Assets;
 use dispatch::Dispatch;
 use events::{EventStructs, Events};
@@ -45,7 +45,7 @@ impl GenerateCode for ir::Contract {
         let event_struct = EventStructs::from(self).generate_code();
         let dispatch = Dispatch::from(self).generate_code();
         let testable = Testable::from(self).generate_code();
-        let abi = ABIGen::from(self).generate_code();
+        let abi = AbiGen::from(self).generate_code();
         let rust_items = &self.rust_items;
 
         quote! {

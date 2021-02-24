@@ -19,11 +19,11 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
 #[derive(From)]
-pub struct ABIGen<'a> {
+pub struct AbiGen<'a> {
     collaboration: &'a Collaboration,
 }
 
-impl<'a> GenerateCode for ABIGen<'a> {
+impl<'a> GenerateCode for AbiGen<'a> {
     fn generate_code(&self) -> TokenStream2 {
         let contract_abis = self.generate_contract_abis();
 
@@ -33,12 +33,12 @@ impl<'a> GenerateCode for ABIGen<'a> {
             pub struct __LIQUID_ABI_GEN;
 
             #[cfg(feature = "liquid-abi-gen")]
-            impl liquid_lang::GenerateABI for __LIQUID_ABI_GEN {
-                fn generate_abi() -> liquid_abi_gen::CollaborationABI {
+            impl liquid_lang::GenerateAbi for __LIQUID_ABI_GEN {
+                fn generate_abi() -> liquid_abi_gen::CollaborationAbi {
                     let mut contract_abis = Vec::new();
                     #(contract_abis.push(#contract_abis);)*
 
-                    liquid_abi_gen::CollaborationABI {
+                    liquid_abi_gen::CollaborationAbi {
                         contract_abis,
                     }
                 }
@@ -54,7 +54,7 @@ fn generate_fn_inputs(sig: &Signature) -> impl Iterator<Item = TokenStream2> + '
             let ty = &ident_type.ty;
 
             quote! {
-                <#ty as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi(#ident.to_owned())
+                <#ty as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(#ident.to_owned())
             }
         }
         _ => unreachable!(),
@@ -79,7 +79,7 @@ fn generate_right_abis(rights: &[Right]) -> impl Iterator<Item = TokenStream2> +
         let constant = sig.is_self_ref() && !sig.is_mut() ;
         quote! {
             {
-                let mut builder = liquid_abi_gen::RightABI::new_builder(String::from(#ident), #constant);
+                let mut builder = liquid_abi_gen::RightAbi::new_builder(String::from(#ident), #constant);
                 #(builder.input(#input_args);)*
                 #output_args
                 builder.done()
@@ -88,7 +88,7 @@ fn generate_right_abis(rights: &[Right]) -> impl Iterator<Item = TokenStream2> +
     })
 }
 
-impl<'a> ABIGen<'a> {
+impl<'a> AbiGen<'a> {
     fn generate_contract_abis(&'a self) -> impl Iterator<Item = TokenStream2> + 'a {
         let contracts = &self.collaboration.contracts;
         contracts.iter().map(move |contract| {
@@ -98,7 +98,7 @@ impl<'a> ABIGen<'a> {
                 let field_ident = field.ident.as_ref().unwrap().to_string();
                 let field_ty = &field.ty;
                 quote! {
-                    <#field_ty as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi(String::from(#field_ident))
+                    <#field_ty as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(String::from(#field_ident))
                 }
             });
             let data = quote! {
@@ -115,7 +115,7 @@ impl<'a> ABIGen<'a> {
                 generate_right_abis(rights.as_slice())
             }).flatten();
             quote! {
-                liquid_abi_gen::ContractABI {
+                liquid_abi_gen::ContractAbi {
                     name: String::from(#contract_ident),
                     data: #data,
                     rights: {

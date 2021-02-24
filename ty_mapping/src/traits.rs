@@ -241,7 +241,7 @@ impl MappingToSolidityType for () {
 }
 
 #[cfg(feature = "contract")]
-impl MappingToSolidityType for liquid_primitives::__LIQUID_GETTER_INDEX_PLACEHOLDER {
+impl MappingToSolidityType for liquid_primitives::__Liquid_Getter_Index_Placeholder {
     const MAPPED_TYPE_NAME: [u8; MAX_LENGTH_OF_MAPPED_TYPE_NAME] =
         [0u8; MAX_LENGTH_OF_MAPPED_TYPE_NAME];
 }

@@ -16,16 +16,16 @@ use cfg_if::cfg_if;
 use derive_more::From;
 use serde::Serialize;
 
-pub struct ContractABI {
-    pub constructor_abi: ConstructorABI,
-    pub external_fn_abis: Vec<ExternalFnABI>,
-    pub event_abis: Vec<EventABI>,
+pub struct ContractAbi {
+    pub constructor_abi: ConstructorAbi,
+    pub external_fn_abis: Vec<ExternalFnAbi>,
+    pub event_abis: Vec<EventAbi>,
 }
 
 cfg_if! {
     if #[cfg(feature = "solidity-compatible")] {
         #[derive(Serialize)]
-        pub struct TrivialABI {
+        pub struct TrivialAbi {
             #[serde(rename = "type")]
             pub ty: String,
             pub name: String,
@@ -33,25 +33,25 @@ cfg_if! {
 
         #[derive(Serialize, From)]
         #[serde(untagged)]
-        pub enum ParamABI {
-            Composite(CompositeABI),
-            Trivial(TrivialABI),
+        pub enum ParamAbi {
+            Composite(CompositeAbi),
+            Trivial(TrivialAbi),
             None,
         }
 
         #[derive(Serialize)]
         #[allow(non_snake_case)]
-        pub struct ConstructorABI {
-            inputs: Vec<ParamABI>,
+        pub struct ConstructorAbi {
+            inputs: Vec<ParamAbi>,
             payable: bool,
             stateMutability: String,
             #[serde(rename = "type")]
             ty: String,
         }
 
-        impl ConstructorABI {
-            pub fn new_builder() -> ConstructorABIBuilder {
-                ConstructorABIBuilder {
+        impl ConstructorAbi {
+            pub fn new_builder() -> ConstructorAbiBuilder {
+                ConstructorAbiBuilder {
                     abi: Self {
                         inputs: Vec::new(),
                         payable: false,
@@ -64,24 +64,24 @@ cfg_if! {
 
         #[derive(Serialize)]
         #[allow(non_snake_case)]
-        pub struct ExternalFnABI {
+        pub struct ExternalFnAbi {
             constant: bool,
-            inputs: Vec<ParamABI>,
+            inputs: Vec<ParamAbi>,
             name: String,
-            outputs: Vec<ParamABI>,
+            outputs: Vec<ParamAbi>,
             payable: bool,
             stateMutability: String,
             #[serde(rename = "type")]
             ty: String,
         }
 
-        impl ExternalFnABI {
+        impl ExternalFnAbi {
             pub fn new_builder(
                 name: String,
                 state_mutability: String,
                 constant: bool,
-            ) -> ExternalFnABIBuilder {
-                ExternalFnABIBuilder {
+            ) -> ExternalFnAbiBuilder {
+                ExternalFnAbiBuilder {
                     abi: Self {
                         constant,
                         inputs: Vec::new(),
@@ -96,7 +96,7 @@ cfg_if! {
         }
     } else {
         #[derive(Serialize)]
-        pub struct TrivialABI {
+        pub struct TrivialAbi {
             #[serde(rename = "type")]
             pub ty: String,
             #[serde(skip_serializing_if = "::std::string::String::is_empty")]
@@ -104,40 +104,40 @@ cfg_if! {
         }
 
         #[derive(Serialize)]
-        pub struct OptionABI {
+        pub struct OptionAbi {
             #[serde(flatten)]
-            pub trivial: TrivialABI,
-            pub some: Box<ParamABI>,
+            pub trivial: TrivialAbi,
+            pub some: Box<ParamAbi>,
         }
 
         #[derive(Serialize)]
-        pub struct ResultABI {
+        pub struct ResultAbi {
             #[serde(flatten)]
-            pub trivial: TrivialABI,
-            pub ok: Box<ParamABI>,
-            pub err: Box<ParamABI>,
+            pub trivial: TrivialAbi,
+            pub ok: Box<ParamAbi>,
+            pub err: Box<ParamAbi>,
         }
 
         #[derive(Serialize, From)]
         #[serde(untagged)]
-        pub enum ParamABI {
-            Opt(OptionABI),
-            Res(ResultABI),
-            Composite(CompositeABI),
-            Trivial(TrivialABI),
+        pub enum ParamAbi {
+            Opt(OptionAbi),
+            Res(ResultAbi),
+            Composite(CompositeAbi),
+            Trivial(TrivialAbi),
             None,
         }
 
         #[derive(Serialize)]
-        pub struct ConstructorABI {
-            inputs: Vec<ParamABI>,
+        pub struct ConstructorAbi {
+            inputs: Vec<ParamAbi>,
             #[serde(rename = "type")]
             ty: String,
         }
 
-        impl ConstructorABI {
-            pub fn new_builder() -> ConstructorABIBuilder {
-                ConstructorABIBuilder {
+        impl ConstructorAbi {
+            pub fn new_builder() -> ConstructorAbiBuilder {
+                ConstructorAbiBuilder {
                     abi: Self {
                         inputs: Vec::new(),
                         ty: "constructor".to_owned(),
@@ -147,21 +147,21 @@ cfg_if! {
         }
 
         #[derive(Serialize)]
-        pub struct ExternalFnABI {
+        pub struct ExternalFnAbi {
             constant: bool,
-            inputs: Vec<ParamABI>,
+            inputs: Vec<ParamAbi>,
             name: String,
-            outputs: Vec<ParamABI>,
+            outputs: Vec<ParamAbi>,
             #[serde(rename = "type")]
             ty: String,
         }
 
-        impl ExternalFnABI {
+        impl ExternalFnAbi {
             pub fn new_builder(
                 name: String,
                 constant: bool,
-            ) -> ExternalFnABIBuilder {
-                ExternalFnABIBuilder {
+            ) -> ExternalFnAbiBuilder {
+                ExternalFnAbiBuilder {
                     abi: Self {
                         constant,
                         inputs: Vec::new(),
@@ -175,28 +175,28 @@ cfg_if! {
     }
 }
 
-impl TrivialABI {
+impl TrivialAbi {
     pub fn new(ty: String, name: String) -> Self {
-        TrivialABI { ty, name }
+        TrivialAbi { ty, name }
     }
 }
 
 #[derive(Serialize)]
-pub struct CompositeABI {
+pub struct CompositeAbi {
     #[serde(flatten)]
-    pub trivial: TrivialABI,
+    pub trivial: TrivialAbi,
     #[serde(skip_serializing_if = "::std::vec::Vec::is_empty")]
-    pub components: Vec<ParamABI>,
+    pub components: Vec<ParamAbi>,
 }
 
-pub struct ConstructorABIBuilder {
-    abi: ConstructorABI,
+pub struct ConstructorAbiBuilder {
+    abi: ConstructorAbi,
 }
 
-impl ConstructorABIBuilder {
-    pub fn input(mut self, param_abi: ParamABI) -> Self {
+impl ConstructorAbiBuilder {
+    pub fn input(mut self, param_abi: ParamAbi) -> Self {
         match param_abi {
-            ParamABI::None => (),
+            ParamAbi::None => (),
             other => {
                 self.abi.inputs.push(other);
             }
@@ -204,59 +204,59 @@ impl ConstructorABIBuilder {
         self
     }
 
-    pub fn done(self) -> ConstructorABI {
+    pub fn done(self) -> ConstructorAbi {
         self.abi
     }
 }
 
-pub struct ExternalFnABIBuilder {
-    abi: ExternalFnABI,
+pub struct ExternalFnAbiBuilder {
+    abi: ExternalFnAbi,
 }
 
-impl FnOutputBuilder for ExternalFnABIBuilder {
-    fn output(&mut self, param_abi: ParamABI) {
+impl FnOutputBuilder for ExternalFnAbiBuilder {
+    fn output(&mut self, param_abi: ParamAbi) {
         self.abi.outputs.push(param_abi);
     }
 }
 
-impl ExternalFnABIBuilder {
-    pub fn input(&mut self, param_abi: ParamABI) {
+impl ExternalFnAbiBuilder {
+    pub fn input(&mut self, param_abi: ParamAbi) {
         match param_abi {
-            ParamABI::None => (),
+            ParamAbi::None => (),
             other => {
                 self.abi.inputs.push(other);
             }
         }
     }
 
-    pub fn done(self) -> ExternalFnABI {
+    pub fn done(self) -> ExternalFnAbi {
         self.abi
     }
 }
 
 #[derive(Serialize)]
-pub struct EventParamABI {
+pub struct EventParamAbi {
     pub indexed: bool,
     #[serde(flatten)]
-    pub param_abi: ParamABI,
+    pub param_abi: ParamAbi,
 }
 
 #[derive(Serialize)]
-pub struct EventABI {
+pub struct EventAbi {
     anonymous: bool,
-    inputs: Vec<EventParamABI>,
+    inputs: Vec<EventParamAbi>,
     name: String,
     #[serde(rename = "type")]
     ty: String,
 }
 
-pub struct EventABIBuilder {
-    abi: EventABI,
+pub struct EventAbiBuilder {
+    abi: EventAbi,
 }
 
-impl EventABI {
-    pub fn new_builder(name: String) -> EventABIBuilder {
-        EventABIBuilder {
+impl EventAbi {
+    pub fn new_builder(name: String) -> EventAbiBuilder {
+        EventAbiBuilder {
             abi: Self {
                 anonymous: false,
                 inputs: Vec::new(),
@@ -267,12 +267,12 @@ impl EventABI {
     }
 }
 
-impl EventABIBuilder {
-    pub fn input(&mut self, param_abi: ParamABI, indexed: bool) {
-        self.abi.inputs.push(EventParamABI { param_abi, indexed });
+impl EventAbiBuilder {
+    pub fn input(&mut self, param_abi: ParamAbi, indexed: bool) {
+        self.abi.inputs.push(EventParamAbi { param_abi, indexed });
     }
 
-    pub fn done(self) -> EventABI {
+    pub fn done(self) -> EventAbi {
         self.abi
     }
 }

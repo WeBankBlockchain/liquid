@@ -10,9 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::contract::ir::Contract;
-use crate::common::GenerateCode;
-use crate::utils as lang_utils;
+use crate::{common::GenerateCode, contract::ir::Contract, utils as lang_utils};
 use derive_more::From;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, quote_spanned};
@@ -162,10 +160,10 @@ impl<'a> Events<'a> {
                             liquid_ty_mapping::len::<(#(#event_field_tys,)*)>()
                             + #event_name_len
                             + 2;
-    
+
                         const SIG: [u8; SIG_LEN] =
                             liquid_ty_mapping::composite::<(#(#event_field_tys,)*), SIG_LEN>(&[#(#event_name_bytes),*]);
-    
+
                         liquid_primitives::hash::hash(&SIG)
                     }
                 }
@@ -261,7 +259,9 @@ impl<'a> EventStructs<'a> {
                 field.vis = syn::Visibility::Public(syn::VisPublic {
                     pub_token: Default::default(),
                 });
-                field.attrs.retain(|attr| !lang_utils::is_liquid_attribute(attr));
+                field
+                    .attrs
+                    .retain(|attr| !lang_utils::is_liquid_attribute(attr));
             });
 
             quote_spanned!(span =>

@@ -36,23 +36,23 @@ fn generate_abi_gen(
         .zip(field_tys.iter())
         .map(|(field_name, field_ty)| {
             quote! {
-                <#field_ty as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi(#field_name.to_owned())
+                <#field_ty as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(#field_name.to_owned())
             }
         });
 
     quote! {
         #[cfg(feature = "liquid-abi-gen")]
-        impl liquid_abi_gen::traits::GenerateParamABI for #ident {
+        impl liquid_abi_gen::traits::GenerateParamAbi for #ident {
             fn generate_ty_name() -> liquid_prelude::string::String {
                 String::from("tuple")
             }
 
-            fn generate_param_abi(name: String) -> liquid_abi_gen::ParamABI {
+            fn generate_param_abi(name: String) -> liquid_abi_gen::ParamAbi {
                 let mut components = __std::Vec::new();
                 #(components.push(#field_param_abis);)*
-                liquid_abi_gen::ParamABI::Composite(
-                    liquid_abi_gen::CompositeABI {
-                        trivial: liquid_abi_gen::TrivialABI::new(Self::generate_ty_name(), name),
+                liquid_abi_gen::ParamAbi::Composite(
+                    liquid_abi_gen::CompositeAbi {
+                        trivial: liquid_abi_gen::TrivialAbi::new(Self::generate_ty_name(), name),
                         components,
                     }
                 )
@@ -65,7 +65,7 @@ fn generate_abi_gen(
             where
                 B: liquid_abi_gen::traits::FnOutputBuilder
             {
-                let param_abi = <Self as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi("".into());
+                let param_abi = <Self as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi("".into());
                 builder.output(param_abi);
             }
         }

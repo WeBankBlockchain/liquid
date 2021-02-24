@@ -19,11 +19,11 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
 #[derive(From)]
-pub struct ABIGen<'a> {
+pub struct AbiGen<'a> {
     contract: &'a Contract,
 }
 
-impl<'a> GenerateCode for ABIGen<'a> {
+impl<'a> GenerateCode for AbiGen<'a> {
     fn generate_code(&self) -> TokenStream2 {
         let constructor_abi = self.generate_constructor_abi();
         let external_fn_abis = self.generate_external_fn_abis();
@@ -36,13 +36,13 @@ impl<'a> GenerateCode for ABIGen<'a> {
 
             #[cfg(feature = "liquid-abi-gen")]
             const _: () = {
-                impl liquid_lang::GenerateABI for __LIQUID_ABI_GEN {
-                    fn generate_abi() -> liquid_abi_gen::ContractABI {
+                impl liquid_lang::GenerateAbi for __LIQUID_ABI_GEN {
+                    fn generate_abi() -> liquid_abi_gen::ContractAbi {
                         let constructor_abi = #constructor_abi;
                         let external_fn_abis = #external_fn_abis;
                         let event_abis = #event_abis;
 
-                        liquid_abi_gen::ContractABI {
+                        liquid_abi_gen::ContractAbi {
                             constructor_abi,
                             external_fn_abis,
                             event_abis,
@@ -61,20 +61,20 @@ fn generate_fn_inputs(sig: &Signature) -> impl Iterator<Item = TokenStream2> + '
             let ty = &ident_type.ty;
 
             quote! {
-                <#ty as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi(#ident.to_owned())
+                <#ty as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(#ident.to_owned())
             }
         }
         _ => unreachable!(),
     })
 }
 
-impl<'a> ABIGen<'a> {
+impl<'a> AbiGen<'a> {
     fn generate_constructor_abi(&self) -> TokenStream2 {
         let constructor = &self.contract.constructor;
         let input_args = generate_fn_inputs(&constructor.sig);
 
         quote! {
-            liquid_abi_gen::ConstructorABI::new_builder()
+            liquid_abi_gen::ConstructorAbi::new_builder()
                 #(.input(#input_args))*
                 .done()
         }
@@ -109,7 +109,7 @@ impl<'a> ABIGen<'a> {
 
             quote! {
                 {
-                    let mut builder = liquid_abi_gen::ExternalFnABI::new_builder(#build_args);
+                    let mut builder = liquid_abi_gen::ExternalFnAbi::new_builder(#build_args);
                     #(builder.input(#input_args);)*
                     #output_args
                     builder.done()
@@ -139,12 +139,12 @@ impl<'a> ABIGen<'a> {
                 let is_indexed = event.indexed_fields.iter().any(|index| *index == i);
 
                 quote!{
-                    <#field_ty as liquid_abi_gen::traits::GenerateParamABI>::generate_param_abi(#name.to_owned()), #is_indexed
+                    <#field_ty as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(#name.to_owned()), #is_indexed
                 }});
 
             quote! {
                 {
-                    let mut builder = liquid_abi_gen::EventABI::new_builder(String::from(#event_name));
+                    let mut builder = liquid_abi_gen::EventAbi::new_builder(String::from(#event_name));
                     #(builder.input(#inputs);)*
                     builder.done()
                 }

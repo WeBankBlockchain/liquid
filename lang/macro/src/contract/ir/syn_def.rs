@@ -190,7 +190,7 @@ impl Spanned for ItemAsset {
 }
 
 #[derive(Debug)]
-pub struct AssetMetaInfo{
+pub struct AssetMetaInfo {
     pub total_supply: u64,
     pub issuer: String,
     // pub destroyable: bool,
@@ -198,10 +198,10 @@ pub struct AssetMetaInfo{
     pub description: String,
 }
 
-impl AssetMetaInfo{
+impl AssetMetaInfo {
     pub fn default() -> Self {
-        AssetMetaInfo{
-            total_supply : u64::MAX,
+        AssetMetaInfo {
+            total_supply: u64::MAX,
             issuer: String::new(),
             // destroyable: true,
             fungible: true,
