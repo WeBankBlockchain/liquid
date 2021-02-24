@@ -71,9 +71,6 @@ check_workspace() {
         cargo +nightly check --verbose --features "${feature}" --manifest-path lang/Cargo.toml
         cargo +nightly check --verbose --no-default-features --features "${feature}" --target=wasm32-unknown-unknown --manifest-path lang/Cargo.toml
         cargo +nightly build --verbose --no-default-features --features "${feature}" --release --target=wasm32-unknown-unknown --manifest-path lang/Cargo.toml > ${build_log}
-
-        cargo +nightly clippy --verbose --all --features "${feature}" --features "contract-abi-gen" --manifest-path lang/Cargo.toml -- -D warnings
-        cargo +nightly clippy --verbose --all --no-default-features --features "${feature}" --features "collaboration-abi-gen" --target=wasm32-unknown-unknown --manifest-path lang/Cargo.toml -- -D warnings
     done
     LOG_INFO "checking workspace build fmt ..."
     cargo +nightly fmt --verbose --all -- --check
@@ -83,6 +80,11 @@ check_workspace() {
     cargo +nightly test --verbose --release --manifest-path ty_mapping/Cargo.toml
     cargo +nightly test --verbose --release --manifest-path primitives/Cargo.toml
     cargo +nightly test --verbose --release --features "collaboration" --manifest-path lang/macro/Cargo.toml
+    for feature in ${features[*]};do
+        LOG_INFO "checking feature ${feature} using clippy ..."
+        cargo +nightly clippy --verbose --all --features "${feature}" --features "contract-abi-gen" --manifest-path lang/Cargo.toml -- -D warnings
+        cargo +nightly clippy --verbose --all --no-default-features --features "${feature}" --features "collaboration-abi-gen" --target=wasm32-unknown-unknown --manifest-path lang/Cargo.toml -- -D warnings
+    done
 }
 
 main(){
