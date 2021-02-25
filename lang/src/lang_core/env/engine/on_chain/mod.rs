@@ -366,7 +366,7 @@ impl Env for EnvInstance {
                         .try_into()
                         .unwrap(),
                 ));
-                ext::print64(*ret.last().unwrap());
+                // ext::print64(*ret.last().unwrap());
                 start += core::mem::size_of::<u64>();
             }
         }

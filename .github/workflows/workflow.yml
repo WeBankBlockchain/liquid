@@ -11,7 +11,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-11.0, macos-10.15]
+        os: [macos-11.0]
+        # os: [macos-11.0, macos-10.15]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -26,14 +27,14 @@ jobs:
           components: rustfmt, clippy
           target: wasm32-unknown-unknown
       - name: check
-        run: ./scripts/check.sh
+        run: ./scripts/check.sh -w
 
   ubuntu_test:
     name: ubuntu_test
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-18.04]
+        os: [ubuntu-20.04]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -48,7 +49,7 @@ jobs:
       # - name: install ubuntu dependencies
         # run: sudo apt install -y git curl build-essential clang cmake openssl libssl-dev zlib1g-dev ccache libgmp-dev flex bison automake libtool
       - name: check
-        run: ./scripts/check.sh
+        run: ./scripts/check.sh -e
 
   win_test:
     name: win_test
