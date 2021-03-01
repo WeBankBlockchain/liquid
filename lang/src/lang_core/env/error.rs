@@ -17,6 +17,7 @@ use derive_more::From;
 pub enum EnvError {
     ScaleDecode(scale::Error),
     AbiDecode(liquid_primitives::Error),
+    NotEnoughSpace,
     UnableToReadFromStorage,
     UnableToReadCallData,
     FailToCallForeignContract,

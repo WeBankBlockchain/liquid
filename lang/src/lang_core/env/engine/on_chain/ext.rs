@@ -100,7 +100,7 @@ mod sys {
             asset_name_length: u32,
             result_offset: u32,
             result_length: u32,
-        ) -> u32;
+        ) -> i32;
         pub fn getNotFungibleAssetInfo(
             address_offset: u32,
             asset_name_offset: u32,
@@ -366,8 +366,8 @@ pub fn get_not_fungible_asset_ids(
     };
 
     match size {
-        0 => Err(EnvError::UnableToReadFromStorage),
-        _ => Ok(size),
+        num if num < 0 => Err(EnvError::NotEnoughSpace),
+        _ => Ok(size as u32),
     }
 }
 
