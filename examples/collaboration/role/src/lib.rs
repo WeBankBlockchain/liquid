@@ -45,7 +45,9 @@ mod iou {
     #[liquid(rights)]
     impl IouSender {
         #[liquid(belongs_to = "sender")]
-        pub fn send_iou(&self, iou_id: ContractId<Iou>) -> ContractId<Iou> {
+        // The mutability of first parameter can *NOT* be immutable for now.
+        // Due to https://github.com/vita-dounai/liquid/issues/8
+        pub fn send_iou(&mut self, iou_id: ContractId<Iou>) -> ContractId<Iou> {
             let iou = iou_id.fetch();
             assert!(iou.cash > 0);
             assert!(self.sender == iou.owner);
