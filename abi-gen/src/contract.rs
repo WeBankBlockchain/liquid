@@ -269,7 +269,7 @@ impl EventAbi {
 
 impl EventAbiBuilder {
     pub fn input(&mut self, param_abi: ParamAbi, indexed: bool) {
-        self.abi.inputs.push(EventParamAbi { param_abi, indexed });
+        self.abi.inputs.push(EventParamAbi { indexed, param_abi });
     }
 
     pub fn done(self) -> EventAbi {

@@ -146,30 +146,32 @@ impl<'a> AstVisitor for PathVisitor<'a> {
                 } else {
                     quote! { len }
                 };
-                let step = if let Some(step) = step { *step } else { 1 } as usize;
+                let step = if let Some(step) = step { *step } else { 1u32 };
                 let current_var = self.current_var();
                 self.ident_count += 1;
 
                 self.stmts.push(quote! {
                     let #current_var = {
                         let len = #last_var.len() as i64;
+                        let start = #start;
                         let end = #end;
-                        let start = if #start < 0 { (len as i64) + (#start) } else { #start };
-                        let end = if end < 0 { (len as i64) + (#end) } else { #end };
-                        if start >= len || end < 0 {
-                            Vec::new()
+                        let start = if start < 0 { (len as i64) + start } else { start };
+                        let end = if end < 0 { (len as i64) + end } else { end };
+                        if start < 0
+                            || start > len
+                            || end < 0
+                            || end > len
+                            || start > end
+                            || #step == 0  {
+                            unreachable!();
                         } else {
-                            let start = if start < 0 { 0 } else { start } as usize;
-                            let end = if end > len { len } else { end } as usize;
-                            if start >= end {
-                                Vec::new()
-                            } else {
-                                #last_var[start..end]
-                                    .iter()
-                                    .step_by(#step)
-                                    .map(|val| *val)
-                                    .collect::<Vec<_>>()
-                            }
+                            let start = start as usize;
+                            let end = end as usize;
+                            #last_var[start..end]
+                                .iter()
+                                .step_by(#step as usize)
+                                .map(|val| *val)
+                                .collect::<Vec<_>>()
                         }
                     };
                 });
@@ -497,11 +499,58 @@ mod tests {
         let result = run(&obj_ty, &obj_var, &obj_init, "$.v[0..1;2].u");
         assert_eq!(result, "[0]");
 
-        let result = run(&obj_ty, &obj_var, &obj_init, "$.v[2..1].u");
-        assert_eq!(result, "[]");
-
         let result = run(&obj_ty, &obj_var, &obj_init, "$.v[..].u[..-1][..-1]");
         assert_eq!(result, "[0, 1]");
+    }
+
+    #[test]
+    #[should_panic]
+    #[serial]
+    fn invalid_array_range_1() {
+        let (obj_ty, obj_var, obj_init) =
+            (quote! {}, quote! { bar }, quote! { vec![0u32] });
+
+        let _ = run(&obj_ty, &obj_var, &obj_init, "$[2..1]");
+    }
+
+    #[test]
+    #[should_panic]
+    #[serial]
+    fn invalid_array_range_2() {
+        let (obj_ty, obj_var, obj_init) =
+            (quote! {}, quote! { bar }, quote! { vec![0u32] });
+
+        let _ = run(&obj_ty, &obj_var, &obj_init, "$[-2..]");
+    }
+
+    #[test]
+    #[should_panic]
+    #[serial]
+    fn invalid_array_range_3() {
+        let (obj_ty, obj_var, obj_init) =
+            (quote! {}, quote! { bar }, quote! { vec![0u32] });
+
+        let _ = run(&obj_ty, &obj_var, &obj_init, "$[..-2]");
+    }
+
+    #[test]
+    #[should_panic]
+    #[serial]
+    fn invalid_array_range_4() {
+        let (obj_ty, obj_var, obj_init) =
+            (quote! {}, quote! { bar }, quote! { vec![0u32] });
+
+        let _ = run(&obj_ty, &obj_var, &obj_init, "$[..2]");
+    }
+
+    #[test]
+    #[should_panic]
+    #[serial]
+    fn invalid_array_range_5() {
+        let (obj_ty, obj_var, obj_init) =
+            (quote! {}, quote! { bar }, quote! { vec![0u32] });
+
+        let _ = run(&obj_ty, &obj_var, &obj_init, "$[..;0]");
     }
 
     #[test]

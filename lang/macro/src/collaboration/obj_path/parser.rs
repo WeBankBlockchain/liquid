@@ -118,7 +118,7 @@ pub enum AstNodeType {
     Range {
         start: Option<i64>,
         end: Option<i64>,
-        step: Option<i64>,
+        step: Option<u32>,
     },
 
     Field(Field),
@@ -609,13 +609,13 @@ impl<'a> Parser<'a> {
 
     // STEP ::= ";" NUMBER
     //        | ε
-    fn step(&mut self) -> ParseResult<Option<i64>> {
+    fn step(&mut self) -> ParseResult<Option<u32>> {
         debug!("#step");
         match self.token_reader.peek_token() {
             Ok(Token::Semicolon(..)) => {
                 self.eat_token();
                 let step = self.number()?;
-                Ok(Some(step as i64))
+                Ok(Some(step))
             }
             Ok(Token::RBracket(..)) => Ok(None),
             Ok(other) => {
