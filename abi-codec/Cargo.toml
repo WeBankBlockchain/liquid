@@ -1,6 +1,6 @@
 [package]
 name = "liquid_abi_codec"
-version = "0.3.0"
+version = "1.0.0-rc1"
 authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
 edition = "2018"
 
@@ -11,9 +11,9 @@ cfg-if = "0.1.10"
 paste = "0.1.17"
 num-bigint = { package = "num-bigint", version = "0.3.0", default-features = false }
 
-liquid_prelude = { version = "0.3.0", path = "../prelude", default-features = false }
-liquid_macro = { version = "0.3.0", path = "../macro", default-features = false }
-liquid_primitives = { version = "0.3.0", path = "../primitives", default-features = false, features = ["contract"] }
+liquid_prelude = { version = "1.0.0-rc1", path = "../prelude", default-features = false }
+liquid_macro = { version = "1.0.0-rc1", path = "../macro", default-features = false }
+liquid_primitives = { version = "1.0.0-rc1", path = "../primitives", default-features = false, features = ["contract"] }
 
 [dev-dependencies]
 hex-literal = "0.2.1"
