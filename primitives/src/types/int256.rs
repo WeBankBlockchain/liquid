@@ -11,22 +11,24 @@
 // limitations under the License.
 
 use crate::types::uint256::u256;
+#[allow(unused_imports)]
 use core::{
     fmt,
     ops::{
         Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub,
         SubAssign,
     },
+    str::FromStr,
 };
 use liquid_prelude::vec::{from_elem, Vec};
 use num::{
-    bigint::BigInt,
+    bigint::{BigInt, ParseBigIntError},
     pow,
     traits::{
         ops::checked::{CheckedAdd, CheckedDiv, CheckedMul, CheckedSub},
         Signed,
     },
-    Bounded,
+    Bounded, Num,
 };
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Num, One, Zero)]
@@ -114,6 +116,23 @@ impl<'a> From<&'a i256> for i256 {
     }
 }
 
+impl FromStr for i256 {
+    type Err = ParseBigIntError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.to_lowercase();
+        if s.starts_with("0x") || s.starts_with("-0x") {
+            if let Some(sub_str) = s.strip_prefix("0x") {
+                Ok(BigInt::from_str_radix(sub_str, 16).map(Self)?)
+            } else {
+                Ok(-BigInt::from_str_radix(&s[3..], 16).map(Self)?)
+            }
+        } else {
+            Ok(BigInt::from_str_radix(&s, 10).map(Self)?)
+        }
+    }
+}
+
+#[cfg(feature = "std")]
 impl fmt::Display for i256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", &self.to_str_radix(10))
@@ -284,5 +303,12 @@ mod tests {
         let encoded = scale::Encode::encode(&origin);
         let decoded: i256 = scale::Decode::decode(&mut encoded.as_slice()).unwrap();
         assert!(origin == decoded);
+    }
+
+    #[test]
+    fn from_str() {
+        let i1: i256 = "42258578699988885".parse().unwrap();
+        let i2: i256 = "-0x9621F414202F95".parse().unwrap();
+        assert_eq!(-i1, i2);
     }
 }
