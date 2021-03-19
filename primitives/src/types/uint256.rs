@@ -72,6 +72,7 @@ impl Bounded for u256 {
 impl FromStr for u256 {
     type Err = ParseBigIntError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.to_lowercase();
         match s.strip_prefix("0x") {
             Some(sub_str) => Ok(BigUint::from_str_radix(sub_str, 16).map(Self)?),
             None => Ok(BigUint::from_str_radix(&s, 10).map(Self)?),
@@ -79,12 +80,12 @@ impl FromStr for u256 {
     }
 }
 
-// Forbidden due to float-point number problem.
-// impl fmt::Display for u256 {
-//    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//        write!(f, "{}", &self.0.to_str_radix(10))
-//    }
-// }
+#[cfg(feature = "std")]
+impl fmt::Display for u256 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", &self.0.to_str_radix(10))
+    }
+}
 
 #[cfg(feature = "std")]
 impl fmt::Debug for u256 {
@@ -287,12 +288,19 @@ mod tests {
     fn check_display() {
         let val = u256::max_value();
         assert_eq!(
-        format!("{}", val),
-        "115792089237316195423570985008687907853269984665640564039457584007913129639935"
-    );
+            format!("{}", val),
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+        );
         assert_eq!(
-        val.to_string(),
-        "115792089237316195423570985008687907853269984665640564039457584007913129639935"
-    );
+            val.to_string(),
+            "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn from_negative() {
+        let val: u256 = u256::from(-1);
+        assert_eq!(val, 1.into())
     }
 }
