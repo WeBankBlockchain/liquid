@@ -11,6 +11,7 @@
 // limitations under the License.
 
 pub use crate::types::int256::i256;
+#[allow(unused_imports)]
 use core::{
     default::Default,
     fmt,
@@ -78,11 +79,12 @@ impl FromStr for u256 {
     }
 }
 
-impl fmt::Display for u256 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", &self.0.to_str_radix(10))
-    }
-}
+// Forbidden due to float-point number problem.
+// impl fmt::Display for u256 {
+//    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//        write!(f, "{}", &self.0.to_str_radix(10))
+//    }
+// }
 
 #[cfg(feature = "std")]
 impl fmt::Debug for u256 {

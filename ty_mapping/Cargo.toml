@@ -1,15 +1,15 @@
 [package]
 name = "liquid_ty_mapping"
-version = "0.3.0"
+version = "1.0.0-rc1"
 authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-liquid_prelude = { version = "0.3.0", path = "../prelude", default-features = false }
-liquid_macro = { version = "0.3.0", path = "../macro", default-features = false }
-liquid_primitives = { version = "0.3.0", path = "../primitives", default-features = false }
+liquid_prelude = { version = "1.0.0-rc1", path = "../prelude", default-features = false }
+liquid_macro = { version = "1.0.0-rc1", path = "../macro", default-features = false }
+liquid_primitives = { version = "1.0.0-rc1", path = "../primitives", default-features = false }
 
 [features]
 default = ["std"]

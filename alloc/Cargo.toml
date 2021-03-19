@@ -1,6 +1,6 @@
 [package]
 name = "liquid_alloc"
-version = "0.3.0"
+version = "1.0.0-rc1"
 authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
 edition = "2018"
 
