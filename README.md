@@ -38,7 +38,7 @@ Liquid 由微众银行区块链团队开发并完全开源，是一种基于[Rus
 
 ### 可定制（Customization）
 
--   能够根据业务需求对编程模型、语言文法的进行深度定制。目前已的集成[可编程分布式协作编程模型](https://liquid-doc.readthedocs.io/zh_CN/latest/docs/pdc/introduction.html)；
+-   能够根据业务需求对编程模型、语言文法的进行深度定制。目前已集成[可编程分布式协作编程模型](https://liquid-doc.readthedocs.io/zh_CN/latest/docs/pdc/introduction.html)；
 
 -   未来还将进一步探索如何与隐私保护、跨链协同等功能相结合。
 
