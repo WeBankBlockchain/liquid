@@ -123,6 +123,10 @@ mod hello_world {
 
 -   [智能合约编译技术专项兴趣小组](https://mp.weixin.qq.com/s/NfBZtPWxXdnP0XLLGrQKow)
 
+## Minimum Supported Rust Version(MSRV)
+
+Rust Nightly 1.52 或更高。
+
 ## License
 
 Liquid 的开源协议为 Apache License 2.0，详情请参考[LICENSE](./LICENSE)。
