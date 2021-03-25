@@ -1,10 +1,13 @@
 # Liquid - Makes Smart Contract Smarter
 
+![](https://raw.githubusercontent.com/WeBankBlockchain/liquid-doc/main/_static/images/logo.svg)
+
 [![GitHub license](https://img.shields.io/badge/%20license-Apache%202.0-green)](https://github.com/vita-dounai/liquid/blob/dev/LICENSE)
 [![Code Lines](https://tokei.rs/b1/github/WeBankBlockchain/Liquid/)](https://github.com/WeBankBlockchain/Liquid)
+[![Latest release](https://img.shields.io/github/release/WebankBlockchain/liquid.svg)](https://github.com/WebankBlockchain/liquid/releases/latest)
 [![Language](https://img.shields.io/badge/Language-Rust-blue.svg)](https://www.rust-lang.org/)
 
-Liquid 由微众银行区块链团队开发并完全开源，是一种基于[Rust 语言](https://www.rust-lang.org/)的[嵌入式领域特定语言](http://wiki.haskell.org/Embedded_domain_specific_language)（ embedded Domain Specific Language，eDSL），能够用于编写在[FISCO BCOS](https://github.com/FISCO-BCOS/FISCO-BCOS)区块链底层平台上运行的智能合约。
+Liquid 由微众银行区块链团队开发并完全开源，是一种[嵌入式领域特定语言](http://wiki.haskell.org/Embedded_domain_specific_language)（ embedded Domain Specific Language，eDSL），能够用来编写运行于区块链底层平台[FISCO BCOS](https://github.com/FISCO-BCOS/FISCO-BCOS)的智能合约。
 
 ## 关键特性
 
