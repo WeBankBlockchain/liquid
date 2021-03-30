@@ -117,7 +117,7 @@ mod hello_world {
 
 ## 架构设计
 
-![](https://liquid-doc.readthedocs.io/zh_CN/latest/_static/images/advance/liquid_arch.png)
+![](https://liquid-doc.readthedocs.io/zh_CN/latest/_static/images/advance/liquid_arch.svg)
 
 ## 社区
 
