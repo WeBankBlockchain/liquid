@@ -179,7 +179,7 @@ impl TryFrom<(ir::ContractParams, syn::ItemMod)> for ir::Contract {
 
             functions.push(ir::Function{
                 attrs: getter.attrs,
-                kind: ir::FunctionKind::External(lang_utils::calculate_fn_id(ident), true),
+                kind: ir::FunctionKind::External(lang_utils::calculate_fn_id(ident)),
                 sig: ir::Signature::try_from(&getter.sig).unwrap(),
                 body: *getter.block,
                 span: field.span(),
@@ -205,10 +205,9 @@ impl TryFrom<(ir::ContractParams, syn::ItemMod)> for ir::Contract {
         .unwrap();
         functions.push(ir::Function {
             attrs: supports_asset_fn.attrs,
-            kind: ir::FunctionKind::External(
-                lang_utils::calculate_fn_id(&SUPPORTS_ASSET_SIGNATURE),
-                false,
-            ),
+            kind: ir::FunctionKind::External(lang_utils::calculate_fn_id(
+                &SUPPORTS_ASSET_SIGNATURE,
+            )),
             sig: ir::Signature::try_from(&supports_asset_fn.sig).unwrap(),
             body: *supports_asset_fn.block,
             span,
@@ -445,17 +444,6 @@ impl TryFrom<&syn::Signature> for ir::Signature {
             }
         }
 
-        let input_args_count = inputs.len() - 1;
-        if input_args_count > 16 {
-            bail_span!(
-                inputs[1]
-                    .span()
-                    .join(inputs.last().span())
-                    .expect("first argument and last argument are in the same file"),
-                "the number of input arguments should not exceed 16"
-            )
-        }
-
         let output_args_count = match output {
             syn::ReturnType::Default => 0,
             syn::ReturnType::Type(_, ty) => match &(**ty) {
@@ -534,7 +522,7 @@ impl TryFrom<syn::ImplItemMethod> for ir::Function {
             }
         } else if let syn::Visibility::Public(_) = method.vis {
             let fn_id = crate::utils::calculate_fn_id(ident);
-            ir::FunctionKind::External(fn_id, false)
+            ir::FunctionKind::External(fn_id)
         } else {
             ir::FunctionKind::Normal
         };
@@ -1067,7 +1055,7 @@ impl TryFrom<(ir::InterfaceParams, syn::ItemMod)> for ir::Interface {
         };
 
         let mut foreign_structs = Vec::new();
-        let mut foreign_fns = BTreeMap::<_, Vec<ir::ForeignFn>>::new();
+        let mut foreign_fns = BTreeMap::<_, ir::ForeignFn>::new();
         let mut imports = Vec::new();
         let span = item_mod.span();
 
@@ -1077,8 +1065,6 @@ impl TryFrom<(ir::InterfaceParams, syn::ItemMod)> for ir::Interface {
         } else {
             Ident::new(&meta_info.interface_name, span)
         };
-
-        let mut lang_type = ir::LangType::Liquid;
 
         for item in items {
             match item {
@@ -1097,59 +1083,27 @@ impl TryFrom<(ir::InterfaceParams, syn::ItemMod)> for ir::Interface {
                     }
 
                     let abi = &item_foreign_mod.abi;
-                    match abi.name {
-                        Some(ref name) => {
-                            let name = name.value();
-                            match name.as_str() {
-                                "liquid" => (),
-                                "solidity" => lang_type = ir::LangType::Solidity,
-                                _ => bail!(
-                                    abi,
-                                    "ABI should be specified  as `\"liquid\"` or \
-                                     `\"solidity\"`"
-                                ),
-                            }
+                    if let Some(ref name) = abi.name {
+                        let name = name.value();
+                        match name.as_str() {
+                            "liquid" => (),
+                            _ => bail!(
+                                abi,
+                                "ABI should be specified  as `\"liquid\"` or empty"
+                            ),
                         }
-                        _ => bail!(
-                            abi,
-                            "ABI should be specified  as `\"liquid\"` or `\"solidity\"`"
-                        ),
                     }
 
                     for foreign_item in item_foreign_mod.items.iter() {
                         let foreign_fn = ir::ForeignFn::try_from(foreign_item)?;
                         let ident = foreign_fn.sig.ident.clone();
-                        if let Some(fns) = foreign_fns.get_mut(&ident) {
-                            if interface_ident == foreign_fn.sig.ident {
-                                bail_span!(
-                                    foreign_fn.span,
-                                    "the name of the interface should not be identical \
-                                     to the name of this overriding method"
-                                )
-                            }
-                            let last_fn = fns.last().unwrap();
-                            let consistent = match (
-                                &foreign_fn.mock_context_getter,
-                                &last_fn.mock_context_getter,
-                            ) {
-                                (Some(ident_f), Some(ident_l)) => ident_f == ident_l,
-                                (Some(_), None) => false,
-                                _ => true,
-                            };
-
-                            if !consistent {
-                                bail_span!(
-                                    last_fn.span,
-                                    "the values of `mock_context_getter` attribute \
-                                     among declarations of overriding function `{}` is \
-                                     not consistent",
-                                    ident.to_string()
-                                )
-                            }
-
-                            fns.push(foreign_fn);
+                        if let Some(foreign_fn) = foreign_fns.get_mut(&ident) {
+                            bail_span!(
+                                foreign_fn.span,
+                                "overriding methods is not supported in liquid"
+                            )
                         } else {
-                            foreign_fns.insert(ident, vec![foreign_fn]);
+                            foreign_fns.insert(ident, foreign_fn);
                         }
                     }
 
@@ -1169,18 +1123,6 @@ impl TryFrom<(ir::InterfaceParams, syn::ItemMod)> for ir::Interface {
             }
         }
 
-        if let ir::LangType::Liquid = lang_type {
-            for value in foreign_fns.values() {
-                if value.len() > 1 {
-                    bail_span!(
-                        value[0].span(),
-                        "interface implemented via Liquid is impossible to have \
-                         overriding methods"
-                    )
-                }
-            }
-        }
-
         Ok(Self {
             mod_token: item_mod.mod_token,
             ident: item_mod.ident,
@@ -1189,7 +1131,6 @@ impl TryFrom<(ir::InterfaceParams, syn::ItemMod)> for ir::Interface {
             foreign_fns,
             imports,
             interface_ident,
-            lang_type,
             span,
         })
     }

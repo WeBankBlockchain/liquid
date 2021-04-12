@@ -347,17 +347,6 @@ impl TryFrom<&syn::Signature> for ir::Signature {
             }
         }
 
-        let input_args_count = inputs.len() - 1;
-        if input_args_count > 16 {
-            bail_span!(
-                inputs[1]
-                    .span()
-                    .join(inputs.last().span())
-                    .expect("first argument and last argument are in the same file"),
-                "the number of input arguments should not exceed 16"
-            )
-        }
-
         let output_args_count = match output {
             syn::ReturnType::Default => 0,
             syn::ReturnType::Type(_, ty) => match &(**ty) {
@@ -365,7 +354,7 @@ impl TryFrom<&syn::Signature> for ir::Signature {
                 _ => 1,
             },
         };
-        if output_args_count > 16 {
+        if output_args_count > 18 {
             bail_span!(
                 output.span(),
                 "the number of output arguments should not exceed 16"

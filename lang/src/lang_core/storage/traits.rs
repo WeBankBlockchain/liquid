@@ -38,4 +38,6 @@ cfg_if! {
 #[allow(non_camel_case_types)]
 pub trait You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage: Sized {
     type T = Self;
+    type Wrapped1;
+    type Wrapped2;
 }

@@ -11,7 +11,7 @@
 // limitations under the License.
 
 mod codegen;
-mod ir;
+pub mod ir;
 mod obj_path;
 
 use crate::{common::GenerateCode, utils::check_idents};

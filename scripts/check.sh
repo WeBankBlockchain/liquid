@@ -4,7 +4,7 @@
 set -e
 check_examples_flag=
 check_workspace_flag=
-features=("contract,solidity-compatible" "collaboration")
+features=("contract" "collaboration")
 build_log="./build.log"
 
 LOG_WARN()
@@ -52,7 +52,11 @@ parse_params()
 }
 
 check_examples() {
+    export CARGO_TARGET_DIR=./examples/target
     for dir in $(ls examples);do
+        if [[ $dir == "target" ]];then
+            continue
+        fi
         for example in $(ls examples/${dir});do
             LOG_INFO "checking examples/${dir}/${example} ..."
             cargo +nightly build --release --no-default-features --target=wasm32-unknown-unknown --manifest-path "examples/${dir}/${example}/Cargo.toml"
@@ -75,9 +79,8 @@ check_workspace() {
     LOG_INFO "checking workspace build fmt ..."
     cargo +nightly fmt --verbose --all -- --check
     LOG_INFO "checking workspace build unit test ..."
-    cargo +nightly test --verbose --features "contract,solidity-compatible" --release --manifest-path lang/Cargo.toml
+    cargo +nightly test --verbose --features "contract" --release --manifest-path lang/Cargo.toml
     cargo +nightly test --verbose --features "collaboration" --release --manifest-path lang/Cargo.toml
-    cargo +nightly test --verbose --release --manifest-path ty_mapping/Cargo.toml
     cargo +nightly test --verbose --release --manifest-path primitives/Cargo.toml
     cargo +nightly test --verbose --release --features "collaboration" --manifest-path lang/macro/Cargo.toml
     for feature in ${features[*]};do

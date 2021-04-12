@@ -12,7 +12,6 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(incomplete_features)]
-#![feature(const_fn)]
 #![feature(associated_type_defaults)]
 #![feature(const_panic)]
 #![feature(specialization)]
@@ -41,6 +40,8 @@ pub mod precompiled {
     pub use super::lang_core::precompiled::*;
 }
 
+pub use liquid_lang_macro::InOut;
+
 use cfg_if::cfg_if;
 
 cfg_if! {
@@ -50,10 +51,8 @@ cfg_if! {
             fn fetch(&self) -> Self::Target;
         }
 
-        pub use liquid_lang_macro::{collaboration, InOut};
-    } else if #[cfg(all(feature = "contract", feature = "solidity-compatible"))] {
-        pub use liquid_lang_macro::{contract, interface, InOut, State};
-    } else if #[cfg(all(feature = "contract", not(feature = "solidity-compatible")))] {
-        pub use liquid_lang_macro::{contract, interface, InOut};
+        pub use liquid_lang_macro::collaboration;
+    } else if #[cfg(feature = "contract")] {
+        pub use liquid_lang_macro::{contract, interface};
     }
 }

@@ -65,16 +65,6 @@ cfg_if! {
             };
         }
 
-        #[cfg(feature = "solidity-compatible")]
-        impl<K, V> Getter for Mapping<K, V>
-        where
-            K: Codec + liquid_abi_codec::Decode,
-            V: Codec + liquid_abi_codec::Encode + Clone,
-        {
-            getter_impl!();
-        }
-
-        #[cfg(not(feature = "solidity-compatible"))]
         impl<K, V> Getter for Mapping<K, V>
         where
             K: Codec,
@@ -262,4 +252,6 @@ where
 impl<K, V> You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage
     for Mapping<K, V>
 {
+    type Wrapped1 = K;
+    type Wrapped2 = V;
 }

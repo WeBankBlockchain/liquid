@@ -36,34 +36,8 @@ cfg_if! {
             "compilation feature `contract` and `collaboration` can not be \
              enabled simultaneously"
         }
-    } else if #[cfg(all(feature = "collaboration", feature = "solidity-compatible"))] {
-        compile_error! {
-            "compilation feature `collaboration` and `solidity-compatible` can not be \
-             enabled simultaneously"
-        }
-    } else if #[cfg(all(feature = "collaboration", feature = "solidity-interface"))] {
-        compile_error! {
-            "compilation feature `collaboration` and `solidity-interface` can not be \
-             enabled simultaneously"
-        }
-    } else if #[cfg(all(feature = "solidity-compatible", feature = "solidity-interface"))]{
-        compile_error! {
-            "it's unnecessary to enable `solidity-interface` feature when \
-             `solidity-compatible` is enabled"
-        }
-    } else if #[cfg(all(feature = "contract", not(feature = "solidity-compatible")))] {
-        compile_error! {
-            "up till now, compilation feature `contract` and `solidity-compatible` must \
-             be enabled simultaneously"
-        }
     } else if #[cfg(feature = "collaboration")] {
         mod collaboration;
-        use derive::codec;
-
-        #[proc_macro_derive(InOut)]
-        pub fn inout_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-            wrapper::generate_wrapper(codec::generate(input.into())).into()
-        }
 
         #[proc_macro_attribute]
         pub fn collaboration(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -72,29 +46,6 @@ cfg_if! {
     } else if #[cfg(feature = "contract")] {
         mod contract;
         use contract::GenerateMode;
-
-        cfg_if! {
-            if #[cfg(feature = "solidity-compatible")] {
-                use derive::{in_out, state};
-
-                #[proc_macro_derive(InOut)]
-                pub fn inout_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-                    wrapper::generate_wrapper(in_out::generate(input.into())).into()
-                }
-
-                #[proc_macro_derive(State)]
-                pub fn state_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-                    wrapper::generate_wrapper(state::generate(input.into())).into()
-                }
-            } else {
-                use derive::codec;
-
-                #[proc_macro_derive(InOut)]
-                pub fn inout_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-                    wrapper::generate_wrapper(codec::generate(input.into())).into()
-                }
-            }
-        }
 
         #[proc_macro_attribute]
         pub fn interface(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -106,4 +57,11 @@ cfg_if! {
             contract::generate(attr.into(), item.into(), GenerateMode::Contract).into()
         }
     }
+}
+
+use derive::inout;
+
+#[proc_macro_derive(InOut)]
+pub fn inout_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    wrapper::generate_wrapper(inout::generate(input.into())).into()
 }

@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 rem Please execute this script from the root of the project's directory.
 
-set features=("contract,solidity-compatible", "collaboration")
+set features=("contract", "collaboration")
 set results=()
 
 set results[0].name=basic_check
@@ -52,42 +52,58 @@ if !errorlevel! neq 0 (
 
 set results[3].name=clippy
 set results[3].result=0
-for %%f in %features% do (
-    cargo +nightly clippy ^
-        --verbose ^
-        --all ^
-        --features %%f ^
-        --features "contract-abi-gen" ^
-        --manifest-path lang\Cargo.toml ^
-        -- -D warnings
-    if !errorlevel! neq 0 (
-        set results[3].result=1
-    )
 
-    cargo +nightly clippy ^
-        --verbose ^
-        --all ^
-        --no-default-features ^
-        --features %%f ^
-        --features "collaboration-abi-gen" ^
-        --target=wasm32-unknown-unknown ^
-        --manifest-path lang\Cargo.toml ^
-        -- -D warnings 
-    if !errorlevel! neq 0 (
-        set results[3].result=1
-    )
+cargo +nightly clippy ^
+    --verbose ^
+    --all ^
+    --features "contract contract-abi-gen" ^
+    --manifest-path lang\Cargo.toml ^
+    -- -D warnings
+if !errorlevel! neq 0 (
+    set results[3].result=1
 )
+
+cargo +nightly clippy ^
+    --verbose ^
+    --all ^
+    --no-default-features ^
+    --features "collaboration collaboration-abi-gen" ^
+    --target=wasm32-unknown-unknown ^
+    --manifest-path lang\Cargo.toml ^
+    -- -D warnings 
 if !errorlevel! neq 0 (
     set results[3].result=1
 )
 
 set results[4].name=unit_tests
 set results[4].result=0
-cargo +nightly test --verbose --features "contract,solidity-compatible" --release --manifest-path lang/Cargo.toml
+
+cargo +nightly test --verbose --features "contract" --release --manifest-path lang/Cargo.toml
+if !errorlevel! neq 0 (
+    set results[4].result=1
+)
+
 cargo +nightly test --verbose --features "collaboration" --release --manifest-path lang/Cargo.toml
+if !errorlevel! neq 0 (
+    set results[4].result=1
+)
+
 cargo +nightly test --verbose --features "collaboration" --release --manifest-path lang/macro/Cargo.toml
-cargo +nightly test --verbose --release --manifest-path ty_mapping/Cargo.toml
+if !errorlevel! neq 0 (
+    set results[4].result=1
+)
+
 cargo +nightly test --verbose --release --manifest-path primitives/Cargo.toml
+if !errorlevel! neq 0 (
+    set results[4].result=1
+)
+
+cargo +nightly test --verbose --features "contract" --release --manifest-path abi-gen/Cargo.toml
+if !errorlevel! neq 0 (
+    set results[4].result=1
+)
+
+cargo +nightly test --verbose --features "collaboration" --release --manifest-path abi-gen/Cargo.toml
 if !errorlevel! neq 0 (
     set results[4].result=1
 )

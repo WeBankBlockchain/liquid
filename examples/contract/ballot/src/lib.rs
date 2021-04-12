@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use liquid::{storage, InOut, State};
+use liquid::{storage, InOut};
 use liquid_lang as liquid;
 
 /// This example is inspired by [Solidity by Example](https://solidity.readthedocs.io/en/latest/solidity-by-example.html).
@@ -12,7 +12,7 @@ mod ballot {
     /// This declares a new complex type which will
     /// be used for variables later.
     /// It will represent a single voter.
-    #[derive(State, InOut, Clone)]
+    #[derive(InOut, Clone)]
     #[cfg_attr(feature = "std", derive(Debug, PartialEq, Eq))]
     pub struct Voter {
         /// weight is accumulated by delegation
@@ -26,7 +26,7 @@ mod ballot {
     }
 
     /// This is a type for a single proposal.
-    #[derive(State, InOut, Clone)]
+    #[derive(InOut, Clone)]
     #[cfg_attr(feature = "std", derive(Debug, PartialEq, Eq))]
     pub struct Proposal {
         /// name of the proposal

@@ -11,7 +11,6 @@
 // limitations under the License.
 
 use crate::lang_core::env::{calldata::CallData, error::Result};
-use cfg_if::cfg_if;
 use liquid_prelude::{string::String, vec::Vec};
 use liquid_primitives::{
     types::{timestamp, Address},
@@ -90,39 +89,19 @@ pub trait Env {
         asset_id: u64,
     ) -> String;
 
-    cfg_if! {
-        if #[cfg(feature = "solidity-compatible")] {
-            fn emit<Event>(&mut self, event: Event)
-            where
-                Event: Topics + liquid_abi_codec::Encode;
+    fn emit<Event>(&mut self, event: Event)
+    where
+        Event: Topics + scale::Encode;
 
-            fn call<R>(&mut self, addr: &Address, data: &[u8]) -> Result<R>
-            where
-                R: liquid_abi_codec::Decode + liquid_abi_codec::TypeInfo;
+    fn call<R>(&mut self, addr: &Address, data: &[u8]) -> Result<R>
+    where
+        R: scale::Decode;
 
-            fn finish<V>(&mut self, return_value: &V)
-            where
-                V: liquid_abi_codec::Encode;
+    fn finish<V>(&mut self, return_value: &V)
+    where
+        V: scale::Encode;
 
-            fn revert<V>(&mut self, revert_info: &V)
-            where
-                V: liquid_abi_codec::Encode;
-        } else {
-            fn emit<Event>(&mut self, event: Event)
-            where
-                Event: Topics + scale::Encode;
-
-            fn call<R>(&mut self, addr: &Address, data: &[u8]) -> Result<R>
-            where
-                R: scale::Decode;
-
-            fn finish<V>(&mut self, return_value: &V)
-            where
-                V: scale::Encode;
-
-            fn revert<V>(&mut self, revert_info: &V)
-            where
-                V: scale::Encode;
-        }
-    }
+    fn revert<V>(&mut self, revert_info: &V)
+    where
+        V: scale::Encode;
 }

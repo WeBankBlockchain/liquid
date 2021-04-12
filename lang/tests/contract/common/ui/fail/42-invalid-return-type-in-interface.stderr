@@ -1,5 +1,0 @@
-error[E0277]: the trait bound `f32: You_Should_Use_An_Valid_Return_Type` is not satisfied
- --> $DIR/42-invalid-return-type-in-interface.rs:6:9
-  |
-6 |         fn bar(&self) -> f32;
-  |         ^^^^^^^^^^^^^^^^^^^^^ the trait `You_Should_Use_An_Valid_Return_Type` is not implemented for `f32`

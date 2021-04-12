@@ -10,9 +10,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(feature = "solidity-compatible")]
-use liquid_abi_codec::{Decode, Encode, Input};
-#[cfg(not(feature = "solidity-compatible"))]
 use scale::{Decode, Encode, Error, Input};
 
 use liquid_prelude::vec::{from_elem, Vec};
@@ -24,22 +21,6 @@ pub struct CallData {
 }
 
 impl Decode for CallData {
-    #[cfg(feature = "solidity-compatible")]
-    fn decode<I: Input>(input: &mut I) -> Result<Self, liquid_primitives::Error> {
-        let remaining_len = input.remaining_len();
-        if remaining_len < 4 {
-            return Err(liquid_primitives::Error::from(
-                "require at least 4 bytes for input data",
-            ));
-        }
-        let mut selector: Selector = Default::default();
-        input.read_bytes(&mut selector)?;
-        let mut data = from_elem(0, input.remaining_len());
-        input.read_bytes(&mut data)?;
-        Ok(Self { selector, data })
-    }
-
-    #[cfg(not(feature = "solidity-compatible"))]
     fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
         let remaining_len = input.remaining_len()?;
         match remaining_len {

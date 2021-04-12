@@ -1,7 +1,0 @@
-error[E0277]: the trait bound `(): You_Should_Use_An_Valid_Element_Type` is not satisfied
-  --> $DIR/02-vec-unit-return.rs:12:31
-   |
-12 |         pub fn noop(&self) -> Vec<()> {
-   |                               ^^^^^^^ the trait `You_Should_Use_An_Valid_Element_Type` is not implemented for `()`
-   |
-   = note: required because of the requirements on the impl of `You_Should_Use_An_Valid_Return_Type` for `std::vec::Vec<()>`

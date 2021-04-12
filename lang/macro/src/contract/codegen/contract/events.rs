@@ -78,32 +78,6 @@ impl<'a> Events<'a> {
             .map(|item_event| &item_event.ident)
             .collect::<Vec<_>>();
 
-        let encode = if cfg!(feature = "solidity-compatible") {
-            quote! {
-                impl liquid_abi_codec::Encode for Event {
-                    fn encode(&self) -> Vec<u8> {
-                        match self {
-                            #(
-                                Event::#event_idents(event) => event.encode(),
-                            )*
-                        }
-                    }
-                }
-            }
-        } else {
-            quote! {
-                impl scale::Encode for Event {
-                    fn encode(&self) -> Vec<u8> {
-                        match self {
-                            #(
-                                Event::#event_idents(event) => event.encode(),
-                            )*
-                        }
-                    }
-                }
-            }
-        };
-
         quote! {
             pub enum Event {
                 #(#event_idents(#event_idents),)*
@@ -127,7 +101,15 @@ impl<'a> Events<'a> {
                 }
             }
 
-            #encode
+            impl scale::Encode for Event {
+                fn encode(&self) -> Vec<u8> {
+                    match self {
+                        #(
+                            Event::#event_idents(event) => event.encode(),
+                        )*
+                    }
+                }
+            }
         }
     }
 
@@ -142,38 +124,20 @@ impl<'a> Events<'a> {
                 let ty = &field.ty;
                 if !item_event.indexed_fields.iter().any(|index| *index == i) {
                     quote_spanned! { ty.span() =>
-                        <#ty as liquid_lang::You_Should_Use_An_Valid_Event_Data_Type>::T
+                        <#ty as liquid_lang::You_Should_Use_An_Valid_Output_Type>::T
                     }
                 } else {
                     quote_spanned! { ty.span() =>
-                        <#ty as liquid_lang::You_Should_Use_An_Valid_Event_Topic_Type>::T
+                        <#ty as liquid_lang::You_Should_Use_An_Valid_Topic_Type>::T
                     }
                 }
             }).collect::<Vec<_>>();
 
-            let sig_hash = if cfg!(feature = "solidity-compatible") {
-                let event_name_len = event_name_bytes.len();
-
-                quote_spanned! { span =>
-                    {
-                        const SIG_LEN: usize =
-                            liquid_ty_mapping::len::<(#(#event_field_tys,)*)>()
-                            + #event_name_len
-                            + 2;
-
-                        const SIG: [u8; SIG_LEN] =
-                            liquid_ty_mapping::composite::<(#(#event_field_tys,)*), SIG_LEN>(&[#(#event_name_bytes),*]);
-
-                        liquid_primitives::hash::hash(&SIG)
-                    }
-                }
-            } else {
-                quote_spanned! { span =>
-                    {
-                        #[allow(non_camel_case_types)]
-                        struct __LIQUID_EVENT_FIELDS_CHECKER(#(#event_field_tys,)*);
-                        liquid_primitives::hash::hash(&[#(#event_name_bytes),*])
-                    }
+            let sig_hash = quote_spanned! { span =>
+                {
+                    #[allow(non_camel_case_types)]
+                    struct __LIQUID_EVENT_FIELDS_CHECKER(#(#event_field_tys,)*);
+                    liquid_primitives::hash::hash(&[#(#event_name_bytes),*]).into()
                 }
             };
 
@@ -182,7 +146,7 @@ impl<'a> Events<'a> {
                     let ident = &event_fields[*index].ident;
                     let ty = &event_fields[*index].ty;
                     quote_spanned! { ty.span() =>
-                        <#ty as liquid_lang::You_Should_Use_An_Valid_Event_Topic_Type>::topic(&self.#ident)
+                        <#ty as liquid_lang::You_Should_Use_An_Valid_Topic_Type>::topic(&self.#ident)
                     }
                 });
 
@@ -193,36 +157,13 @@ impl<'a> Events<'a> {
                 }
             };
 
-            let mut impls =  quote_spanned! { span =>
+            let impls = quote_spanned! { span =>
                 impl liquid_primitives::Topics for #event_ident {
                     fn topics(&self) -> liquid_prelude::vec::Vec<liquid_primitives::types::Hash> {
-                        [#sig_hash.into(), #topic_hash].to_vec()
+                        [#sig_hash, #topic_hash].to_vec()
                     }
                 }
             };
-
-            if cfg!(feature = "solidity-compatible") {
-                let mediate_encode = item_event.unindexed_fields.iter().map(|index| {
-                    let ident = &event_fields[*index].ident;
-                    let ty = &event_fields[*index].ty;
-                    quote! {
-                        <#ty as liquid_abi_codec::MediateEncode>::encode(&self.#ident)
-                    }
-                });
-
-                impls.extend(quote_spanned! { span =>
-                    impl liquid_abi_codec::Encode for #event_ident {
-                        fn encode(&self) -> liquid_prelude::vec::Vec<u8> {
-                            #[allow(unused_mut)]
-                            let mut mediates = Vec::<liquid_abi_codec::Mediate>::new();
-                            #(
-                                mediates.push(#mediate_encode);
-                            )*
-                            liquid_abi_codec::encode_head_tail(&mediates).iter().flat_map(|word| word.to_vec()).collect()
-                        }
-                    }
-                });
-            }
 
             impls
         })
@@ -263,10 +204,22 @@ impl<'a> EventStructs<'a> {
                     .attrs
                     .retain(|attr| !lang_utils::is_liquid_attribute(attr));
             });
+            let fields = fields.iter().enumerate().map(|(i, field)| {
+                if item_event.indexed_fields.contains(&i) {
+                    quote! {
+                        #[codec(skip)]
+                        #field
+                    }
+                } else {
+                    quote! {
+                        #field
+                    }
+                }
+            });
 
             quote_spanned!(span =>
                 #(#attrs)*
-                #[cfg_attr(not(feature = "solidity-compatible"), derive(scale::Encode))]
+                #[derive(scale::Encode)]
                 pub struct #ident {
                     #(#fields,)*
                 }

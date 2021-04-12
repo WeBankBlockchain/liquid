@@ -37,10 +37,9 @@ pub fn generate_input_tys(sig: &Signature) -> Vec<&syn::Type> {
         .collect::<Vec<_>>()
 }
 
-pub fn generate_input_idents(
-    args: &Punctuated<FnArg, Token![,]>,
-) -> Vec<&proc_macro2::Ident> {
-    args.iter()
+pub fn generate_input_idents(sig: &Signature) -> Vec<&proc_macro2::Ident> {
+    sig.inputs
+        .iter()
         .skip(1)
         .filter_map(|arg| match arg {
             FnArg::Typed(ident_type) => Some(&ident_type.ident),

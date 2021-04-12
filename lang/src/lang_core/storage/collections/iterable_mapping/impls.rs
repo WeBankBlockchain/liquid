@@ -16,24 +16,67 @@ use crate::lang_core::storage::{
 };
 use cfg_if::cfg_if;
 use core::borrow::Borrow;
-use scale::{Codec, Decode, Encode};
+use liquid_prelude::vec;
+use scale::{Codec, Decode, Encode, Error, Input};
 
-#[derive(Decode, Encode)]
 #[cfg_attr(feature = "std", derive(Debug))]
-struct KeyEntry<K: Codec> {
+struct KeyEntry<K> {
     key: K,
     deleted: bool,
 }
 
-#[derive(Decode, Encode)]
 #[cfg_attr(feature = "std", derive(Debug))]
-struct ValueEntry<V: Codec> {
+struct ValueEntry<V> {
     key_index: u32,
     val: V,
 }
 
+impl<K> Encode for KeyEntry<K>
+where
+    K: Encode,
+{
+    fn encode(&self) -> vec::Vec<u8> {
+        let mut encoded = self.key.encode();
+        encoded.extend(self.deleted.encode());
+        encoded
+    }
+}
+
+impl<K> Decode for KeyEntry<K>
+where
+    K: Decode,
+{
+    fn decode<I: Input>(value: &mut I) -> Result<Self, Error> {
+        let key = K::decode(value)?;
+        let deleted = bool::decode(value)?;
+        Ok(Self { key, deleted })
+    }
+}
+
+impl<V> Encode for ValueEntry<V>
+where
+    V: Encode,
+{
+    fn encode(&self) -> vec::Vec<u8> {
+        let mut encoded = self.key_index.encode();
+        encoded.extend(self.val.encode());
+        encoded
+    }
+}
+
+impl<V> Decode for ValueEntry<V>
+where
+    V: Decode,
+{
+    fn decode<I: Input>(value: &mut I) -> Result<Self, Error> {
+        let key_index = u32::decode(value)?;
+        let val = V::decode(value)?;
+        Ok(Self { key_index, val })
+    }
+}
+
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct IterableMapping<K: Codec, V: Codec> {
+pub struct IterableMapping<K, V> {
     keys: Vec<KeyEntry<K>>,
     mapping: Mapping<K, ValueEntry<V>>,
 }
@@ -137,16 +180,6 @@ cfg_if! {
             };
         }
 
-        #[cfg(feature = "solidity-compatible")]
-        impl<K, V> Getter for IterableMapping<K, V>
-        where
-            K: Codec + liquid_abi_codec::Decode,
-            V: Codec + liquid_abi_codec::Encode + Clone,
-        {
-            getter_impl!();
-        }
-
-        #[cfg(not(feature = "solidity-compatible"))]
         impl<K, V> Getter for IterableMapping<K, V>
         where
             K: Codec,
@@ -315,7 +348,9 @@ where
     }
 }
 
-impl<K: Codec, V: Codec> You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage
+impl<K, V> You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage
     for IterableMapping<K, V>
 {
+    type Wrapped1 = K;
+    type Wrapped2 = V;
 }

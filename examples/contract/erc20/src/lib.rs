@@ -157,7 +157,7 @@ mod erc20 {
             assert_eq!(transfer_event.topics.len(), 3);
             assert_eq!(
                 transfer_event.topics[0],
-                "0x27772adc63db07aae765b71eb2b533064fa781bd57457e1b138592d8198d0959"
+                "0xf099cd8bde557814842a3121e8ddfd433a539b8c9f14bf31ebf108d12e6196e9"
                     .parse()
                     .unwrap()
             );
@@ -173,6 +173,7 @@ mod erc20 {
                     .parse()
                     .unwrap()
             );
+            println!("{:?}", transfer_event);
             assert_eq!(transfer_event.decode_data::<u128>(), 10);
 
             assert_eq!(contract.balance_of(bob), 10);
@@ -219,7 +220,7 @@ mod erc20 {
             assert_eq!(approval_event.topics.len(), 3);
             assert_eq!(
                 approval_event.topics[0],
-                "0x444360fd9f99263247bc59eb6f6c9f5d7f1096ba7962aa22cb94c3f5b743eded"
+                "0x7134692b230b9e1ffa39098904722134159652b09c5bc41d88d6698779d228ff"
                     .parse()
                     .unwrap()
             );

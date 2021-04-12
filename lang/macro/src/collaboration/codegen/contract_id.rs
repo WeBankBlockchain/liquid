@@ -83,49 +83,25 @@ impl ContractId {
                 }
             }
 
-            impl<T> liquid_lang::You_Should_Use_An_Valid_Field_Type for ContractId<T>
-            where
-                T: liquid_lang::You_Should_Use_An_Valid_Contract_Type,
-            {
-            }
-
             impl<T> liquid_lang::You_Should_Use_An_Valid_Input_Type for ContractId<T>
             where
-                T: liquid_lang::You_Should_Use_An_Valid_Contract_Type,
+                T: liquid_lang::You_Should_Use_An_Valid_Contract_Type
             {
             }
 
-            impl<T> liquid_lang::You_Should_Use_An_Valid_Return_Type for ContractId<T>
+            impl<T> liquid_lang::You_Should_Use_An_Valid_Output_Type for ContractId<T>
             where
-                T: liquid_lang::You_Should_Use_An_Valid_Contract_Type,
+                T: liquid_lang::You_Should_Use_An_Valid_Contract_Type
             {
-            }
-
-            #[cfg(feature = "liquid-abi-gen")]
-            impl<T> liquid_abi_gen::traits::GenerateParamAbi for ContractId<T>
-            where
-                T: liquid_lang::You_Should_Use_An_Valid_Contract_Type,
-            {
-                fn generate_ty_name() -> String {
-                    <u32 as liquid_abi_gen::traits::GenerateParamAbi>::generate_ty_name()
-                }
-
-                fn generate_param_abi(name: String) -> liquid_abi_gen::ParamAbi {
-                    <u32 as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(name)
-                }
             }
 
             #[cfg(feature = "liquid-abi-gen")]
-            impl<T> liquid_abi_gen::traits::GenerateOutputs for ContractId<T>
+            impl<T> liquid_abi_gen::traits::TypeToString for ContractId<T>
             where
                 T: liquid_lang::You_Should_Use_An_Valid_Contract_Type,
             {
-                fn generate_outputs<B>(builder: &mut B)
-                where
-                    B: liquid_abi_gen::traits::FnOutputBuilder
-                {
-                    let param_abi = <Self as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi("".into());
-                    builder.output(param_abi);
+                fn type_to_string() -> liquid_prelude::string::String {
+                    <u32 as liquid_abi_gen::traits::TypeToString>::type_to_string()
                 }
             }
         }

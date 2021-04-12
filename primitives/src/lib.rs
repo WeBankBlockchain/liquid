@@ -11,7 +11,6 @@
 // limitations under the License.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![feature(const_fn)]
 #![feature(const_mut_refs)]
 
 #[macro_use]
@@ -65,7 +64,6 @@ cfg_if! {
         #[allow(non_camel_case_types)]
         pub struct __Liquid_Getter_Index_Placeholder;
 
-        #[cfg(not(feature = "solidity-compatible"))]
         impl scale::Decode for __Liquid_Getter_Index_Placeholder {
             fn decode<I: scale::Input>(_: &mut I) -> Result<Self, scale::Error> {
                 Ok(Self {})

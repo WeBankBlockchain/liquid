@@ -16,10 +16,8 @@ lazy_static = "1.4.0"
 spin = "0.7.0"
 
 liquid_macro = { version = "1.0.0-rc1", path = "../macro", default-features = false }
-liquid_abi_codec = { version = "1.0.0-rc1", path = "../abi-codec", default-features = false, optional = true }
 liquid_primitives = { version = "1.0.0-rc1", path = "../primitives", default-features = false }
 liquid_prelude = { version = "1.0.0-rc1", path = "../prelude", default-features = false }
-liquid_ty_mapping = { version = "1.0.0-rc1", path = "../ty_mapping", default-features = false }
 liquid_abi_gen = { version = "1.0.0-rc1", path = "../abi-gen", default-features = false, optional = true }
 liquid_lang_macro = { version = "1.0.0-rc1", path = "macro", default-features = false }
 liquid_alloc = { version = "1.0.0-rc1", path = "../alloc", default-features = false }
@@ -29,15 +27,11 @@ hex-literal = "0.2.1"
 pretty_assertions = "0.6.1"
 trybuild = "1.0.30"
 predicates = "1.0.5"
-serial_test = "0.5.1"
-
-liquid_abi_codec = { version = "1.0.0-rc1", path = "../abi-codec", default-features = false }
 
 [features]
 default = ["std"]
 std = [
     "liquid_macro/std",
-    "liquid_abi_codec/std",
     "liquid_primitives/std",
     "liquid_prelude/std",
     "liquid_lang_macro/std",
@@ -49,27 +43,16 @@ gm = [
     "liquid_primitives/gm",
 ]
 contract = [
-    "liquid_ty_mapping/contract",
     "liquid_primitives/contract",
     "liquid_lang_macro/contract",
 ]
-solidity-compatible = [
-    "liquid_abi_codec",
-    "liquid_lang_macro/solidity-compatible",
-]
-solidity-interface = [
-    "liquid_abi_codec",
-    "liquid_lang_macro/solidity-interface",
-]
 collaboration = [
-    "liquid_abi_codec",
     "liquid_lang_macro/collaboration",
     "liquid_macro/collaboration",
 ]
 contract-abi-gen = [
     "std",
     "liquid_abi_gen/contract",
-    "liquid_abi_gen/solidity-compatible",
 ]
 collaboration-abi-gen = [
     "std",
@@ -83,20 +66,10 @@ required-features = ["collaboration"]
 
 [[test]]
 name = "contract"
-path = "tests/contract/tests-liq.rs"
-required-features = ["contract", "solidity-interface"]
-
-[[test]]
-name = "contract-sol"
-path = "tests/contract/tests-sol.rs"
-required-features = ["contract", "solidity-compatible"]
+path = "tests/contract/tests.rs"
+required-features = ["contract"]
 
 [[test]]
 name = "derive"
-path = "tests/derive/tests-liq.rs"
-required-features = ["contract", "solidity-interface"]
-
-[[test]]
-name = "derive-sol"
-path = "tests/derive/tests-sol.rs"
-required-features = ["contract", "solidity-compatible"]
+path = "tests/derive/tests.rs"
+required-features = ["contract"]

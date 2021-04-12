@@ -24,7 +24,6 @@ colored = "2.0.0"
 
 liquid_prelude = { version = "1.0.0-rc1", path = "../../prelude", default-features = false }
 liquid_primitives = { version = "1.0.0-rc1", path = "../../primitives", default-features = false }
-liquid_ty_mapping = { version = "1.0.0-rc1", path = "../../ty_mapping", default-features = false }
 
 [dev-dependencies]
 tempfile = "3.1.0"
@@ -39,13 +38,9 @@ default = ["std"]
 std = [
     "liquid_prelude/std",
     "liquid_primitives/std",
-    "liquid_ty_mapping/std",
 ]
 gm = []
 contract = [
     "liquid_primitives/contract",
-    "liquid_ty_mapping/contract",
 ]
-solidity-compatible = []
 collaboration = []
-solidity-interface = []

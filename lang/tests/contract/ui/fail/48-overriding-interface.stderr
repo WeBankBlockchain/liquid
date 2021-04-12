@@ -1,0 +1,5 @@
+error: overriding methods is not supported in liquid
+ --> $DIR/48-overriding-interface.rs:6:9
+  |
+6 |         fn foo(&self);
+  |         ^^^^^^^^^^^^^^

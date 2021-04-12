@@ -10,18 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use cfg_if::cfg_if;
 use liquid_primitives::{types::Hash, Topics};
+use scale::{Decode, Encode};
 
-cfg_if! {
-    if #[cfg(feature = "solidity-compatible")] {
-        use liquid_abi_codec::{Decode, Encode};
-    } else {
-        use scale::{Decode, Encode};
-    }
-}
-
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Event {
     pub data: Vec<u8>,
     pub topics: Vec<Hash>,

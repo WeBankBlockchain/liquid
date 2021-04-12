@@ -1,3 +1,5 @@
+use std::env;
+
 fn main() -> Result<(), std::io::Error> {
     let contract_abi =
         <contract::__LIQUID_ABI_GEN as liquid_lang::GenerateAbi>::generate_abi();
@@ -23,7 +25,8 @@ fn main() -> Result<(), std::io::Error> {
     );
     let contents = final_abi.join(",");
     let contents = format!("[{}]", contents);
-    std::fs::create_dir("target").ok();
-    std::fs::write("target/erc20.abi", contents)?;
+    let target_dir = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
+    std::fs::create_dir(&target_dir).ok();
+    std::fs::write(format!("{}/erc20_asset.abi", target_dir), contents)?;
     Ok(())
 }

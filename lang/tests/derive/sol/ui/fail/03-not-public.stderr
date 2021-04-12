@@ -1,7 +1,0 @@
-error: the visibility of this type should be `pub`
- --> $DIR/03-not-public.rs:5:1
-  |
-5 | / struct MyStruct {
-6 | |     i: i128,
-7 | | }
-  | |_^

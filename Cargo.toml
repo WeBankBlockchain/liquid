@@ -1,12 +1,10 @@
 [workspace]
 members = [
     "abi-gen",
-    "abi-codec",
     "prelude",
     "primitives",
     "alloc",
     "lang",
-    "ty_mapping",
     "macro",
 ]
 exclude = [

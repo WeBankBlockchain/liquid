@@ -10,11 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{
-    collaboration::{codegen::utils, ir::*},
-    common::GenerateCode,
-    utils::filter_non_liquid_attributes,
-};
+use crate::{collaboration::ir::*, common, utils::filter_non_liquid_attributes};
 use derive_more::From;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::{quote, quote_spanned};
@@ -25,7 +21,7 @@ pub struct Dispatch<'a> {
     collaboration: &'a Collaboration,
 }
 
-impl<'a> GenerateCode for Dispatch<'a> {
+impl<'a> common::GenerateCode for Dispatch<'a> {
     fn generate_code(&self) -> TokenStream2 {
         let marker = self.generate_right_marker();
         let right_traits = self.generate_right_traits();
@@ -93,11 +89,10 @@ impl<'a> Dispatch<'a> {
         let traits = all_item_rights
             .iter()
             .map(|item_rights| {
-                let ty = &item_rights.ident;
                 let rights = &item_rights.rights;
                 rights
                     .iter()
-                    .map(move |right| self.generate_right_trait(right, ty))
+                    .map(move |right| self.generate_right_trait(right))
             })
             .flatten();
 
@@ -117,18 +112,10 @@ impl<'a> Dispatch<'a> {
         }
     }
 
-    fn generate_right_trait(&self, right: &Right, ty: &Ident) -> TokenStream2 {
+    fn generate_right_trait(&self, right: &Right) -> TokenStream2 {
         let right_id = Self::generate_right_id(right);
         let right_marker = quote! { Marker::<[(); #right_id as usize]> };
         let sig = &right.sig;
-
-        let input_tys = utils::generate_input_tys(sig);
-        let input_ty_checker = utils::generate_ty_checker(input_tys.as_slice());
-        let right_input = quote! {
-            impl liquid_lang::FnInput for #right_marker {
-                type Input = (ContractId::<#ty>, (#(#input_tys,)*));
-            }
-        };
 
         let output = &sig.output;
         let (output_ty_checker, output_span) = match output {
@@ -137,7 +124,7 @@ impl<'a> Dispatch<'a> {
                 let return_ty = &*ty;
                 (
                     quote! {
-                        <#return_ty as liquid_lang::You_Should_Use_An_Valid_Return_Type>::T
+                        <#return_ty as liquid_lang::You_Should_Use_An_Valid_Output_Type>::T
                     },
                     return_ty.span(),
                 )
@@ -151,14 +138,16 @@ impl<'a> Dispatch<'a> {
 
         let selector = Self::generate_right_selector(right);
         let right_selector = {
-            let input_checker = Ident::new(
+            let input_tys = common::generate_input_tys(sig);
+            let input_ty_checker = common::generate_ty_checker(input_tys.as_slice());
+            let input_ty_checker_ident = Ident::new(
                 &format!("__LIQUID_RIGHT_INPUT_CHECKER_{}", right_id),
                 right.span,
             );
 
             quote! {
                 #[allow(non_camel_case_types)]
-                struct #input_checker #input_ty_checker;
+                struct #input_ty_checker_ident #input_ty_checker;
 
                 impl liquid_lang::FnSelector for #right_marker {
                     const SELECTOR: liquid_primitives::Selector = [#(#selector,)*];
@@ -167,7 +156,6 @@ impl<'a> Dispatch<'a> {
         };
 
         quote! {
-            #right_input
             #right_output
             #right_selector
         }
@@ -176,13 +164,6 @@ impl<'a> Dispatch<'a> {
     fn generate_contract_trait(&self, contract: &ItemContract) -> TokenStream2 {
         let contract_id = Self::generate_contract_id(contract);
         let contract_marker = quote! { Marker::<[(); #contract_id as usize]> };
-
-        let fields_ty = contract.fields.named.iter().map(|field| &field.ty);
-        let contract_input = quote! {
-            impl liquid_lang::FnInput for #contract_marker {
-                type Input = (#(#fields_ty,)*);
-            }
-        };
 
         let selector = Self::generate_contract_selector(contract, false);
         let contract_selector = {
@@ -194,7 +175,6 @@ impl<'a> Dispatch<'a> {
         };
 
         quote! {
-            #contract_input
             #contract_selector
         }
     }
@@ -206,18 +186,19 @@ impl<'a> Dispatch<'a> {
         use heck::SnakeCase;
 
         let rights = &item_rights.rights;
+        let ty = &item_rights.ident;
         let fragments = rights.iter().map(|right| {
             let right_id = Self::generate_right_id(right);
             let right_marker = quote! { Marker::<[(); #right_id as usize]> };
             let sig = &right.sig;
             let right_name = &sig.ident;
-            let input_idents = utils::generate_input_idents(&sig.inputs);
-
-            let pat_idents = if input_idents.is_empty() {
-                quote! { (mut contract_id, _) }
-            } else {
-                quote! { (mut contract_id, (#(#input_idents,)*)) }
-            };
+            let input_idents = common::generate_input_idents(&sig);
+            let input_tys = common::generate_input_tys(&sig);
+            let inputs = input_idents.iter().zip(input_tys.iter()).map(|(ident, ty)| {
+                quote! {
+                    let #ident = <#ty as scale::Decode>::decode(data_ptr).map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+                }
+            });
 
             let flush = if !sig.is_self_ref() || sig.is_mut() {
                 quote! {
@@ -229,10 +210,11 @@ impl<'a> Dispatch<'a> {
 
             quote! {
                 if selector == <#right_marker as liquid_lang::FnSelector>::SELECTOR {
-                    let #pat_idents = <<#right_marker as liquid_lang::FnInput>::Input as scale::Decode>::decode(&mut data.as_slice())
-                        .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
-
+                    let data_ptr = &mut data.as_slice();
                     #[allow(unused_mut)]
+                    let mut contract_id = <ContractId<#ty> as scale::Decode>::decode(data_ptr).map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+                    #(#inputs)*
+
                     let result = contract_id.#right_name(#(#input_idents,)*);
 
                     #flush
@@ -264,11 +246,23 @@ impl<'a> Dispatch<'a> {
             .iter()
             .map(|field| &field.ident)
             .collect::<Vec<_>>();
+        let inputs = item_contract
+            .fields
+            .named
+            .iter()
+            .map(|field| {
+                let ident = &field.ident;
+                let ty = &field.ty;
+                quote! {
+                    let #ident = <#ty as scale::Decode>::decode(data_ptr).map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+                }
+            })
+            .collect::<Vec<_>>();
         let fetch_selector = Self::generate_contract_selector(item_contract, true);
         quote! {
             if selector == <#contract_marker as liquid_lang::FnSelector>::SELECTOR {
-                let (#(#input_idents,)*) = <<#contract_marker as liquid_lang::FnInput>::Input as scale::Decode>::decode(&mut data.as_slice())
-                    .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+                let data_ptr = &mut data.as_slice();
+                #(#inputs)*;
                 let contract_id = liquid_macro::sign! (#contract_ident => #(#input_idents,)*);
                 <Storage as liquid_lang::storage::Flush>::flush(storage);
                 liquid_lang::env::finish(&contract_id);
@@ -277,7 +271,8 @@ impl<'a> Dispatch<'a> {
             }
 
             if selector == [#(#fetch_selector,)*] {
-                let contract_id = <ContractId<#contract_ident> as scale::Decode>::decode(&mut data.as_slice())
+                let data_ptr = &mut data.as_slice();
+                let contract_id = <ContractId<#contract_ident> as scale::Decode>::decode(data_ptr)
                     .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
 
                 let contract = <ContractId<#contract_ident> as liquid_lang::ContractVisitor>::fetch(&contract_id);

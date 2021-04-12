@@ -17,6 +17,7 @@ fn compile_tests() {
     t.pass("tests/collaboration/ui/pass/02-right-belongs-to-everyone.rs");
     t.pass("tests/collaboration/ui/pass/03-inherited-signers.rs");
     t.pass("tests/collaboration/ui/pass/04-selector.rs");
+    t.pass("tests/collaboration/ui/pass/05-contract-id.rs");
     t.compile_fail("tests/collaboration/ui/fail/01-no-signers.rs");
     t.compile_fail("tests/collaboration/ui/fail/02-no-contract.rs");
     t.compile_fail("tests/collaboration/ui/fail/03-invalid-signers.rs");
