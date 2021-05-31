@@ -17,7 +17,6 @@ use self::db::{Block, ContractStorage, Event, ExecContext};
 use crate::lang_core::env::{
     backend::Env, calldata::CallData, engine::OnInstance, error::Result, CallMode,
 };
-use cfg_if::cfg_if;
 use core::cell::RefCell;
 use liquid_primitives::{types::address::Address, Topics};
 use std::{collections::HashMap, str};
@@ -126,72 +125,36 @@ impl Env for EnvInstance {
         self.current_block().block_number()
     }
 
-    cfg_if! {
-        if #[cfg(feature = "solidity-compatible")] {
-            fn emit<E>(&mut self, event: E)
-            where
-                E: Topics + liquid_abi_codec::Encode,
-            {
-                self.events.push(Event::new(event));
-            }
+    fn emit<E>(&mut self, event: E)
+    where
+        E: Topics + scale::Encode,
+    {
+        self.events.push(Event::new(event));
+    }
 
-            fn call<R>(&mut self, _addr: &Address, _data: &[u8]) -> Result<R>
-            where
-                R: liquid_abi_codec::Decode + liquid_abi_codec::TypeInfo,
-            {
-                unimplemented!();
-            }
+    fn call<R>(&mut self, _addr: &Address, _data: &[u8]) -> Result<R>
+    where
+        R: scale::Decode,
+    {
+        unimplemented!();
+    }
 
-            fn finish<V>(&mut self, _: &V)
-            where
-                V: liquid_abi_codec::Encode,
-            {
-                unimplemented!();
-            }
+    fn finish<V>(&mut self, _: &V)
+    where
+        V: scale::Encode,
+    {
+        unimplemented!();
+    }
 
-            fn revert<V>(&mut self, msg: &V)
-            where
-                V: liquid_abi_codec::Encode,
-            {
-                // Ensure that the type of `V` can only be String.
-                panic!("{}", <String as liquid_abi_codec::Decode>::decode(
-                    &mut msg.encode().as_slice()
-                )
-                .unwrap());
-            }
-        } else {
-            fn emit<E>(&mut self, event: E)
-            where
-                E: Topics + scale::Encode,
-            {
-                self.events.push(Event::new(event));
-            }
-
-            fn call<R>(&mut self, _addr: &Address, _data: &[u8]) -> Result<R>
-            where
-                R: scale::Decode,
-            {
-                unimplemented!();
-            }
-
-            fn finish<V>(&mut self, _: &V)
-            where
-                V: scale::Encode,
-            {
-                unimplemented!();
-            }
-
-            fn revert<V>(&mut self, msg: &V)
-            where
-                V: scale::Encode,
-            {
-                // Ensure that the type of `V` can only be String.
-                panic!("{}", <String as scale::Decode>::decode(
-                    &mut msg.encode().as_slice()
-                )
-                .unwrap());
-            }
-        }
+    fn revert<V>(&mut self, msg: &V)
+    where
+        V: scale::Encode,
+    {
+        // Ensure that the type of `V` can only be String.
+        panic!(
+            "{}",
+            <String as scale::Decode>::decode(&mut msg.encode().as_slice()).unwrap()
+        );
     }
 
     fn register_asset(
@@ -312,6 +275,7 @@ impl Env for EnvInstance {
             }
         };
         let asset_info = self.assets_info.get(asset_name).unwrap();
+        #[allow(clippy::branches_sharing_code)]
         if asset_info.fungible {
             let amount = amount_or_id;
             let from_balance = self

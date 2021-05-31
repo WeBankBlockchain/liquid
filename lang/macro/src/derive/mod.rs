@@ -14,16 +14,5 @@ extern crate proc_macro;
 
 #[macro_use]
 mod error;
-mod utils;
+pub mod inout;
 pub mod wrapper;
-
-use cfg_if::cfg_if;
-
-cfg_if! {
-    if #[cfg(feature = "solidity-compatible")] {
-        pub mod in_out;
-        pub mod state;
-    } else {
-        pub mod codec;
-    }
-}

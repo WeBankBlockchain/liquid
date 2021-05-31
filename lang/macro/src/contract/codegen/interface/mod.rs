@@ -13,12 +13,9 @@
 mod mockable;
 
 use crate::{
-    common::GenerateCode,
-    contract::{
-        codegen::utils as codegen_utils,
-        ir::{ForeignFn, Interface, LangType},
-    },
-    utils as lang_utils,
+    common,
+    contract::ir::{ForeignFn, Interface},
+    utils,
 };
 use either::Either;
 use heck::ShoutySnakeCase;
@@ -27,38 +24,20 @@ use mockable::Mockable;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::{quote, quote_spanned};
 
-impl GenerateCode for Interface {
+impl common::GenerateCode for Interface {
     fn generate_code(&self) -> TokenStream2 {
         let ident = &self.ident;
         let imports = &self.imports;
         let interface_ident = &self.interface_ident;
-        let types = lang_utils::generate_primitive_types();
+        let types = utils::generate_primitive_types();
         let mockable = Mockable::from(self);
 
         let foreign_structs = self.generate_foreign_structs();
         let foreign_contract = self.generate_foreign_contract();
         let mockable_contract = mockable.generate_code();
-        let cfg_checker = match self.lang_type {
-            LangType::Solidity => {
-                if cfg!(not(feature = "solidity-interface"))
-                    && cfg!(not(feature = "solidity-compatible"))
-                {
-                    quote! {
-                        compile_error! {
-                            "in order to call interface implemented via Solidity, \
-                             please enable compilation feature `solidity-interface`"
-                        }
-                    }
-                } else {
-                    quote! {}
-                }
-            }
-            _ => quote! {},
-        };
 
         quote! {
             mod #ident {
-                #cfg_checker
                 #(#imports)*
                 #(#foreign_structs)*
 
@@ -88,21 +67,16 @@ impl GenerateCode for Interface {
     }
 }
 
-fn generate_selector_ident(fn_name: &Ident) -> Ident {
-    let shouty_name = &fn_name.to_string().to_shouty_snake_case();
-    Ident::new(&shouty_name, Span::call_site())
-}
-
-fn generate_trivial_fn(foreign_fn: &ForeignFn, is_sol: bool) -> TokenStream2 {
-    let attrs = lang_utils::filter_non_liquid_attributes(foreign_fn.attrs.iter());
+fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
+    let attrs = utils::filter_non_liquid_attributes(foreign_fn.attrs.iter());
     let sig = &foreign_fn.sig;
     let span = foreign_fn.span;
     let fn_ident = &sig.ident;
 
     let inputs = &sig.inputs;
-    let input_tys = codegen_utils::generate_input_tys(&sig);
-    let input_ty_checker = codegen_utils::generate_ty_checker(input_tys.as_slice());
-    let input_idents = codegen_utils::generate_input_idents(inputs);
+    let input_tys = common::generate_input_tys(&sig);
+    let input_ty_checker = common::generate_ty_checker(input_tys.as_slice());
+    let input_idents = common::generate_input_idents(&sig);
 
     let output = &sig.output;
     let output_ty = match output {
@@ -110,184 +84,47 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn, is_sol: bool) -> TokenStream2 {
             quote! { () }
         }
         syn::ReturnType::Type(_, ty) => quote! {
-            <#ty as liquid_lang::You_Should_Use_An_Valid_Return_Type>::T
+            <#ty as liquid_lang::You_Should_Use_An_Valid_Output_Type>::T
         },
     };
 
-    let selector_ident = generate_selector_ident(fn_ident);
     let fn_name = fn_ident.to_string();
     let fn_name_bytes = fn_name.as_bytes();
-    let fn_name_len = fn_name.len();
 
-    let inputs = inputs.iter().skip(1);
+    let actual_inputs = inputs.iter().skip(1);
     let is_mut = sig.is_mut();
-    let encode = if !is_sol {
-        quote! {
-            <Input as scale::Encode>::encode(&(#(#input_idents,)*))
-        }
-    } else {
-        quote! {
-            <Input as liquid_abi_codec::Encode>::encode(&(#(#input_idents,)*))
-        }
-    };
+    let input_encodes = input_idents
+        .iter()
+        .zip(input_tys.iter())
+        .map(|(ident, ty)| {
+            quote! {
+                <#ty as scale::Encode>::encode(&#ident)
+            }
+        });
 
     quote_spanned! { span =>
         #(#attrs)*
         #[allow(non_snake_case)]
-        pub fn #fn_ident(&self, #(#inputs,)*) -> Option<#output_ty> {
+        pub fn #fn_ident(&self, #(#actual_inputs,)*) -> Option<#output_ty> {
             #[allow(dead_code)]
-            type Input = #input_ty_checker;
+            struct __LiquidInputTyChecker #input_ty_checker;
 
             #[allow(dead_code)]
-            const #selector_ident: liquid_primitives::Selector = {
-                const SIG_LEN: usize =
-                    liquid_ty_mapping::len::<Input>()
-                    + #fn_name_len
-                    + 2;
-
-                const SIG: [u8; SIG_LEN] =
-                    liquid_ty_mapping::composite::<Input, SIG_LEN>(&[#(#fn_name_bytes),*]);
-
-                let hash = liquid_primitives::hash::hash(&SIG);
+            const __LIQUID_SELECTOR: liquid_primitives::Selector = {
+                let hash = liquid_primitives::hash::hash(&[#(#fn_name_bytes),*]);
                 [hash[0], hash[1], hash[2], hash[3]]
             };
 
-            let mut encoded = #selector_ident.to_vec();
-            encoded.extend(#encode);
+            let mut __liquid_encoded = __LIQUID_SELECTOR.to_vec();
+            #(
+                __liquid_encoded.extend(#input_encodes);
+            )*
 
             if #is_mut {
                 liquid_lang::storage::mutable_call_happens();
             }
-            liquid_lang::env::call::<#output_ty>(&self.__liquid_address, &encoded).ok()
+            liquid_lang::env::call::<#output_ty>(&self.0, &__liquid_encoded).ok()
         }
-    }
-}
-
-fn generate_overriding_fn(
-    fn_ident: &Ident,
-    foreign_fns: &[ForeignFn],
-    is_sol: bool,
-) -> TokenStream2 {
-    let impls = foreign_fns.iter().enumerate().map(|(i, foreign_fn)| {
-        let attrs = lang_utils::filter_non_liquid_attributes(foreign_fn.attrs.iter());
-        let sig = &foreign_fn.sig;
-        let span = foreign_fn.span;
-
-        let inputs = &sig.inputs;
-        let input_tys = codegen_utils::generate_input_tys(&sig);
-        let input_ty_checker = codegen_utils::generate_ty_checker(input_tys.as_slice());
-        let input_idents = codegen_utils::generate_input_idents(inputs);
-
-        let output = &sig.output;
-        let output_ty = match output {
-            syn::ReturnType::Default => {
-                quote! { () }
-            }
-            syn::ReturnType::Type(_, ty) => quote! {
-                <#ty as liquid_lang::You_Should_Use_An_Valid_Return_Type>::T
-            },
-        };
-
-        let origin_fn_ident = &sig.ident;
-        let fn_name = format!("{}_{}", origin_fn_ident, i);
-        let fn_ident = Ident::new(&fn_name, span);
-
-        let selector_ident = generate_selector_ident(&fn_ident);
-        let origin_fn_name = origin_fn_ident.to_string();
-        let origin_fn_name_bytes = origin_fn_name.as_bytes();
-        let origin_fn_name_len = origin_fn_name.len();
-
-        let inputs = inputs.iter().skip(1);
-        let is_mut = sig.is_mut();
-        let encode = if is_sol {
-            quote! {
-                <Input as scale::Encode>::encode(&(#(#input_idents,)*))
-            }
-        } else {
-            quote! {
-                <Input as liquid_abi_codec::Encode>::encode(&(#(#input_idents,)*))
-            }
-        };
-
-        quote_spanned! { span =>
-            #[allow(non_snake_case)]
-            #(#attrs)*
-            fn #fn_ident(__liquid_address: &liquid_primitives::types::Address, #(#inputs,)*) -> Option<#output_ty> {
-                #[allow(dead_code)]
-                type Input = #input_ty_checker;
-
-                #[allow(dead_code)]
-                const #selector_ident: liquid_primitives::Selector = {
-                    const SIG_LEN: usize =
-                        liquid_ty_mapping::len::<Input>()
-                        + #origin_fn_name_len
-                        + 2;
-
-                    const SIG: [u8; SIG_LEN] =
-                        liquid_ty_mapping::composite::<Input, SIG_LEN>(&[#(#origin_fn_name_bytes),*]);
-
-                    let hash = liquid_primitives::hash::hash(&SIG);
-                    [hash[0], hash[1], hash[2], hash[3]]
-                };
-
-                let mut encoded = #selector_ident.to_vec();
-                encoded.extend(#encode);
-
-                if #is_mut {
-                    liquid_lang::storage::mutable_call_happens();
-                }
-                liquid_lang::env::call::<#output_ty>(&__liquid_address, &encoded).ok()
-            }
-
-            impl FnOnce<(#(#input_tys,)*)> for #origin_fn_ident {
-                type Output = Option<#output_ty>;
-
-                extern "rust-call" fn call_once(self, (#(#input_idents,)*): (#(#input_tys,)*)) -> Self::Output {
-                    #fn_ident(unsafe {
-                        &*self.__liquid_address
-                    }, #(#input_idents,)*)
-                }
-            }
-
-            impl FnMut<(#(#input_tys,)*)> for #origin_fn_ident {
-                extern "rust-call" fn call_mut(&mut self, (#(#input_idents,)*): (#(#input_tys,)*)) -> Self::Output {
-                    #fn_ident(unsafe {
-                        &*self.__liquid_address
-                    }, #(#input_idents,)*)
-                }
-            }
-
-            impl Fn<(#(#input_tys,)*)> for #origin_fn_ident {
-                extern "rust-call" fn call(&self, (#(#input_idents,)*): (#(#input_tys,)*)) -> Self::Output {
-                    #fn_ident(unsafe {
-                        &*self.__liquid_address
-                    }, #(#input_idents,)*)
-                }
-            }
-        }
-    });
-
-    quote! {
-        #[allow(non_camel_case_types)]
-        pub struct #fn_ident {
-            __liquid_address: *const liquid_primitives::types::Address,
-        }
-
-        impl #fn_ident {
-            pub fn init(&mut self, addr: *const liquid_primitives::types::Address) {
-                self.__liquid_address = addr;
-            }
-        }
-
-        impl Default for #fn_ident {
-            fn default() -> Self {
-                Self {
-                    __liquid_address: core::ptr::null(),
-                }
-            }
-        }
-
-        #(#impls)*
     }
 }
 
@@ -319,64 +156,19 @@ impl Interface {
 
     fn generate_foreign_contract(&self) -> TokenStream2 {
         let span = self.span;
-        let is_sol = matches!(self.lang_type, LangType::Solidity);
 
-        let (trivial_fns, overriding_fns): (Vec<_>, Vec<_>) =
-            self.foreign_fns.iter().partition_map(|(ident, fns)| {
-                if fns.len() == 1 {
-                    let trivial_fn = fns.first().unwrap();
-                    Either::Left(generate_trivial_fn(trivial_fn, is_sol))
-                } else {
-                    Either::Right((ident, generate_overriding_fn(ident, fns, is_sol)))
-                }
-            });
-        let (overriding_idents, overriding_impls): (Vec<_>, Vec<_>) =
-            overriding_fns.into_iter().unzip();
+        let trivial_fns = self
+            .foreign_fns
+            .iter()
+            .map(|(_, foreign_fn)| generate_trivial_fn(foreign_fn))
+            .collect::<Vec<_>>();
 
-        let type_notations = if cfg!(feature = "solidity-compatible") {
-            quote! {
-                impl liquid_lang::You_Should_Use_An_Valid_InOut_Type for Interface {}
-                impl liquid_lang::You_Should_Use_An_Valid_State_Type for Interface {}
-                impl liquid_lang::You_Should_Use_An_Valid_Element_Type for Interface {}
-            }
-        } else {
-            quote! {
-                impl liquid_lang::You_Should_Use_An_Valid_Field_Type for Interface {}
-            }
-        };
-        let mut impls = quote_spanned! { span =>
-            pub struct InterfaceImpl {
-                __liquid_address: liquid_primitives::types::Address,
-                __liquid_marker: core::marker::PhantomPinned,
-                #(
-                    pub #overriding_idents: #overriding_idents,
-                )*
-            }
-
-            pub struct Interface(core::pin::Pin<liquid_prelude::boxed::Box<InterfaceImpl>>);
+        let impls = quote_spanned! { span =>
+            pub struct Interface(liquid_primitives::types::Address);
 
             impl Interface {
                 pub fn at(addr: liquid_primitives::types::Address) -> Self {
-                    let iface = InterfaceImpl {
-                        __liquid_address: addr,
-                        __liquid_marker: core::marker::PhantomPinned,
-                        #(
-                            #overriding_idents: Default::default(),
-                        )*
-                    };
-
-                    #[allow(unused_mut)]
-                    let mut boxed = liquid_prelude::boxed::Box::pin(iface);
-                    #[allow(unused_variables)]
-                    let addr_ptr: *const liquid_primitives::types::Address = &boxed.as_ref().__liquid_address;
-                    #[allow(unused_unsafe)]
-                    unsafe {
-                        #(
-                            boxed.as_mut().get_unchecked_mut().#overriding_idents.init(addr_ptr);
-                        )*
-                    }
-
-                    Self(boxed)
+                    Self(addr)
                 }
             }
 
@@ -395,65 +187,32 @@ impl Interface {
 
             impl scale::Encode for Interface {
                 fn encode(&self) -> Vec<u8> {
-                    self.0.__liquid_address.encode()
+                    self.0.encode()
                 }
             }
-
-            #(#overriding_impls)*
 
             impl Into<liquid_primitives::types::Address> for Interface {
                 fn into(self) -> liquid_primitives::types::Address {
-                    self.0.__liquid_address
+                    self.0
                 }
             }
 
-            impl liquid_ty_mapping::MappingToSolidityType for Interface {
-                const MAPPED_TYPE_NAME: [u8; liquid_ty_mapping::MAX_LENGTH_OF_MAPPED_TYPE_NAME] =
-                    <liquid_primitives::types::Address as liquid_ty_mapping::MappingToSolidityType>::MAPPED_TYPE_NAME;
+            #[cfg(feature = "liquid-abi-gen")]
+            impl liquid_abi_gen::traits::TypeToString for Interface {
+                fn type_to_string() -> liquid_prelude::string::String {
+                    <liquid_primitives::types::Address as liquid_abi_gen::traits::TypeToString>::type_to_string()
+                }
             }
 
-            #type_notations
-            impl liquid_lang::You_Should_Use_An_Valid_Event_Data_Type for Interface {}
-            impl liquid_lang::You_Should_Use_An_Valid_Return_Type for Interface {}
             impl liquid_lang::You_Should_Use_An_Valid_Input_Type for Interface {}
+            impl liquid_lang::You_Should_Use_An_Valid_Output_Type for Interface {}
+            impl liquid_lang::You_Should_Use_An_Valid_Topic_Type for Interface {}
+            impl liquid_lang::You_Should_Use_An_Valid_State_Type for Interface {}
 
-            impl InterfaceImpl {
+            impl Interface {
                 #(#trivial_fns)*
             }
-
-            impl core::ops::Deref for Interface {
-                type Target = InterfaceImpl;
-                fn deref(&self) -> &Self::Target {
-                    &self.0
-                }
-            }
         };
-
-        if let LangType::Solidity = self.lang_type {
-            impls.extend(quote_spanned! { span =>
-                impl liquid_abi_codec::TypeInfo for Interface {}
-
-                impl liquid_abi_codec::MediateEncode for Interface {
-                    fn encode(&self) -> liquid_abi_codec::Mediate {
-                        self.0.__liquid_address.encode()
-                    }
-                }
-
-                impl liquid_abi_codec::MediateDecode for Interface {
-                    fn decode(
-                        slices: &[liquid_abi_codec::Word],
-                        offset: usize
-                    ) -> ::core::result::Result<liquid_abi_codec::DecodeResult<Self>, liquid_primitives::Error> {
-                        let decode_result = <liquid_primitives::types::Address as liquid_abi_codec::MediateDecode>::decode(slices, offset)?;
-                        let value = Self::at(decode_result.value);
-                        Ok(liquid_abi_codec::DecodeResult {
-                            value,
-                            new_offset: decode_result.new_offset
-                        })
-                    }
-                }
-            });
-        }
 
         impls
     }

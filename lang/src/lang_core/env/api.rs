@@ -17,7 +17,6 @@ use crate::lang_core::env::{
     error::Result,
     CallMode,
 };
-use cfg_if::cfg_if;
 use liquid_prelude::{string::String, vec::Vec};
 use liquid_primitives::{
     types::{timestamp, Address},
@@ -133,78 +132,34 @@ pub fn get_not_fungible_asset_info(
     })
 }
 
-cfg_if! {
-    if #[cfg(feature = "solidity-compatible")] {
-        pub fn emit<Event>(event: Event)
-        where
-            Event: Topics + liquid_abi_codec::Encode,
-        {
-            <EnvInstance as OnInstance>::on_instance(|instance| {
-                Env::emit(instance, event)
-            });
-        }
+pub fn emit<Event>(event: Event)
+where
+    Event: Topics + scale::Encode,
+{
+    <EnvInstance as OnInstance>::on_instance(|instance| Env::emit(instance, event));
+}
 
-        pub fn call<R>(addr: &Address, data: &[u8]) -> Result<R>
-        where
-            R: liquid_abi_codec::Decode + liquid_abi_codec::TypeInfo,
-        {
-            <EnvInstance as OnInstance>::on_instance(|instance| {
-                Env::call(instance, addr, data)
-            })
-        }
+pub fn call<R>(addr: &Address, data: &[u8]) -> Result<R>
+where
+    R: scale::Decode,
+{
+    <EnvInstance as OnInstance>::on_instance(|instance| Env::call(instance, addr, data))
+}
 
-        pub fn finish<V>(return_value: &V)
-        where
-            V: liquid_abi_codec::Encode,
-        {
-            <EnvInstance as OnInstance>::on_instance(|instance| {
-                Env::finish(instance, return_value);
-            })
-        }
+pub fn finish<V>(return_value: &V)
+where
+    V: scale::Encode,
+{
+    <EnvInstance as OnInstance>::on_instance(|instance| {
+        Env::finish(instance, return_value);
+    })
+}
 
-        pub fn revert<V>(return_value: &V)
-        where
-            V: liquid_abi_codec::Encode,
-        {
-            <EnvInstance as OnInstance>::on_instance(|instance| {
-                Env::revert(instance, return_value);
-            })
-        }
-    } else {
-        pub fn emit<Event>(event: Event)
-        where
-            Event: Topics + scale::Encode,
-        {
-            <EnvInstance as OnInstance>::on_instance(|instance| {
-                Env::emit(instance, event)
-            });
-        }
-
-        pub fn call<R>(addr: &Address, data: &[u8]) -> Result<R>
-        where
-            R: scale::Decode,
-        {
-            <EnvInstance as OnInstance>::on_instance(|instance| {
-                Env::call(instance, addr, data)
-            })
-        }
-
-        pub fn finish<V>(return_value: &V)
-        where
-            V: scale::Encode,
-        {
-            <EnvInstance as OnInstance>::on_instance(|instance| {
-                Env::finish(instance, return_value);
-            })
-        }
-
-        pub fn revert<V>(return_value: &V)
-        where
-            V: scale::Encode,
-        {
-            <EnvInstance as OnInstance>::on_instance(|instance| {
-                Env::revert(instance, return_value);
-            })
-        }
-    }
+pub fn revert<V>(return_value: &V)
+where
+    V: scale::Encode,
+{
+    <EnvInstance as OnInstance>::on_instance(|instance| {
+        Env::revert(instance, return_value);
+    })
 }

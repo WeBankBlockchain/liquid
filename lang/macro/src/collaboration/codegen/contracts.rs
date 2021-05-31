@@ -12,10 +12,10 @@
 
 use crate::{
     collaboration::{
-        codegen::{path_visitor::PathVisitor, utils},
+        codegen::path_visitor::PathVisitor,
         ir::{Collaboration, SelectFrom, SelectWith, Selector},
     },
-    common::GenerateCode,
+    common,
     utils::filter_non_liquid_attributes,
 };
 use derive_more::From;
@@ -29,7 +29,7 @@ pub struct Contracts<'a> {
     collaboration: &'a Collaboration,
 }
 
-impl<'a> GenerateCode for Contracts<'a> {
+impl<'a> common::GenerateCode for Contracts<'a> {
     fn generate_code(&self) -> TokenStream2 {
         let structs = self.generate_structs();
         let acquire_signers = self.generate_acquire_signers();
@@ -268,7 +268,7 @@ impl<'a> Contracts<'a> {
                 let sig = &right.sig;
                 let fn_name = &sig.ident;
                 let inputs = &sig.inputs.iter().skip(1).collect::<Vec<_>>();
-                let input_idents = utils::generate_input_idents(&sig.inputs);
+                let input_idents = common::generate_input_idents(&sig);
                 let output = &sig.output;
                 let need_abolish = !sig.is_self_ref();
                 let execute = if need_abolish {

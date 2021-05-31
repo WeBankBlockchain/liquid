@@ -7,16 +7,16 @@ use liquid_lang as liquid;
 
 #[liquid::interface(name = auto)]
 mod entry {
-    extern "solidity" {
+    extern "liquid" {
         fn getInt(&self, key: String) -> i256;
         fn getUint(&self, key: String) -> u256;
         fn getAddress(&self, key: String) -> address;
         fn getString(&self, key: String) -> String;
 
-        fn set(&mut self, key: String, value: i256);
-        fn set(&mut self, key: String, value: u256);
-        fn set(&mut self, key: String, value: address);
-        fn set(&mut self, key: String, value: String);
+        fn setI256(&mut self, key: String, value: i256);
+        fn setU256(&mut self, key: String, value: u256);
+        fn setAddress(&mut self, key: String, value: address);
+        fn setString(&mut self, key: String, value: String);
     }
 }
 
@@ -24,7 +24,7 @@ mod entry {
 mod kv_table {
     use super::entry::*;
 
-    extern "solidity" {
+    extern "liquid" {
         fn get(&self, primary_key: String) -> (bool, Entry);
         #[liquid(mock_context_getter = "liquid_is_fun")]
         fn set(&mut self, primary_key: String, entry: Entry) -> i256;
@@ -36,7 +36,7 @@ mod kv_table {
 mod kv_table_factory {
     use super::kv_table::*;
 
-    extern "solidity" {
+    extern "liquid" {
         fn openTable(&self, name: String) -> KvTable;
         fn createTable(
             &mut self,
@@ -95,9 +95,9 @@ mod kv_table_test {
         pub fn set(&mut self, id: String, item_price: i256, item_name: String) -> i256 {
             let table = self.table_factory.openTable(TABLE_NAME.clone()).unwrap();
             let entry = table.newEntry().unwrap();
-            (entry.set)(String::from("id"), id.clone());
-            (entry.set)(String::from("item_price"), item_price);
-            (entry.set)(String::from("item_name"), item_name);
+            entry.setString(String::from("id"), id.clone());
+            entry.setI256(String::from("item_price"), item_price);
+            entry.setString(String::from("item_name"), item_name);
             let count = table.set(id, entry).unwrap();
 
             self.env().emit(SetResult {
@@ -181,17 +181,15 @@ mod kv_table_test {
                 .expect()
                 .returns(Entry::at(Default::default()));
 
-            let entry_set_ctx = Entry::set_context();
-            entry_set_ctx
-                .expect::<(String, String)>()
-                .returns_fn(|key, value| {
-                    entries().insert(key, value.into_bytes());
-                });
-            entry_set_ctx
-                .expect::<(String, i256)>()
-                .returns_fn(|key, value| {
-                    entries().insert(key, value.to_be_bytes().to_vec());
-                });
+            let entry_set_string_ctx = Entry::setString_context();
+            entry_set_string_ctx.expect().returns_fn(|key, value| {
+                entries().insert(key, value.into_bytes());
+            });
+
+            let entry_set_i256_ctx = Entry::setI256_context();
+            entry_set_i256_ctx.expect().returns_fn(|key, value| {
+                entries().insert(key, value.to_be_bytes().to_vec());
+            });
 
             let get_ctx = KvTable::get_context();
             get_ctx

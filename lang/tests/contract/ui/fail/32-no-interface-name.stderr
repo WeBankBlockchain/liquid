@@ -1,0 +1,7 @@
+error: expected `name` parameter in `#[liquid::interface]` attribute
+ --> $DIR/32-no-interface-name.rs:3:1
+  |
+3 | #[liquid::interface]
+  | ^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `liquid::interface` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -12,6 +12,7 @@
 
 use cfg_if::cfg_if;
 pub mod traits;
+mod type_to_string;
 
 cfg_if! {
     if #[cfg(feature = "contract")] {

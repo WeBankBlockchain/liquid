@@ -12,7 +12,6 @@
 
 mod cns;
 
-use cfg_if::cfg_if;
 pub use cns::Cns;
 use liquid_prelude::vec::{self, Vec};
 use liquid_primitives::types::Address;
@@ -26,38 +25,16 @@ struct ReturnDataWrapper {
     pub data: Vec<u8>,
 }
 
-cfg_if! {
-    if #[cfg(feature = "solidity-compatible")] {
-        use liquid_abi_codec::{Decode, Input, TypeInfo};
-        use liquid_primitives::Error;
+use scale::{Decode, Error, Input};
 
-        impl TypeInfo for ReturnDataWrapper {
-            fn is_dynamic() -> bool {
-                true
-            }
-        }
-
-        impl Decode for ReturnDataWrapper {
-            fn decode<I: Input>(value: &mut I) -> Result<Self, Error> {
-                let remaining_len = value.remaining_len();
-                let mut buffer = vec::from_elem(0, remaining_len);
-                value.read_bytes(&mut buffer)?;
-                Ok(Self { data: buffer })
-            }
-        }
-    } else {
-        use scale::{Decode, Error, Input};
-
-        impl Decode for ReturnDataWrapper {
-            fn decode<I: Input>(value: &mut I) -> Result<Self, Error> {
-                let remaining_len = match value.remaining_len()? {
-                    Some(len) => len,
-                    _ => 0,
-                };
-                let mut buffer = vec::from_elem(0, remaining_len);
-                value.read(&mut buffer)?;
-                Ok(Self { data: buffer })
-            }
-        }
+impl Decode for ReturnDataWrapper {
+    fn decode<I: Input>(value: &mut I) -> Result<Self, Error> {
+        let remaining_len = match value.remaining_len()? {
+            Some(len) => len,
+            _ => 0,
+        };
+        let mut buffer = vec::from_elem(0, remaining_len);
+        value.read(&mut buffer)?;
+        Ok(Self { data: buffer })
     }
 }

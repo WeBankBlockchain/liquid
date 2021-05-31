@@ -13,7 +13,6 @@ derive_more = "0.99.9"
 
 liquid_macro = { version = "1.0.0-rc1", path = "../macro", default-features = false }
 liquid_prelude = { version = "1.0.0-rc1", path = "../prelude", default-features = false }
-liquid_ty_mapping = { version = "1.0.0-rc1", path = "../ty_mapping", default-features = false }
 liquid_primitives = { version = "1.0.0-rc1", path = "../primitives", default-features = false }
 
 [features]
@@ -21,13 +20,10 @@ default = ["std"]
 std = [
     "serde/std",
     "liquid_prelude/std",
-    "liquid_ty_mapping/std",
     "liquid_primitives/std",
 ]
-solidity-compatible = []
 contract = [
     "liquid_primitives/contract",
-    "liquid_ty_mapping/contract",
 ]
 collaboration = [
     "liquid_macro/collaboration",

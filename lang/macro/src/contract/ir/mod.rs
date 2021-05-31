@@ -23,7 +23,7 @@ pub use self::{
     syn_def::{
         AssetAttribute, AssetMetaInfo, AttrValue, Contract, ContractMetaInfo, FnArg,
         ForeignFn, ForeignStruct, Function, FunctionKind, IdentType, Interface,
-        InterfaceMetaInfo, Item, ItemAsset, ItemEvent, ItemImpl, ItemStorage, LangType,
-        LiquidItem, Marker, MetaVersion, RustItem, Signature,
+        InterfaceMetaInfo, Item, ItemAsset, ItemEvent, ItemImpl, ItemStorage, LiquidItem,
+        Marker, MetaVersion, RustItem, Signature,
     },
 };

@@ -12,4 +12,3 @@
 
 mod contract;
 mod interface;
-mod utils;

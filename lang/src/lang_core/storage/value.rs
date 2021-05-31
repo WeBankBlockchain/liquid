@@ -15,14 +15,17 @@ use crate::lang_core::storage::{
     You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage,
 };
 use cfg_if::cfg_if;
-use scale::Encode;
+use scale::Codec;
 
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Value<T> {
     cell: CachedCell<T>,
 }
 
-impl<T> Bind for Value<T> {
+impl<T> Bind for Value<T>
+where
+    T: Codec,
+{
     fn bind_with(key: &[u8]) -> Self {
         Self {
             cell: CachedCell::new(key),
@@ -32,7 +35,7 @@ impl<T> Bind for Value<T> {
 
 impl<T> Flush for Value<T>
 where
-    T: Encode,
+    T: Codec,
 {
     fn flush(&mut self) {
         self.cell.flush();
@@ -46,7 +49,7 @@ cfg_if! {
 
         impl<T> Getter for Value<T>
         where
-            T: scale::Codec + Clone,
+            T: Codec + Clone,
         {
             type Index = __Liquid_Getter_Index_Placeholder;
             type Output = T;
@@ -59,7 +62,7 @@ cfg_if! {
 
 impl<T> Value<T>
 where
-    T: scale::Codec,
+    T: Codec,
 {
     pub fn initialize(&mut self, input: T) {
         if self.cell.get().is_none() {
@@ -89,7 +92,7 @@ where
 
 impl<T, R> AsRef<R> for Value<T>
 where
-    T: AsRef<R> + scale::Codec,
+    T: Codec + AsRef<R>,
 {
     fn as_ref(&self) -> &R {
         self.get().as_ref()
@@ -98,7 +101,7 @@ where
 
 impl<T> core::ops::Deref for Value<T>
 where
-    T: scale::Codec,
+    T: Codec,
 {
     type Target = T;
 
@@ -109,7 +112,7 @@ where
 
 impl<T> core::ops::DerefMut for Value<T>
 where
-    T: scale::Codec,
+    T: Codec,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.get_mut()
@@ -120,7 +123,7 @@ macro_rules! impl_ops_for_value {
     ($trait_name:ident; $fn_name:ident) => {
         impl<T> core::ops::$trait_name<T> for &Value<T>
         where
-            T: core::ops::$trait_name<T> + Copy + scale::Codec,
+            T: Codec + core::ops::$trait_name<T> + Copy,
         {
             type Output = <T as core::ops::$trait_name>::Output;
 
@@ -131,7 +134,7 @@ macro_rules! impl_ops_for_value {
 
         impl<T> core::ops::$trait_name for &Value<T>
         where
-            T: core::ops::$trait_name<T> + Copy + scale::Codec,
+            T: Codec + core::ops::$trait_name<T> + Copy,
         {
             type Output = <T as core::ops::$trait_name>::Output;
 
@@ -143,7 +146,7 @@ macro_rules! impl_ops_for_value {
         paste::item! {
             impl<T> core::ops::[<$trait_name Assign>]<T> for Value<T>
             where
-                T: core::ops::[<$trait_name Assign>]<T> + scale::Codec,
+                T: Codec + core::ops::[<$trait_name Assign>]<T>,
             {
                 fn [<$fn_name _assign>](&mut self, rhs: T) {
                     self.mutate_with(|val| {
@@ -156,7 +159,7 @@ macro_rules! impl_ops_for_value {
         paste::item! {
             impl<T> core::ops::[<$trait_name Assign>]<&Self> for Value<T>
             where
-                T: core::ops::[<$trait_name Assign>]<T> + Copy + scale::Codec,
+                T: Codec + core::ops::[<$trait_name Assign>]<T> + Copy,
             {
                 fn [<$fn_name _assign>](&mut self, rhs: &Self) {
                     self.mutate_with(|val| {
@@ -181,7 +184,7 @@ impl_ops_for_value!(Shr;shr);
 
 impl<T> core::ops::Neg for &Value<T>
 where
-    T: core::ops::Neg + Copy + scale::Codec,
+    T: Codec + core::ops::Neg + Copy,
 {
     type Output = <T as core::ops::Neg>::Output;
 
@@ -192,7 +195,7 @@ where
 
 impl<T> core::ops::Not for &Value<T>
 where
-    T: core::ops::Not + Copy + scale::Codec,
+    T: Codec + core::ops::Not + Copy,
 {
     type Output = <T as core::ops::Not>::Output;
 
@@ -203,7 +206,7 @@ where
 
 impl<T, I> core::ops::Index<I> for Value<T>
 where
-    T: core::ops::Index<I> + scale::Codec,
+    T: Codec + core::ops::Index<I>,
 {
     type Output = <T as core::ops::Index<I>>::Output;
 
@@ -214,7 +217,7 @@ where
 
 impl<T, I> core::ops::IndexMut<I> for Value<T>
 where
-    T: core::ops::IndexMut<I> + scale::Codec,
+    T: Codec + core::ops::IndexMut<I>,
 {
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         &mut (self.get_mut()[index])
@@ -223,7 +226,7 @@ where
 
 impl<T> PartialEq<T> for Value<T>
 where
-    T: PartialEq + scale::Codec,
+    T: Codec + PartialEq,
 {
     fn eq(&self, rhs: &T) -> bool {
         self.get().eq(rhs)
@@ -232,20 +235,20 @@ where
 
 impl<T> PartialEq for Value<T>
 where
-    T: PartialEq + scale::Codec,
+    T: Codec + PartialEq,
 {
     fn eq(&self, rhs: &Self) -> bool {
         self.get().eq(rhs.get())
     }
 }
 
-impl<T> Eq for Value<T> where T: Eq + scale::Codec {}
+impl<T> Eq for Value<T> where T: Codec + Eq {}
 
 use core::cmp::Ordering;
 
 impl<T> PartialOrd<T> for Value<T>
 where
-    T: PartialOrd + scale::Codec,
+    T: Codec + PartialOrd,
 {
     fn partial_cmp(&self, other: &T) -> Option<Ordering> {
         self.get().partial_cmp(other)
@@ -254,7 +257,7 @@ where
 
 impl<T> PartialOrd for Value<T>
 where
-    T: PartialOrd + scale::Codec,
+    T: Codec + PartialOrd,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.get().partial_cmp(other.get())
@@ -263,11 +266,16 @@ where
 
 impl<T> Ord for Value<T>
 where
-    T: Ord + scale::Codec,
+    T: Codec + Ord,
 {
     fn cmp(&self, other: &Self) -> Ordering {
         self.get().cmp(other.get())
     }
+}
+
+impl<T> You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage for Value<T> {
+    type Wrapped1 = T;
+    type Wrapped2 = ();
 }
 
 #[cfg(test)]
@@ -276,7 +284,7 @@ mod tests {
 
     impl<T> core::fmt::Display for Value<T>
     where
-        T: core::fmt::Display + scale::Codec,
+        T: core::fmt::Display + Codec,
     {
         fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
             self.get().fmt(f)
@@ -400,5 +408,3 @@ mod tests {
         assert_eq!(*v2, 3);
     }
 }
-
-impl<T> You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage for Value<T> {}

@@ -17,7 +17,6 @@ mod dispatch;
 mod path_visitor;
 mod rights;
 mod storage;
-mod utils;
 
 use crate::{
     collaboration::ir::Collaboration, common::GenerateCode, utils as macro_utils,

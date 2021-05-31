@@ -1,5 +1,0 @@
-error: empty structs are not supported
- --> $DIR/01-empty-struct.rs:5:21
-  |
-5 | pub struct MyStruct {}
-  |                     ^^

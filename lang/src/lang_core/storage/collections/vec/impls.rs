@@ -321,4 +321,7 @@ where
     }
 }
 
-impl<T> You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage for Vec<T> {}
+impl<T> You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage for Vec<T> {
+    type Wrapped1 = T;
+    type Wrapped2 = ();
+}

@@ -21,7 +21,6 @@ use crate::env::{
     error::{EnvError, Result},
     CallMode,
 };
-use cfg_if::cfg_if;
 use core::convert::TryInto;
 use liquid_prelude::{string::String, vec::Vec};
 use liquid_primitives::{types::address::*, Topics};
@@ -57,30 +56,12 @@ impl EnvInstance {
         scale::Encode::encode_to(value, &mut self.buffer);
     }
 
-    #[cfg(feature = "solidity-compatible")]
-    fn encode_into_buffer_abi<V>(&mut self, value: &V)
-    where
-        V: liquid_abi_codec::Encode,
-    {
-        self.reset_buffer();
-        liquid_abi_codec::Encode::encode_to(value, &mut self.buffer);
-    }
-
     fn decode_from_buffer_scale<R>(&mut self) -> Result<R>
     where
         R: scale::Decode,
     {
         let len = self.buffer.len();
         scale::Decode::decode(&mut &self.buffer[..len]).map_err(Into::into)
-    }
-
-    #[cfg(feature = "solidity-compatible")]
-    fn decode_from_buffer_abi<R>(&mut self) -> Result<R>
-    where
-        R: liquid_abi_codec::Decode,
-    {
-        let len = self.buffer.len();
-        liquid_abi_codec::Decode::decode(&mut &self.buffer[..len]).map_err(Into::into)
     }
 }
 
@@ -120,9 +101,6 @@ impl Env for EnvInstance {
         ext::get_call_data(call_data_buf.as_mut_slice());
 
         if mode == CallMode::Call {
-            #[cfg(feature = "solidity-compatible")]
-            use liquid_abi_codec::Decode;
-            #[cfg(not(feature = "solidity-compatible"))]
             use scale::Decode;
 
             CallData::decode(&mut call_data_buf.as_slice()).map_err(Into::into)
@@ -134,123 +112,60 @@ impl Env for EnvInstance {
         }
     }
 
-    cfg_if! {
-        if #[cfg(feature = "solidity-compatible")] {
-            fn emit<Event>(&mut self, event: Event)
-            where
-                Event: Topics + liquid_abi_codec::Encode,
-            {
-                self.encode_into_buffer_abi(&event);
-                let topics = event.topics();
-                ext::log(&self.buffer[..self.buffer.len()], &topics);
-            }
+    fn emit<Event>(&mut self, event: Event)
+    where
+        Event: Topics + scale::Encode,
+    {
+        self.encode_into_buffer_scale(&event);
+        let topics = event.topics();
+        ext::log(&self.buffer[..self.buffer.len()], &topics);
+    }
 
-            fn call<R>(&mut self, addr: &Address, data: &[u8]) -> Result<R>
-            where
-                R: liquid_abi_codec::Decode + liquid_abi_codec::TypeInfo,
-            {
-                let status = ext::call(&addr.0, data);
-                if status != 0 {
-                    return Err(EnvError::FailToCallForeignContract);
-                }
-                if core::mem::size_of::<R>() == 0 {
-                    // The `R` is unit type.
-                    self.buffer.clear();
-                    self.decode_from_buffer_abi()
-                } else {
-                    let return_data_size = if <R as liquid_abi_codec::TypeInfo>::is_dynamic() {
-                        ext::get_return_data_size()
-                    } else {
-                        <R as liquid_abi_codec::TypeInfo>::size_hint()
-                    };
-                    if return_data_size <= StaticBuffer::CAPACITY as u32 {
-                        if return_data_size != 0 {
-                            ext::get_return_data(&mut self.buffer[..]);
-                        }
-                        self.buffer.resize(return_data_size as usize);
-                        self.decode_from_buffer_abi()
-                    } else {
-                        let mut return_data_buffer =
-                            liquid_prelude::vec::from_elem(0u8, return_data_size as usize);
-                        ext::get_return_data(&mut return_data_buffer);
-                        liquid_abi_codec::Decode::decode(&mut return_data_buffer.as_slice())
-                            .map_err(Into::into)
-                    }
-                }
-            }
-
-            fn finish<V>(&mut self, return_value: &V)
-            where
-                V: liquid_abi_codec::Encode,
-            {
-                let encoded = return_value.encode();
-                ext::finish(&encoded);
-            }
-
-            fn revert<V>(&mut self, revert_info: &V)
-            where
-                V: liquid_abi_codec::Encode,
-            {
-                let encoded = revert_info.encode();
-                ext::revert(&encoded);
-            }
+    fn call<R>(&mut self, addr: &Address, data: &[u8]) -> Result<R>
+    where
+        R: scale::Decode,
+    {
+        let status = ext::call(&addr.0, data);
+        if status != 0 {
+            return Err(EnvError::FailToCallForeignContract);
+        }
+        if core::mem::size_of::<R>() == 0 {
+            // The `R` is unit type.
+            self.buffer.clear();
+            self.decode_from_buffer_scale()
         } else {
-            fn emit<Event>(&mut self, event: Event)
-            where
-                Event: Topics + scale::Encode,
-            {
-                self.encode_into_buffer_scale(&event);
-                let topics = event.topics();
-                ext::log(&self.buffer[..self.buffer.len()], &topics);
-            }
-
-            fn call<R>(&mut self, addr: &Address, data: &[u8]) -> Result<R>
-            where
-                R: scale::Decode,
-            {
-                let status = ext::call(&addr.0, data);
-                if status != 0 {
-                    return Err(EnvError::FailToCallForeignContract);
+            // TODO(#1): Optimize the performance of getting return data size
+            let return_data_size = ext::get_return_data_size();
+            if return_data_size <= StaticBuffer::CAPACITY as u32 {
+                if return_data_size != 0 {
+                    ext::get_return_data(&mut self.buffer[..]);
                 }
-                if core::mem::size_of::<R>() == 0 {
-                    // The `R` is unit type.
-                    self.buffer.clear();
-                    self.decode_from_buffer_scale()
-                } else {
-                    // TODO(#1): Optimize the performance of getting return data size
-                    let return_data_size = ext::get_return_data_size();
-                    if return_data_size <= StaticBuffer::CAPACITY as u32 {
-                        if return_data_size != 0 {
-                            ext::get_return_data(&mut self.buffer[..]);
-                        }
-                        self.buffer.resize(return_data_size as usize);
-                        self.decode_from_buffer_scale()
-                    } else {
-                        let mut return_data_buffer =
-                            liquid_prelude::vec::from_elem(0u8, return_data_size as usize);
-                        ext::get_return_data(&mut return_data_buffer);
-                        scale::Decode::decode(&mut return_data_buffer.as_slice())
-                            .map_err(Into::into)
-                    }
-                }
-            }
-
-            fn finish<V>(&mut self, return_value: &V)
-            where
-                V: scale::Encode,
-            {
-                let encoded = return_value.encode();
-                ext::finish(&encoded);
-            }
-
-            fn revert<V>(&mut self, revert_info: &V)
-            where
-                V: scale::Encode,
-            {
-                let encoded = revert_info.encode();
-                ext::revert(&encoded);
+                self.buffer.resize(return_data_size as usize);
+                self.decode_from_buffer_scale()
+            } else {
+                let mut return_data_buffer =
+                    liquid_prelude::vec::from_elem(0u8, return_data_size as usize);
+                ext::get_return_data(&mut return_data_buffer);
+                scale::Decode::decode(&mut return_data_buffer.as_slice())
+                    .map_err(Into::into)
             }
         }
+    }
+
+    fn finish<V>(&mut self, return_value: &V)
+    where
+        V: scale::Encode,
+    {
+        let encoded = return_value.encode();
+        ext::finish(&encoded);
+    }
+
+    fn revert<V>(&mut self, revert_info: &V)
+    where
+        V: scale::Encode,
+    {
+        let encoded = revert_info.encode();
+        ext::revert(&encoded);
     }
 
     fn get_caller(&mut self) -> Address {
