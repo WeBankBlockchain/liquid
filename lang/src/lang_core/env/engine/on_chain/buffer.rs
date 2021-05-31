@@ -65,13 +65,6 @@ impl scale::Output for StaticBuffer {
     }
 }
 
-#[cfg(feature = "solidity-compatible")]
-impl liquid_abi_codec::Output for StaticBuffer {
-    fn write(&mut self, bytes: &[u8]) {
-        self.write_bytes(bytes);
-    }
-}
-
 impl<I: core::slice::SliceIndex<[u8]>> core::ops::Index<I> for StaticBuffer {
     type Output = I::Output;
 

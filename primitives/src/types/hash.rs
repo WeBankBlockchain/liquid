@@ -19,7 +19,9 @@ use liquid_prelude::{
 
 pub const HASH_LENGTH: usize = 32;
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(
+    Copy, Clone, PartialEq, Eq, PartialOrd, Ord, scale::Decode, scale::Encode, Hash,
+)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Hash([u8; HASH_LENGTH]);
 

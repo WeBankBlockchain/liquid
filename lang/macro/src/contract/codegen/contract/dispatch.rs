@@ -11,11 +11,8 @@
 // limitations under the License.
 
 use crate::{
-    common::GenerateCode,
-    contract::{
-        codegen::utils,
-        ir::{Contract, Function, FunctionKind},
-    },
+    common,
+    contract::ir::{Contract, Function, FunctionKind},
 };
 
 use derive_more::From;
@@ -28,7 +25,7 @@ pub struct Dispatch<'a> {
     contract: &'a Contract,
 }
 
-impl<'a> GenerateCode for Dispatch<'a> {
+impl<'a> common::GenerateCode for Dispatch<'a> {
     fn generate_code(&self) -> TokenStream2 {
         let marker = self.generate_external_fn_marker();
         let traits = self.generate_external_fn_traits();
@@ -71,20 +68,12 @@ impl<'a> Dispatch<'a> {
 
     fn generate_external_fn_trait(&self, func: &Function) -> TokenStream2 {
         let fn_id = match &func.kind {
-            FunctionKind::External(fn_id, _) => fn_id,
+            FunctionKind::External(fn_id) => fn_id,
             _ => unreachable!(),
         };
 
         let fn_marker = quote! { FnMarker::<[(); #fn_id]> };
         let sig = &func.sig;
-
-        let input_tys = utils::generate_input_tys(sig);
-        let input_ty_checker = utils::generate_ty_checker(input_tys.as_slice());
-        let fn_input = quote! {
-            impl liquid_lang::FnInput for #fn_marker {
-                type Input = (#(#input_tys,)*);
-            }
-        };
 
         let output = &sig.output;
         let (output_ty_checker, output_span) = match output {
@@ -93,7 +82,7 @@ impl<'a> Dispatch<'a> {
                 let return_ty = &*ty;
                 (
                     quote! {
-                        <#return_ty as liquid_lang::You_Should_Use_An_Valid_Return_Type>::T
+                        <#return_ty as liquid_lang::You_Should_Use_An_Valid_Output_Type>::T
                     },
                     return_ty.span(),
                 )
@@ -107,31 +96,18 @@ impl<'a> Dispatch<'a> {
 
         let fn_name = sig.ident.to_string();
         let fn_name_bytes = fn_name.as_bytes();
-        let fn_name_len = fn_name.len();
 
-        let selector = if cfg!(feature = "solidity-compatible") {
-            quote! {
-                impl liquid_lang::FnSelector for #fn_marker {
-                    const SELECTOR: liquid_primitives::Selector = {
-                        const SIG_LEN: usize =
-                            liquid_ty_mapping::len::<#input_ty_checker>()
-                            + #fn_name_len
-                            + 2;
-                        const SIG: [u8; SIG_LEN] = liquid_ty_mapping::composite::<(#(#input_tys,)*), SIG_LEN>(&[#(#fn_name_bytes),*]);
-                        let hash = liquid_primitives::hash::hash(&SIG);
-                        [hash[0], hash[1], hash[2], hash[3]]
-                    };
-                }
-            }
-        } else {
-            let input_checker = Ident::new(
+        let selector = {
+            let input_tys = common::generate_input_tys(sig);
+            let input_ty_checker = common::generate_ty_checker(input_tys.as_slice());
+            let input_ty_checker_ident = Ident::new(
                 &format!("__LIQUID_EXTERNAL_INPUT_CHECKER_{}", fn_id),
                 func.span(),
             );
 
             quote! {
                 #[allow(non_camel_case_types)]
-                struct #input_checker #input_ty_checker;
+                struct #input_ty_checker_ident #input_ty_checker;
 
                 impl liquid_lang::FnSelector for #fn_marker {
                     const SELECTOR: liquid_primitives::Selector = {
@@ -150,55 +126,35 @@ impl<'a> Dispatch<'a> {
         };
 
         quote! {
-            #fn_input
             #fn_output
             #selector
             #mutability
         }
     }
 
-    fn generate_dispatch_fragment(
-        &self,
-        func: &Function,
-        is_getter: bool,
-    ) -> TokenStream2 {
+    fn generate_dispatch_fragment(&self, func: &Function) -> TokenStream2 {
         let fn_id = match &func.kind {
-            FunctionKind::External(fn_id, _) => fn_id,
+            FunctionKind::External(fn_id) => fn_id,
             _ => return quote! {},
         };
         let namespace = quote! { FnMarker<[(); #fn_id]> };
 
         let sig = &func.sig;
         let fn_name = &sig.ident;
-        let input_idents = utils::generate_input_idents(&sig.inputs);
-        let pat_idents = if input_idents.is_empty() {
-            quote! { _ }
-        } else {
-            quote! { (#(#input_idents,)*) }
-        };
-        let attr = if is_getter {
-            quote! { #[allow(deprecated)] }
-        } else {
-            quote! {}
-        };
-
-        let pat_idents_init = if cfg!(feature = "solidity-compatible") {
+        let input_idents = common::generate_input_idents(&sig);
+        let input_tys = common::generate_input_tys(&sig);
+        let inputs = input_idents.iter().zip(input_tys.iter()).map(|(ident, ty)| {
             quote! {
-                let #pat_idents = <<#namespace as liquid_lang::FnInput>::Input as liquid_abi_codec::Decode>::decode(&mut data.as_slice())
-                    .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+                let #ident = <#ty as scale::Decode>::decode(data_ptr).map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
             }
-        } else {
-            quote! {
-                let #pat_idents = <<#namespace as liquid_lang::FnInput>::Input as scale::Decode>::decode(&mut data.as_slice())
-                .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
-            }
-        };
+        });
 
         quote! {
             if selector == <#namespace as liquid_lang::FnSelector>::SELECTOR {
-                #pat_idents_init
+                let data_ptr = &mut data.as_slice();
+                #(#inputs)*
 
-                #attr
+                #[allow(deprecated)]
                 let result = storage.#fn_name(#(#input_idents,)*);
 
                 if <#namespace as liquid_lang::FnMutability>::IS_MUT {
@@ -214,29 +170,21 @@ impl<'a> Dispatch<'a> {
         }
     }
 
-    fn generate_constr_input_ty_checker(&self) -> TokenStream2 {
+    fn generate_dispatch(&self) -> TokenStream2 {
+        let fragments = self
+            .contract
+            .functions
+            .iter()
+            .map(|func| self.generate_dispatch_fragment(func));
+
         let constr = &self.contract.constructor;
-        let sig = &constr.sig;
-        let input_tys = utils::generate_input_tys(sig);
-        let guards = input_tys.iter().map(|ty| {
-            quote_spanned! {ty.span() => <#ty as liquid_lang::You_Should_Use_An_Valid_Input_Type>::T}
-        });
+        let constr_input_tys = common::generate_input_tys(&constr.sig);
+        let constr_input_ty_checker =
+            common::generate_ty_checker(constr_input_tys.as_slice());
+
         quote! {
             #[allow(non_camel_case_types)]
-            struct __LIQUID_CONSTRUCTOR_INPUT_TY_CHECKER(#(#guards,)*);
-        }
-    }
-
-    fn generate_dispatch(&self) -> TokenStream2 {
-        let fragments = self.contract.functions.iter().map(|func| {
-            let is_getter = matches!(func.kind, FunctionKind::External(_, true));
-            self.generate_dispatch_fragment(func, is_getter)
-        });
-
-        let constr_input_ty_checker = self.generate_constr_input_ty_checker();
-
-        quote! {
-            #constr_input_ty_checker
+            struct __LIQUID_CONSTRUCTOR_INPUT_TY_CHECKER #constr_input_ty_checker;
 
             impl Storage {
                 pub fn dispatch() -> liquid_lang::DispatchResult {
@@ -262,10 +210,8 @@ impl<'a> Dispatch<'a> {
     #[cfg(not(feature = "std"))]
     fn generate_entry_point(&self) -> TokenStream2 {
         let constr = &self.contract.constructor;
-        let sig = &constr.sig;
-        let input_tys = utils::generate_input_tys(sig);
-        let ident = &sig.ident;
-        let input_idents = utils::generate_input_idents(&sig.inputs);
+        let constr_sig = &constr.sig;
+        let ident = &constr_sig.ident;
         let asset_registers: Vec<TokenStream2> = self
             .contract
             .assets
@@ -278,21 +224,17 @@ impl<'a> Dispatch<'a> {
                 }
             })
             .collect();
-        let pat_idents = if input_idents.is_empty() {
-            quote! { _ }
-        } else {
-            quote! { (#(#input_idents,)*) }
-        };
 
-        let decode_result = if cfg!(feature = "solidity-compatible") {
+        let constr_input_tys = common::generate_input_tys(&constr_sig);
+        let constr_input_idents = common::generate_input_idents(&constr_sig);
+        let constr_inputs = constr_input_idents.iter().zip(constr_input_tys.iter()).map(|(ident, ty)| {
             quote! {
-                let result = <(#(#input_tys,)*) as liquid_abi_codec::Decode>::decode(&mut data.as_slice());
+                let #ident = <#ty as scale::Decode>::decode(data_ptr).unwrap_or_else(|_| {
+                    liquid_lang::env::revert(&String::from("invalid params"));
+                    unreachable!();
+                });
             }
-        } else {
-            quote! {
-                let result = <(#(#input_tys,)*) as scale::Decode>::decode(&mut data.as_slice());
-            }
-        };
+        });
 
         quote! {
             #[no_mangle]
@@ -307,18 +249,13 @@ impl<'a> Dispatch<'a> {
             #[no_mangle]
             fn deploy() {
                 let mut storage = <Storage as liquid_lang::storage::New>::new();
-                let result = liquid_lang::env::get_call_data(liquid_lang::env::CallMode::Deploy);
-                if let Ok(call_data) = result {
+                let call_data = liquid_lang::env::get_call_data(liquid_lang::env::CallMode::Deploy);
+                if let Ok(call_data) = call_data {
                     let data = call_data.data;
-                    #decode_result
-
-                    if let Ok(data) = result {
-                        let #pat_idents = data;
-                        storage.#ident(#(#input_idents,)*);
-                        <Storage as liquid_lang::storage::Flush>::flush(&mut storage);
-                    } else {
-                        liquid_lang::env::revert(&String::from("invalid params"));
-                    }
+                    let data_ptr = &mut data.as_slice();
+                    #(#constr_inputs)*
+                    storage.#ident(#(#constr_input_idents,)*);
+                    <Storage as liquid_lang::storage::Flush>::flush(&mut storage);
                 } else {
                     liquid_lang::env::revert(&String::from("could not read input"));
                 }

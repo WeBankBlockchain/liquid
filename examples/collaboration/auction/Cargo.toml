@@ -13,7 +13,6 @@ spin = "0.7.0"
 liquid_lang = { version = "1.0.0-rc1", path = "../../../lang", default-features = false, features = ["collaboration"] }
 liquid_primitives = { version = "1.0.0-rc1", path = "../../../primitives", default-features = false }
 liquid_prelude = { version = "1.0.0-rc1", path = "../../../prelude", default-features = false }
-liquid_abi_codec = { version = "1.0.0-rc1", path = "../../../abi-codec", default-features = false }
 liquid_macro = { version = "1.0.0-rc1", path = "../../../macro", default-features = false, features = ["collaboration"] }
 liquid_abi_gen = { version = "1.0.0-rc1", path = "../../../abi-gen", default-features = false, optional = true }
 
@@ -36,7 +35,6 @@ std = [
     "scale/std",
     "liquid_primitives/std",
     "liquid_prelude/std",
-    "liquid_abi_codec/std",
     "liquid_macro/std",
 ]
 liquid-abi-gen = [

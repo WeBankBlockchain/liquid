@@ -1,0 +1,12 @@
+error[E0277]: the trait bound `(u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8): You_Should_Use_An_Valid_Input_Type` is not satisfied
+  --> $DIR/18-many-elements-in-tuple.rs:14:17
+   |
+14 |               _a: (
+   |  _________________^
+15 | |                 u8,
+16 | |                 u8,
+17 | |                 u8,
+...  |
+33 | |                 u8,
+34 | |             ),
+   | |_____________^ the trait `You_Should_Use_An_Valid_Input_Type` is not implemented for `(u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)`

@@ -11,11 +11,8 @@
 // limitations under the License.
 
 use crate::{
-    common::GenerateCode,
-    contract::{
-        codegen::utils as codegen_utils,
-        ir::{FnArg, ForeignFn, Interface},
-    },
+    common,
+    contract::ir::{FnArg, ForeignFn, Interface},
     utils as lang_utils,
 };
 use derive_more::From;
@@ -29,7 +26,7 @@ pub struct Mockable<'a> {
     interface: &'a Interface,
 }
 
-impl<'a> GenerateCode for Mockable<'a> {
+impl<'a> common::GenerateCode for Mockable<'a> {
     fn generate_code(&self) -> TokenStream2 {
         let types = lang_utils::generate_primitive_types();
         let interface_ident = &self.interface.interface_ident;
@@ -51,13 +48,13 @@ impl<'a> GenerateCode for Mockable<'a> {
     }
 }
 
-fn generate_mock_common(foreign_fn: &ForeignFn, suffix: usize) -> TokenStream2 {
+fn generate_mock_common(foreign_fn: &ForeignFn) -> TokenStream2 {
     let sig = &foreign_fn.sig;
     let span = foreign_fn.span;
 
+    let input_tys = common::generate_input_tys(&sig);
+    let input_idents = common::generate_input_idents(&sig);
     let inputs = &sig.inputs;
-    let input_tys = codegen_utils::generate_input_tys(&sig);
-    let input_idents = codegen_utils::generate_input_idents(inputs);
     let ref_inputs = inputs
         .iter()
         .skip(1)
@@ -120,56 +117,51 @@ fn generate_mock_common(foreign_fn: &ForeignFn, suffix: usize) -> TokenStream2 {
             });
 
     let useless_params = input_idents.iter().map(|_| quote! {_});
-
-    let matcher = Ident::new(&format!("Matcher{}", suffix), span);
-    let returner = Ident::new(&format!("Returner{}", suffix), span);
-    let expectation = Ident::new(&format!("Expectation{}", suffix), span);
-
     let inputs = inputs.iter().skip(1);
 
     quote! {
-        pub enum #matcher {
+        pub enum Matcher {
             Always,
             Pred(Box<(#(Box<dyn Predicate<#input_tys>>,)*)>),
             Func(Box<dyn Fn(#(&#input_tys,)*) -> bool + 'static>),
         }
 
-        impl #matcher {
+        impl Matcher {
             pub fn matches(&self, #(#ref_inputs,)*) -> bool {
                 match self {
-                    #matcher::Always => true,
-                    #matcher::Pred(preds) => {
+                    Matcher::Always => true,
+                    Matcher::Pred(preds) => {
                         [#(#matcher_evals,)*].iter().all(|eval_result| *eval_result)
                     }
-                    #matcher::Func(f) => f(#(#input_idents,)*),
+                    Matcher::Func(f) => f(#(#input_idents,)*),
                 }
             }
         }
 
-        pub enum #returner {
+        pub enum Returner {
             Default,
             Func(Box<dyn FnMut(#(#input_tys,)*) -> #output_ty + 'static>),
             Exception,
         }
 
-        pub struct #expectation {
-            matcher: #matcher,
-            return_fn: #returner,
+        pub struct Expectation {
+            matcher: Matcher,
+            return_fn: Returner,
         }
 
-        impl Default for #expectation {
+        impl Default for Expectation {
             fn default() -> Self {
                 Self {
-                    matcher: #matcher::Always,
-                    return_fn: #returner::Default,
+                    matcher: Matcher::Always,
+                    return_fn: Returner::Default,
                 }
             }
         }
 
-        impl #expectation {
+        impl Expectation {
             pub fn call(&mut self, #(#inputs,)*) -> Option<#output_ty> {
                 match self.return_fn {
-                    #returner::Default => {
+                    Returner::Default => {
                         let default_value = DefaultReturner::<#output_ty>::return_default();
                         if let Some(default_value) = default_value {
                             Some(default_value)
@@ -177,8 +169,8 @@ fn generate_mock_common(foreign_fn: &ForeignFn, suffix: usize) -> TokenStream2 {
                             panic!("can only return default values for types that impl `std::Default`");
                         }
                     }
-                    #returner::Func(ref mut f) => Some(f(#(#input_idents,)*)),
-                    #returner::Exception => None,
+                    Returner::Func(ref mut f) => Some(f(#(#input_idents,)*)),
+                    Returner::Exception => None,
                 }
             }
 
@@ -190,7 +182,7 @@ fn generate_mock_common(foreign_fn: &ForeignFn, suffix: usize) -> TokenStream2 {
             where
                 #(#when_where_clauses,)*
             {
-                self.matcher = #matcher::Pred(Box::new((#(Box::new(#input_idents),)*)));
+                self.matcher = Matcher::Pred(Box::new((#(Box::new(#input_idents),)*)));
                 self
             }
 
@@ -198,7 +190,7 @@ fn generate_mock_common(foreign_fn: &ForeignFn, suffix: usize) -> TokenStream2 {
             where
                 F: Fn(#(#ref_input_tys,)*) -> bool + 'static,
             {
-                self.matcher = #matcher::Func(Box::new(f));
+                self.matcher = Matcher::Func(Box::new(f));
                 self
             }
 
@@ -207,18 +199,18 @@ fn generate_mock_common(foreign_fn: &ForeignFn, suffix: usize) -> TokenStream2 {
                 T: Clone + Into<#output_ty> + 'static,
             {
                 self.return_fn =
-                    #returner::Func(Box::new(move |#(#useless_params,)*| return_value.clone().into()));
+                    Returner::Func(Box::new(move |#(#useless_params,)*| return_value.clone().into()));
             }
 
             pub fn returns_fn<F>(&mut self, f: F)
             where
                 F: FnMut(#(#input_tys,)*) -> #output_ty + 'static,
             {
-                self.return_fn = #returner::Func(Box::new(f))
+                self.return_fn = Returner::Func(Box::new(f))
             }
 
             pub fn throws(&mut self) {
-                self.return_fn = #returner::Exception;
+                self.return_fn = Returner::Exception;
             }
         }
     }
@@ -235,10 +227,10 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn, interface_ident: &Ident) -> Token
         None => Ident::new(&format!("{}_context", fn_ident.to_string()), span),
     };
 
-    let common = generate_mock_common(foreign_fn, 0);
+    let common = generate_mock_common(foreign_fn);
 
     let inputs = &sig.inputs;
-    let input_idents = codegen_utils::generate_input_idents(inputs);
+    let input_idents = common::generate_input_idents(&sig);
     let no_self_inputs = inputs.iter().skip(1);
 
     let ref_input_idents = input_idents.iter().map(|ident| quote! {&#ident});
@@ -259,13 +251,13 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn, interface_ident: &Ident) -> Token
             #common
 
             thread_local!(
-                static EXPECTATIONS: RefCell<Vec<Expectation0>> = RefCell::new(Vec::new());
+                static EXPECTATIONS: RefCell<Vec<Expectation>> = RefCell::new(Vec::new());
             );
 
             pub struct Context;
 
             impl Context {
-                pub fn expect(&self) -> &mut Expectation0 {
+                pub fn expect(&self) -> &mut Expectation {
                     EXPECTATIONS.with(|expectations| unsafe {
                         expectations.borrow_mut().push(Default::default());
                         (*expectations.as_ptr()).last_mut().unwrap()
@@ -288,7 +280,7 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn, interface_ident: &Ident) -> Token
                 }
             }
 
-            impl InterfaceImpl {
+            impl Interface {
                 #(#attrs)*
                 #[allow(non_snake_case)]
                 pub fn #fn_ident(&self, #(#no_self_inputs,)*) -> Option<#output_ty> {
@@ -318,197 +310,24 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn, interface_ident: &Ident) -> Token
     }
 }
 
-fn generate_overriding_fn(
-    fn_ident: &Ident,
-    foreign_fns: &[ForeignFn],
-    interface_ident: &Ident,
-) -> TokenStream2 {
-    let mock_context_getter = match &foreign_fns[0].mock_context_getter {
-        Some(getter) => getter.clone(),
-        None => Ident::new(
-            &format!("{}_context", fn_ident.to_string()),
-            foreign_fns[0].span,
-        ),
-    };
-
-    let all_expectations_drop = foreign_fns.iter().enumerate().map(|(i, foreign_fn)| {
-        let expectations = Ident::new(&format!("EXPECTATIONS{}", i), foreign_fn.span);
-
-        quote! {
-            #expectations.with(|expectations| {
-                expectations.borrow_mut().clear();
-            });
-        }
-    });
-
-    let overriding_mocks = foreign_fns.iter().enumerate().map(|(i, foreign_fn)| {
-        let sig = &foreign_fn.sig;
-        let span = foreign_fn.span;
-
-        let inputs = &sig.inputs;
-        let input_tys = codegen_utils::generate_input_tys(&sig);
-        let input_idents = codegen_utils::generate_input_idents(inputs);
-
-        let ref_input_idents = input_idents.iter().map(|ident| quote! {&#ident});
-        let is_mut = sig.is_mut();
-
-        let output = &sig.output;
-        let output_ty = match output {
-            syn::ReturnType::Default => {
-                quote! { () }
-            }
-            syn::ReturnType::Type(_, ty) => {
-                quote! { #ty }
-            },
-        };
-
-        let common = generate_mock_common(foreign_fn, i);
-        let call_expectation = Ident::new(&format!("call_expectation{}", i), span);
-        let expectation = Ident::new(&format!("Expectation{}", i), span);
-        let expectations = Ident::new(&format!("EXPECTATIONS{}", i), span);
-
-        quote! {
-            #common
-
-            thread_local! (
-                static #expectations: RefCell<Vec<#expectation>> = RefCell::new(Vec::new());
-            );
-
-            impl ExpectationTarget for (#(#input_tys,)*) {
-                type E = #expectation;
-
-                fn return_expectation() -> &'static mut Self::E {
-                    #expectations.with(|expectations| unsafe {
-                        expectations.borrow_mut().push(Default::default());
-                        (*expectations.as_ptr()).last_mut().unwrap()
-                    })
-                }
-            }
-
-            impl #fn_ident {
-                fn #call_expectation((#(#input_idents,)*): (#(#input_tys,)*)) -> Option<#output_ty> {
-                    #expectations.with(|expectations| {
-                        for expectation in expectations.borrow_mut().iter_mut() {
-                            if expectation.matches(#(#ref_input_idents,)*) {
-                                if #is_mut {
-                                    liquid_lang::storage::mutable_call_happens();
-                                }
-                                return expectation.call(#(#input_idents,)*);
-                            }
-                        }
-
-                        panic!(
-                            "no matched expectation is found for `{}({})` in `{}`",
-                            stringify!(#fn_ident),
-                            stringify!(#inputs)
-                                .replace(" : ", ": ")
-                                .replace("& self", "&self")
-                                .replace("& mut", "&mut"),
-                            stringify!(#interface_ident)
-                        );
-                    })
-                }
-            }
-
-            impl FnOnce<(#(#input_tys,)*)> for #fn_ident {
-                type Output = Option<#output_ty>;
-                extern "rust-call" fn call_once(self, args: (#(#input_tys,)*)) -> Self::Output {
-                    Self::#call_expectation(args)
-                }
-            }
-
-            impl FnMut<(#(#input_tys,)*)> for #fn_ident {
-                extern "rust-call" fn call_mut(&mut self, args: (#(#input_tys,)*)) -> Self::Output {
-                    Self::#call_expectation(args)
-                }
-            }
-
-            impl Fn<(#(#input_tys,)*)> for #fn_ident {
-                extern "rust-call" fn call(&self, args: (#(#input_tys,)*)) -> Self::Output {
-                    Self::#call_expectation(args)
-                }
-            }
-        }
-    });
-
-    quote! {
-        #[allow(non_camel_case_types)]
-        #[derive(Debug, Clone)]
-        pub struct #fn_ident;
-
-        const _: () = {
-            #(#overriding_mocks)*
-
-            pub trait ExpectationTarget {
-                type E;
-
-                fn return_expectation() -> &'static mut Self::E;
-            }
-
-            pub struct Context;
-
-            impl Context {
-                pub fn expect<T: ExpectationTarget>(&self) -> &'static mut T::E {
-                    T::return_expectation()
-                }
-            }
-
-            impl Drop for Context {
-                fn drop(&mut self) {
-                    #(
-                        #all_expectations_drop
-                    )*
-                }
-            }
-
-            impl Interface {
-                #[allow(non_snake_case)]
-                pub fn #mock_context_getter() -> Context {
-                    Context {}
-                }
-            }
-        };
-    }
-}
-
 impl<'a> Mockable<'a> {
     fn generate_foreign_contract_mock(&self, interface_ident: &Ident) -> TokenStream2 {
         let interface = self.interface;
         let span = interface.span;
 
-        let (trivial_mocks, overriding_fns): (Vec<_>, Vec<_>) =
-            interface.foreign_fns.iter().partition_map(|(ident, fns)| {
-                if fns.len() == 1 {
-                    let trivial_fn = fns.first().unwrap();
-                    Either::Left(generate_trivial_fn(trivial_fn, interface_ident))
-                } else {
-                    Either::Right((
-                        ident,
-                        generate_overriding_fn(ident, fns, interface_ident),
-                    ))
-                }
-            });
-        let (overriding_idents, overriding_mocks): (Vec<_>, Vec<_>) =
-            overriding_fns.into_iter().unzip();
+        let trivial_mocks = interface
+            .foreign_fns
+            .iter()
+            .map(|(_, foreign_fn)| generate_trivial_fn(foreign_fn, interface_ident))
+            .collect::<Vec<_>>();
 
         quote_spanned! { span =>
             #[derive(Debug, Clone)]
-            pub struct InterfaceImpl {
-                #(
-                    pub #overriding_idents: #overriding_idents,
-                )*
-            }
-
-            #[derive(Debug, Clone)]
-            pub struct Interface(InterfaceImpl);
+            pub struct Interface;
 
             impl Interface {
                 pub fn at(_: liquid_primitives::types::Address) -> Self {
-                    Self(InterfaceImpl {
-                        #(
-                            #overriding_idents: #overriding_idents {},
-                        )*
-                    })
+                    Self {}
                 }
             }
 
@@ -521,11 +340,7 @@ impl<'a> Mockable<'a> {
             impl scale::Decode for Interface {
                 fn decode<I: scale::Input>(value: &mut I) -> ::core::result::Result<Self, scale::Error> {
                     let _ = <() as scale::Decode>::decode(value)?;
-                    Ok(Self(InterfaceImpl {
-                        #(
-                            #overriding_idents: #overriding_idents {},
-                        )*
-                    }))
+                    Ok(Self {})
                 }
             }
 
@@ -535,16 +350,9 @@ impl<'a> Mockable<'a> {
                 }
             }
 
-            impl std::ops::Deref for Interface {
-                type Target = InterfaceImpl;
-                fn deref(&self) -> &Self::Target {
-                    &self.0
-                }
-            }
+            impl liquid_lang::You_Should_Use_An_Valid_State_Type for Interface {}
 
             #(#trivial_mocks)*
-
-            #(#overriding_mocks)*
         }
     }
 }

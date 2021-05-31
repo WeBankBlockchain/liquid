@@ -11,10 +11,7 @@
 // limitations under the License.
 
 use crate::{
-    collaboration::{
-        codegen::{path_visitor::PathVisitor, utils},
-        ir::*,
-    },
+    collaboration::{codegen::path_visitor::PathVisitor, ir::*},
     common::GenerateCode,
     utils::filter_non_liquid_attributes,
 };

@@ -284,7 +284,7 @@ impl Spanned for Function {
 pub enum FunctionKind {
     Constructor,
     Normal,
-    External(usize, bool),
+    External(usize),
 }
 
 pub struct Signature {
@@ -480,11 +480,6 @@ impl Spanned for ForeignFn {
     }
 }
 
-pub enum LangType {
-    Solidity,
-    Liquid,
-}
-
 /// The interface with all required information.
 pub struct Interface {
     /// The `mod` token.
@@ -496,13 +491,11 @@ pub struct Interface {
     /// The user-defined data structures.
     pub foreign_structs: Vec<ForeignStruct>,
     /// The declarations of methods.
-    pub foreign_fns: BTreeMap<Ident, Vec<ForeignFn>>,
+    pub foreign_fns: BTreeMap<Ident, ForeignFn>,
     /// The use declarations to import other symbols.
     pub imports: Vec<syn::ItemUse>,
     /// The name of auto-generated interface struct.
     pub interface_ident: Ident,
-    /// The programming language who implements this interface in remote.
-    pub lang_type: LangType,
     /// The span of the interface.
     pub span: Span,
 }

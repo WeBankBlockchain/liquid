@@ -1,0 +1,5 @@
+error: ABI should be specified  as `"liquid"` or empty
+ --> $DIR/40-invalid-ABI-specification.rs:5:5
+  |
+5 |     extern "C" {
+  |     ^^^^^^^^^^

@@ -14,9 +14,9 @@ use crate::lang_core::{
     env::call,
     precompiled::{ReturnDataWrapper, CNS_ADDRESS},
 };
-use liquid_abi_codec::{Decode, Encode};
 use liquid_prelude::string::String;
 use liquid_primitives::types::{u256, Address};
+use scale::{Decode, Encode};
 
 pub struct Cns;
 

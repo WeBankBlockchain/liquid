@@ -96,15 +96,8 @@ impl<'a> AbiGen<'a> {
             };
 
             let constant = !external_fn.sig.is_mut();
-            let build_args = if cfg!(feature = "solidity-compatible") {
-                let state_mutability = if constant { "view" } else { "nonpayable" };
-                quote! {
-                    String::from(#ident), String::from(#state_mutability), #constant
-                }
-            } else {
-                quote! {
-                    String::from(#ident), #constant
-                }
+            let build_args = quote! {
+                String::from(#ident), #constant
             };
 
             quote! {

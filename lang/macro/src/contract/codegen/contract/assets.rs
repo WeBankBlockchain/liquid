@@ -72,7 +72,7 @@ impl<'a> Assets<'a> {
                             [hash[0], hash[1], hash[2], hash[3]]
                         };
                         let mut encoded = SUPPORTS_ASSET.to_vec();
-                        encoded.extend(<Input as liquid_abi_codec::Encode>::encode(&(String::from(Self::ASSET_NAME),)));
+                        encoded.extend(<Input as scale::Encode>::encode(&(String::from(Self::ASSET_NAME),)));
                         match liquid_lang::env::call::<bool>(&to, &encoded) {
                             Ok(true) =>(),
                             _ => require(false, String::from("the contract doesn't know ") + Self::ASSET_NAME)

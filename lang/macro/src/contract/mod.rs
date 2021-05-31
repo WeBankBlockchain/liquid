@@ -11,7 +11,7 @@
 // limitations under the License.
 
 mod codegen;
-mod ir;
+pub mod ir;
 
 use crate::{common::GenerateCode, utils::check_idents};
 use proc_macro2::TokenStream as TokenStream2;

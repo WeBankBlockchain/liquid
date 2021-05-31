@@ -1,5 +1,0 @@
-error: generic structs are not supported
- --> $DIR/04-generic.rs:5:20
-  |
-5 | pub struct MyStruct<T> {
-  |                    ^^^

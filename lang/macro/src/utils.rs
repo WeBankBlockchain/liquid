@@ -83,6 +83,8 @@ pub fn generate_primitive_types() -> TokenStream2 {
         pub type bytes = liquid_primitives::types::Bytes;
         #[allow(non_camel_case_types)]
         pub type byte = liquid_primitives::types::Byte;
+        #[allow(non_camel_case_types)]
+        pub type hash = liquid_primitives::types::Hash;
 
         #fixed_size_bytes
 

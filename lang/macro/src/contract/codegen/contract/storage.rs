@@ -61,9 +61,6 @@ impl<'a> Storage<'a> {
             field.vis = syn::Visibility::Public(syn::VisPublic {
                 pub_token: Default::default(),
             });
-
-            let ty = &field.ty;
-            field.ty = syn::parse2::<syn::Type>(quote_spanned!( ty.span() => <#ty as liquid_lang::storage::You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage>::T)).unwrap();
         });
 
         let field_idents = fields
@@ -89,7 +86,20 @@ impl<'a> Storage<'a> {
             }
         });
 
+        let state_tys = fields
+            .named
+            .iter()
+            .map(|field| (&field.ty, field.ty.span()));
+        let state_ty_guards = state_tys.map(|(ty, span)| {
+            quote_spanned! { span =>
+                <<#ty as liquid_lang::storage::You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage>::Wrapped1 as liquid_lang::You_Should_Use_An_Valid_State_Type>::T,
+                <<#ty as liquid_lang::storage::You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage>::Wrapped2 as liquid_lang::You_Should_Use_An_Valid_State_Type>::T,
+            }
+        });
+
         quote_spanned! { span =>
+            struct __LiquidStateTyChecker(#(#state_ty_guards)*);
+
             #(#attrs)*
             #[cfg_attr(test, derive(Debug))]
             pub struct Storage
