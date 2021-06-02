@@ -1,6 +1,6 @@
 [package]
 name = "liquid_lang_macro"
-version = "1.0.0-rc1"
+version = "1.0.0-rc2"
 authors = ["vita-dounai <lichenxi.webank@gmail.com>"]
 edition = "2018"
 
@@ -22,8 +22,8 @@ log = "0.4"
 env_logger = "0.7"
 colored = "2.0.0"
 
-liquid_prelude = { version = "1.0.0-rc1", path = "../../prelude", default-features = false }
-liquid_primitives = { version = "1.0.0-rc1", path = "../../primitives", default-features = false }
+liquid_prelude = { version = "1.0.0-rc2", path = "../../prelude", default-features = false }
+liquid_primitives = { version = "1.0.0-rc2", path = "../../primitives", default-features = false }
 
 [dev-dependencies]
 tempfile = "3.1.0"
