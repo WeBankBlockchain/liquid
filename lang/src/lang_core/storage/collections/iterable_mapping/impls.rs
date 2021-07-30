@@ -260,7 +260,7 @@ where
         K: Borrow<Q>,
         Q: Encode,
     {
-        self.mapping.contains_key(&key)
+        self.mapping.contains_key(key)
     }
 
     pub fn iter(&self) -> Iter<'_, K, V> {

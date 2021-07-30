@@ -35,13 +35,6 @@ impl GenerateCode for ir::Contract {
         let storage = Storage::from(self).generate_code();
         let events = Events::from(self).generate_code();
         let assets = Assets::from(self).generate_code();
-        // let asset_idents = self.assets.iter().map(|asset| let asset_ident = asset.ident;
-        //     quote! {
-        //         #[cfg(test)]
-        //         #[allow(non_snake_case)]
-        //         pub type #asset_ident = __liquid_private::#asset_ident;
-        //     }
-        // );
         let event_struct = EventStructs::from(self).generate_code();
         let dispatch = Dispatch::from(self).generate_code();
         let testable = Testable::from(self).generate_code();
@@ -71,13 +64,6 @@ impl GenerateCode for ir::Contract {
                 #[cfg(test)]
                 #[allow(non_snake_case)]
                 pub type #storage_ident = __liquid_private::TestableStorage;
-
-
-                // #(#asset_idents)*
-
-                #[cfg(not(test))]
-                #[allow(non_snake_case)]
-                pub type #storage_ident = __liquid_private::Storage;
 
                 #[cfg(feature = "liquid-abi-gen")]
                 pub use __liquid_private::__LIQUID_ABI_GEN;

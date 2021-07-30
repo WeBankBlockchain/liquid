@@ -49,19 +49,19 @@ impl common::GenerateCode for Interface {
 
                     #[cfg(not(test))]
                     #[allow(dead_code)]
-                    pub mod interface {
+                    pub mod __liquid_interface {
                         use super::*;
                         #foreign_contract
                     }
 
                     #[cfg(test)]
-                    pub mod interface {
+                    pub mod __liquid_interface {
                         use super::*;
                         #mockable_contract
                     }
                 }
 
-                pub type #interface_ident = __liquid_private::interface::Interface;
+                pub type #interface_ident = __liquid_private::__liquid_interface::Interface;
             }
         }
     }
@@ -74,9 +74,9 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
     let fn_ident = &sig.ident;
 
     let inputs = &sig.inputs;
-    let input_tys = common::generate_input_tys(&sig);
+    let input_tys = common::generate_input_tys(sig);
     let input_ty_checker = common::generate_ty_checker(input_tys.as_slice());
-    let input_idents = common::generate_input_idents(&sig);
+    let input_idents = common::generate_input_idents(sig);
 
     let output = &sig.output;
     let output_ty = match output {
@@ -91,7 +91,6 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
     let fn_name = fn_ident.to_string();
     let fn_name_bytes = fn_name.as_bytes();
 
-    let actual_inputs = inputs.iter().skip(1);
     let is_mut = sig.is_mut();
     let input_encodes = input_idents
         .iter()
@@ -102,10 +101,22 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
             }
         });
 
+    // Although it seems redundant here, if I don't do this, the error message
+    // will display twice when type of inputs or outputs is not suitable, what
+    // is ugly to developer. The key to prevent this phenomenon is the `span`
+    // used in `quote_spanned` macro.
+    let receiver = if is_mut {
+        quote_spanned!(span => &mut self)
+    } else {
+        quote_spanned!(span => &self)
+    };
+    let actual_inputs = inputs.iter().skip(1);
+
     quote_spanned! { span =>
         #(#attrs)*
         #[allow(non_snake_case)]
-        pub fn #fn_ident(&self, #(#actual_inputs,)*) -> Option<#output_ty> {
+        #[allow(unused_mut)]
+        pub fn #fn_ident(#receiver, #(#actual_inputs,)*) -> Option<#output_ty> {
             #[allow(dead_code)]
             struct __LiquidInputTyChecker #input_ty_checker;
 

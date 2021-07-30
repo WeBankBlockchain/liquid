@@ -52,8 +52,8 @@ fn generate_mock_common(foreign_fn: &ForeignFn) -> TokenStream2 {
     let sig = &foreign_fn.sig;
     let span = foreign_fn.span;
 
-    let input_tys = common::generate_input_tys(&sig);
-    let input_idents = common::generate_input_idents(&sig);
+    let input_tys = common::generate_input_tys(sig);
+    let input_idents = common::generate_input_idents(sig);
     let inputs = &sig.inputs;
     let ref_inputs = inputs
         .iter()
@@ -230,11 +230,16 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn, interface_ident: &Ident) -> Token
     let common = generate_mock_common(foreign_fn);
 
     let inputs = &sig.inputs;
-    let input_idents = common::generate_input_idents(&sig);
-    let no_self_inputs = inputs.iter().skip(1);
+    let input_idents = common::generate_input_idents(sig);
 
     let ref_input_idents = input_idents.iter().map(|ident| quote! {&#ident});
     let is_mut = sig.is_mut();
+    let receiver = if is_mut {
+        quote_spanned!(span => &mut self)
+    } else {
+        quote_spanned!(span => &self)
+    };
+    let actual_inputs = inputs.iter().skip(1);
 
     let output = &sig.output;
     let output_ty = match output {
@@ -283,7 +288,7 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn, interface_ident: &Ident) -> Token
             impl Interface {
                 #(#attrs)*
                 #[allow(non_snake_case)]
-                pub fn #fn_ident(&self, #(#no_self_inputs,)*) -> Option<#output_ty> {
+                pub fn #fn_ident(#receiver, #(#actual_inputs,)*) -> Option<#output_ty> {
                     EXPECTATIONS.with(|expectations| {
                         for expectation in expectations.borrow_mut().iter_mut() {
                             if expectation.matches(#(#ref_input_idents,)*) {

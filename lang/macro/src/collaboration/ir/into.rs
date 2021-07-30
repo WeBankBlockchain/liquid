@@ -426,7 +426,7 @@ impl TryFrom<(syn::ImplItemMethod, Selectors, Ident)> for ir::Right {
                 }
                 (AttrValue::LitStr(path), span) => {
                     let path = &path.value();
-                    let owner_parser = OwnersParser::new(&path, *span, true)?;
+                    let owner_parser = OwnersParser::new(path, *span, true)?;
                     owner_parser.parse()?
                 }
             }

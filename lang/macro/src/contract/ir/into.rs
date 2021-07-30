@@ -21,7 +21,7 @@ use core::convert::TryFrom;
 use either::Either;
 use heck::CamelCase;
 use itertools::Itertools;
-use proc_macro2::Ident;
+use proc_macro2::{Ident, Span};
 use quote::quote;
 use regex::Regex;
 use std::collections::{BTreeMap, HashSet};
@@ -196,7 +196,9 @@ impl TryFrom<(ir::ContractParams, syn::ItemMod)> for ir::Contract {
         })
         .unwrap();
         constants.push(supports_asset_constant);
-        let supports_asset_name = Ident::new(SUPPORTS_ASSET_NAME, span);
+        // Don't use `span` here please, otherwise it will make intelli sense working
+        // improperly!
+        let supports_asset_name = Ident::new(SUPPORTS_ASSET_NAME, Span::call_site());
         let supports_asset_fn = syn::parse2::<syn::ItemFn>(quote! {
             pub fn #supports_asset_name(&self, asset: String) -> bool {
                 Self::SUPPORTS_ASSET.contains(&asset)
