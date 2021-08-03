@@ -238,7 +238,7 @@ impl<'a> Contracts<'a> {
                         let mated = unsafe {
                             core::mem::transmute::<#ident, #mated_name>(contract)
                         };
-                        contracts.insert(&len, (mated, false));
+                        contracts.insert(len, (mated, false));
                         Self {
                             __liquid_id: len,
                             __liquid_marker: Default::default(),

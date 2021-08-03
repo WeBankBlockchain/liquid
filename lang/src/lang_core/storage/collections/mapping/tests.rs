@@ -30,11 +30,11 @@ fn empty() {
 fn insert_works() {
     let mut map = new_empty::<String, u8>();
     let name = "Alice".to_string();
-    assert_eq!(map.insert(&name, 0), None);
+    assert_eq!(map.insert(name.clone(), 0), None);
     assert_eq!(map.len(), 1);
     assert_eq!(map.is_empty(), false);
 
-    assert_eq!(map.insert(&name, 0), Some(0));
+    assert_eq!(map.insert(name, 0), Some(0));
     assert_eq!(map.len(), 1);
     assert_eq!(map.is_empty(), false);
 }
@@ -42,8 +42,8 @@ fn insert_works() {
 #[test]
 fn get_works() {
     let mut map = new_empty::<String, u8>();
-    assert_eq!(map.insert(&"Alice".to_string(), 0), None);
-    assert_eq!(map.insert(&"Bob".to_string(), 1), None);
+    assert_eq!(map.insert("Alice".to_string(), 0), None);
+    assert_eq!(map.insert("Bob".to_string(), 1), None);
     assert_eq!(map.get(&"Alice".to_string()), Some(&0));
     assert_eq!(map.get(&"Bob".to_string()), Some(&1));
     assert_eq!(map.get(&"Charlie".to_string()), None);
@@ -52,8 +52,8 @@ fn get_works() {
 #[test]
 fn index_works() {
     let mut map = new_empty::<String, u8>();
-    assert_eq!(map.insert(&"Alice".to_string(), 0), None);
-    assert_eq!(map.insert(&"Bob".to_string(), 1), None);
+    assert_eq!(map.insert("Alice".to_string(), 0), None);
+    assert_eq!(map.insert("Bob".to_string(), 1), None);
     assert_eq!(map[&"Alice".to_string()], 0);
     assert_eq!(map[&"Bob".to_string()], 1);
 }
@@ -62,7 +62,7 @@ fn index_works() {
 fn index_repeat() {
     let mut map = new_empty::<String, u8>();
     let name = "Alice".to_string();
-    assert_eq!(map.insert(&name, 0), None);
+    assert_eq!(map.insert(name.clone(), 0), None);
     assert_eq!(map[&name], 0);
     assert_eq!(map[&name], 0);
 }
@@ -79,7 +79,7 @@ fn contains_works() {
     let mut map = new_empty::<String, u8>();
     let name = "string".to_string();
     assert_eq!(map.contains_key(&name), false);
-    assert_eq!(map.insert(&name, 0), None);
+    assert_eq!(map.insert(name.clone(), 0), None);
     assert_eq!(map.contains_key(&name), true);
 }
 
@@ -87,7 +87,7 @@ fn contains_works() {
 fn remove_works() {
     let mut map = new_empty::<String, u8>();
     let name = "Alice".to_string();
-    assert_eq!(map.insert(&name, 0), None);
+    assert_eq!(map.insert(name.clone(), 0), None);
     assert_eq!(map.len(), 1);
     assert_eq!(map.remove(&name), Some(0));
     assert_eq!(map.len(), 0);
@@ -101,8 +101,8 @@ fn remove_works() {
 fn mutate_with_works() {
     let mut map = new_empty::<String, String>();
     // Inserts some elements
-    assert_eq!(map.insert(&"Dog Breed".to_string(), "Akita".into()), None);
-    assert_eq!(map.insert(&"Cat Breed".to_string(), "Bengal".into()), None);
+    assert_eq!(map.insert("Dog Breed".to_string(), "Akita".into()), None);
+    assert_eq!(map.insert("Cat Breed".to_string(), "Bengal".into()), None);
     assert_eq!(map[&"Dog Breed".to_string()], "Akita");
     assert_eq!(map[&"Cat Breed".to_string()], "Bengal");
     // Change the breeds

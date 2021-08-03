@@ -123,14 +123,14 @@ mod asset_erc20 {
                 has_token = true;
             }
             if has_token {
-                self.allowances.insert(&token_id, (caller, spender));
+                self.allowances.insert(token_id, (caller, spender));
                 return true;
             }
             match Erc721Token::withdraw_from_caller(token_id) {
                 None => false,
                 Some(token) => {
                     token.deposit(&self.env().get_address());
-                    self.allowances.insert(&token_id, (caller, spender));
+                    self.allowances.insert(token_id, (caller, spender));
                     true
                 }
             }
@@ -151,11 +151,11 @@ mod asset_erc20 {
                     token.deposit(&self.env().get_address());
                 }
                 if !token_ids.is_empty() {
-                    self.ownership.insert(&caller, token_ids.clone());
-                    self.operators.insert(&(caller, caller), approval);
+                    self.ownership.insert(caller, token_ids.clone());
+                    self.operators.insert((caller, caller), approval);
                 }
             }
-            self.operators.insert(&(caller, operator), approval);
+            self.operators.insert((caller, operator), approval);
         }
 
         pub fn is_approved_for_all(&self, owner: address, operator: address) -> bool {

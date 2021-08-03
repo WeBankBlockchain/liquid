@@ -214,7 +214,7 @@ where
             let old_key_index: u32 = value_entry.key_index;
             self.mapping
                 .insert(
-                    &key,
+                    key,
                     ValueEntry {
                         key_index: old_key_index,
                         val,
@@ -222,8 +222,9 @@ where
                 )
                 .map(|value_entry| value_entry.val)
         } else {
+            let cloned_key = <K as Decode>::decode(&mut key.encode().as_slice()).unwrap();
             self.mapping.insert(
-                &key,
+                key,
                 ValueEntry {
                     key_index: self.keys.len(),
                     val,
@@ -231,7 +232,7 @@ where
             );
 
             self.keys.push(KeyEntry {
-                key,
+                key: cloned_key,
                 deleted: false,
             });
 
@@ -242,7 +243,7 @@ where
     pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
     where
         K: Borrow<Q>,
-        Q: Encode,
+        Q: Encode + ?Sized,
     {
         let ret = self.mapping.remove(key);
 
@@ -258,7 +259,7 @@ where
     pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
-        Q: Encode,
+        Q: Encode + ?Sized,
     {
         self.mapping.contains_key(key)
     }
@@ -270,7 +271,7 @@ where
     pub fn get<Q>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
-        Q: Encode,
+        Q: Encode + ?Sized,
     {
         self.mapping.get(key).map(|value_entry| &value_entry.val)
     }
@@ -278,7 +279,7 @@ where
     pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
     where
         K: Borrow<Q>,
-        Q: Encode,
+        Q: Encode + ?Sized,
     {
         self.mapping
             .get_mut(key)
@@ -288,7 +289,7 @@ where
     pub fn mutate_with<Q, F>(&mut self, key: &Q, f: F) -> Option<&V>
     where
         K: Borrow<Q>,
-        Q: Encode,
+        Q: Encode + ?Sized,
         F: FnOnce(&mut V),
     {
         self.mapping
@@ -301,7 +302,7 @@ impl<'a, K, V, Q> core::ops::Index<&'a Q> for IterableMapping<K, V>
 where
     K: Borrow<Q> + Codec,
     V: Codec,
-    Q: Encode,
+    Q: Encode + ?Sized,
 {
     type Output = V;
 
@@ -316,7 +317,7 @@ impl<'a, K, V, Q> core::ops::IndexMut<&'a Q> for IterableMapping<K, V>
 where
     K: Borrow<Q> + Codec,
     V: Codec,
-    Q: Encode,
+    Q: Encode + ?Sized,
 {
     fn index_mut(&mut self, index: &'a Q) -> &mut Self::Output {
         self.get_mut(index).expect(

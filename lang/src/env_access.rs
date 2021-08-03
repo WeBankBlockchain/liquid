@@ -32,6 +32,10 @@ impl EnvAccess {
         api::get_address()
     }
 
+    pub fn get_block_number(self) -> u64 {
+        api::get_block_number()
+    }
+
     #[allow(clippy::wrong_self_convention)]
     pub fn is_contract(self, account: &Address) -> bool {
         matches!(api::get_external_code_size(account), 0)

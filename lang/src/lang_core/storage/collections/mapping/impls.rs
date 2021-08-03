@@ -105,7 +105,7 @@ where
     ///
     /// If the map did have this key present, the value is updated,
     /// and the old value is returned.
-    pub fn insert<Q>(&mut self, key: &Q, val: V) -> Option<V>
+    pub fn insert<Q>(&mut self, key: Q, val: V) -> Option<V>
     where
         K: Borrow<Q>,
         Q: Encode,
@@ -140,7 +140,7 @@ where
     where
         K: Borrow<Q>,
         F: FnOnce(&mut V),
-        Q: Encode,
+        Q: Encode + ?Sized,
     {
         let encoded_key = key.encode();
         self.chunk.mutate_with(&encoded_key, f)
@@ -150,7 +150,7 @@ where
     pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
     where
         K: Borrow<Q>,
-        Q: Encode,
+        Q: Encode + ?Sized,
     {
         let encoded_key = key.encode();
         let ret = self.chunk.take(&encoded_key);
@@ -169,7 +169,7 @@ where
     pub fn get<Q>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
-        Q: Encode,
+        Q: Encode + ?Sized,
     {
         let encoded_key = key.encode();
         self.chunk.get(&encoded_key)
@@ -178,7 +178,7 @@ where
     pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
     where
         K: Borrow<Q>,
-        Q: Encode,
+        Q: Encode + ?Sized,
     {
         let encoded_key = key.encode();
         self.chunk.get_mut(&encoded_key)
@@ -187,7 +187,7 @@ where
     pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
-        Q: Encode,
+        Q: Encode + ?Sized,
     {
         let encoded_key = key.encode();
         matches!(self.chunk.get(&encoded_key), Some(_))
@@ -198,7 +198,7 @@ impl<'a, K, Q, V> core::ops::Index<&'a Q> for Mapping<K, V>
 where
     K: Codec + Borrow<Q>,
     V: Codec,
-    Q: Encode,
+    Q: Encode + ?Sized,
 {
     type Output = V;
 
@@ -212,7 +212,7 @@ impl<'a, K, Q, V> core::ops::IndexMut<&'a Q> for Mapping<K, V>
 where
     K: Codec + Borrow<Q>,
     V: Codec,
-    Q: Encode,
+    Q: Encode + ?Sized,
 {
     fn index_mut(&mut self, index: &'a Q) -> &mut Self::Output {
         self.get_mut(index).expect(
@@ -231,7 +231,7 @@ where
         I: IntoIterator<Item = (K, V)>,
     {
         for (k, v) in iter {
-            self.insert(&k, v);
+            self.insert(k, v);
         }
     }
 }
