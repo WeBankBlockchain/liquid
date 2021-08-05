@@ -99,7 +99,6 @@ impl<'a> Testable<'a> {
             pub fn #ident(#(#args)*) -> Self {
                 let mut contract = <Storage as liquid_lang::storage::New>::new();
                 contract.#ident(#(#arg_idents)*);
-                liquid_lang::storage::reset_mutable_call_flag();
                 Self {
                     contract
                 }

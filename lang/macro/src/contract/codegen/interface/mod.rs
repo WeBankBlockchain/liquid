@@ -130,10 +130,6 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
             #(
                 __liquid_encoded.extend(#input_encodes);
             )*
-
-            if #is_mut {
-                liquid_lang::storage::mutable_call_happens();
-            }
             liquid_lang::env::call::<#output_ty>(&self.0, &__liquid_encoded).ok()
         }
     }

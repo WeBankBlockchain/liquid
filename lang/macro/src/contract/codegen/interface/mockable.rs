@@ -292,9 +292,6 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn, interface_ident: &Ident) -> Token
                     EXPECTATIONS.with(|expectations| {
                         for expectation in expectations.borrow_mut().iter_mut() {
                             if expectation.matches(#(#ref_input_idents,)*) {
-                                if #is_mut {
-                                    liquid_lang::storage::mutable_call_happens();
-                                }
                                 return expectation.call(#(#input_idents,)*);
                             }
                         }

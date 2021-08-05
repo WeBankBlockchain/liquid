@@ -15,17 +15,17 @@ use quote::quote;
 
 pub fn generate_wrapper(impls: TokenStream2) -> TokenStream2 {
     quote! {
+        #[cfg(feature = "std")]
         const _: () = {
-            #[cfg(feature = "std")]
-            mod __std {
-                pub use ::std::vec::Vec;
-            }
+            pub use ::std::vec::Vec;
 
-            #[cfg(not(feature = "std"))]
-            mod __std {
-                extern crate alloc;
-                pub use alloc::vec::Vec;
-            }
+            #impls
+        };
+
+        #[cfg(not(feature = "std"))]
+        const _: () = {
+            extern crate alloc;
+            pub use alloc::vec::Vec;
 
             #impls
         };
