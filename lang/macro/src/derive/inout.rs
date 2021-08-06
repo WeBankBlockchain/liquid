@@ -533,10 +533,14 @@ fn generate_abi_enum(ident: &Ident, variants: &[Variant]) -> TokenStream2 {
                     }
                 }).collect::<Vec<_>>()
             } else {
-                variant.field_names.iter().zip(variant.field_tys.iter()).map(|(field_name, field_ty)| {
-                    quote! {
-                        <#field_ty as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(#field_name.to_owned())
-                    }
+                variant.field_names
+                    .iter()
+                    .map(|name| name.to_string())
+                    .zip(variant.field_tys.iter())
+                    .map(|(field_name, field_ty)| {
+                        quote! {
+                            <#field_ty as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(#field_name.to_owned())
+                        }
                 }).collect::<Vec<_>>()
             };
 
