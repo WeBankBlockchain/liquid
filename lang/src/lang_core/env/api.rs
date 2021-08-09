@@ -75,6 +75,10 @@ pub fn now() -> timestamp {
     <EnvInstance as OnInstance>::on_instance(|instance| Env::now(instance))
 }
 
+pub fn get_block_number() -> u64 {
+    <EnvInstance as OnInstance>::on_instance(|instance| Env::get_block_number(instance))
+}
+
 pub fn register_asset(
     asset_name: &[u8],
     issuer: &Address,

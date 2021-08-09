@@ -199,9 +199,11 @@ impl Env for EnvInstance {
     fn get_block_number(&mut self) -> u64 {
         ext::get_block_number() as u64
     }
+
     fn get_external_code_size(&self, account: &Address) -> u32 {
         ext::get_external_code_size(&account.0)
     }
+
     fn register_asset(
         &mut self,
         asset_name: &[u8],

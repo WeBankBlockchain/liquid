@@ -18,15 +18,13 @@ jobs:
           fetch-depth: 5
       - name: install macOS dependencies
         run: brew install openssl@1.1 ccache automake
-      - name: Install latest nightly
+      - name: Install nightly
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
           override: true
-          components: rustfmt, clippy
           target: wasm32-unknown-unknown
       - name: check
-        run: ./scripts/check.sh -w
+        run: ./scripts/check.sh -e
 
   ubuntu_test:
     name: ubuntu_test
@@ -38,15 +36,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 5
-      - name: Install latest nightly
+      - name: Install nightly
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
           override: true
-          components: rustfmt, clippy
           target: wasm32-unknown-unknown
-      # - name: install ubuntu dependencies
-        # run: sudo apt install -y git curl build-essential clang cmake openssl libssl-dev zlib1g-dev ccache libgmp-dev flex bison automake libtool
       - name: check
         run: ./scripts/check.sh -e
 
@@ -60,15 +54,12 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 5
-      - name: Install latest nightly
+      - name: Install nightly
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
           override: true
           components: rustfmt, clippy
           target: wasm32-unknown-unknown
-      # - name: install ubuntu dependencies
-        # run: sudo apt install -y git curl build-essential clang cmake openssl libssl-dev zlib1g-dev ccache libgmp-dev flex bison automake libtool
       - name: check
         shell: cmd
-        run: ./scripts/check-examples.bat
+        run: ./scripts/check-workspace.bat

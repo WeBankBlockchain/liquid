@@ -108,14 +108,14 @@ pub fn parse_select_path(path: &str, span: Span) -> Result<SelectWith> {
     }
 
     if path.starts_with("::") || path.starts_with("crate::") {
-        let stream = syn::parse_str(&path)?;
+        let stream = syn::parse_str(path)?;
         let tokens = respan_token_stream(stream, span);
         let expr_path = syn::parse2::<syn::ExprPath>(tokens)?;
         Ok(SelectWith::Func(expr_path))
     } else {
         check_non_ascii(path, span)?;
 
-        let parser = obj_path::Parser::new(&path);
+        let parser = obj_path::Parser::new(path);
         match parser.parse() {
             Ok(ast) => Ok(SelectWith::Obj(ast)),
             Err(err) => {

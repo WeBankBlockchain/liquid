@@ -59,10 +59,10 @@ check_examples() {
         fi
         for example in $(ls examples/${dir});do
             LOG_INFO "checking examples/${dir}/${example} ..."
-            cargo +nightly build --release --no-default-features --target=wasm32-unknown-unknown --manifest-path "examples/${dir}/${example}/Cargo.toml"
-            cargo +nightly test --manifest-path "examples/${dir}/${example}/Cargo.toml"
-            cargo +nightly run --package abi-gen --manifest-path "examples/${dir}/${example}/Cargo.toml"
-            cargo +nightly build --release --no-default-features --features "gm" --target=wasm32-unknown-unknown --manifest-path "examples/${dir}/${example}/Cargo.toml"
+            cargo build --release --no-default-features --target=wasm32-unknown-unknown --manifest-path "examples/${dir}/${example}/Cargo.toml"
+            cargo test --manifest-path "examples/${dir}/${example}/Cargo.toml"
+            cargo run --package abi-gen --manifest-path "examples/${dir}/${example}/Cargo.toml"
+            cargo build --release --no-default-features --features "gm" --target=wasm32-unknown-unknown --manifest-path "examples/${dir}/${example}/Cargo.toml"
             LOG_INFO "examples/${dir}/${example} is ok."
         done
     done
@@ -72,21 +72,21 @@ check_workspace() {
     LOG_INFO "checking workspace build ..."
     for feature in ${features[*]};do
         LOG_INFO "checking feature ${feature} ..."
-        cargo +nightly check --verbose --features "${feature}" --manifest-path lang/Cargo.toml
-        cargo +nightly check --verbose --no-default-features --features "${feature}" --target=wasm32-unknown-unknown --manifest-path lang/Cargo.toml
-        cargo +nightly build --verbose --no-default-features --features "${feature}" --release --target=wasm32-unknown-unknown --manifest-path lang/Cargo.toml > ${build_log}
+        cargo check --verbose --features "${feature}" --manifest-path lang/Cargo.toml
+        cargo check --verbose --no-default-features --features "${feature}" --target=wasm32-unknown-unknown --manifest-path lang/Cargo.toml
+        cargo build --verbose --no-default-features --features "${feature}" --release --target=wasm32-unknown-unknown --manifest-path lang/Cargo.toml > ${build_log}
     done
     LOG_INFO "checking workspace build fmt ..."
-    cargo +nightly fmt --verbose --all -- --check
+    cargo fmt --verbose --all -- --check
     LOG_INFO "checking workspace build unit test ..."
-    cargo +nightly test --verbose --features "contract" --release --manifest-path lang/Cargo.toml
-    cargo +nightly test --verbose --features "collaboration" --release --manifest-path lang/Cargo.toml
-    cargo +nightly test --verbose --release --manifest-path primitives/Cargo.toml
-    cargo +nightly test --verbose --release --features "collaboration" --manifest-path lang/macro/Cargo.toml
+    cargo test --verbose --features "contract" --release --manifest-path lang/Cargo.toml
+    cargo test --verbose --features "collaboration" --release --manifest-path lang/Cargo.toml
+    cargo test --verbose --release --manifest-path primitives/Cargo.toml
+    cargo test --verbose --release --features "collaboration" --manifest-path lang/macro/Cargo.toml
     for feature in ${features[*]};do
         LOG_INFO "checking feature ${feature} using clippy ..."
-        cargo +nightly clippy --verbose --all --features "${feature}" --features "contract-abi-gen" --manifest-path lang/Cargo.toml -- -D warnings
-        cargo +nightly clippy --verbose --all --no-default-features --features "${feature}" --features "collaboration-abi-gen" --target=wasm32-unknown-unknown --manifest-path lang/Cargo.toml -- -D warnings
+        cargo clippy --verbose --all --features "${feature}" --features "contract-abi-gen" --manifest-path lang/Cargo.toml -- -D warnings
+        cargo clippy --verbose --all --no-default-features --features "${feature}" --features "collaboration-abi-gen" --target=wasm32-unknown-unknown --manifest-path lang/Cargo.toml -- -D warnings
     done
 }
 

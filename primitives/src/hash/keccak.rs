@@ -129,7 +129,7 @@ const fn fold(a: &mut [u64; WORD], input: &[u8]) -> usize {
     let mut ip = 0;
     let mut l = input.len();
     while l >= RATE {
-        let temp_input = convert_bytes_to_bytes(&input, ip, RATE);
+        let temp_input = convert_bytes_to_bytes(input, ip, RATE);
         let mut temp_a = convert_words_to_bytes(a);
         xorin(&mut temp_a, &temp_input, RATE);
         let temp = convert_bytes_to_words(&temp_a);

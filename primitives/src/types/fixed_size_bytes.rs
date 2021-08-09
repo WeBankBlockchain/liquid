@@ -167,7 +167,7 @@ macro_rules! impl_bytes_from_integer {
                 impl From<$t1> for Bytes#N {
                     fn from(i: $t1) -> Self {
                         let mut ret = [0u8; (N as usize)];
-                        &ret[..$s].copy_from_slice(&i.to_be_bytes());
+                        ret[..$s].copy_from_slice(&i.to_be_bytes());
                         Self(ret)
                     }
                 }
@@ -175,7 +175,7 @@ macro_rules! impl_bytes_from_integer {
                 impl From<$t2> for Bytes#N {
                     fn from(i: $t2) -> Self {
                         let mut ret = [0u8; (N as usize)];
-                        &ret[..$s].copy_from_slice(&i.to_be_bytes());
+                        ret[..$s].copy_from_slice(&i.to_be_bytes());
                         Self(ret)
                     }
                 }

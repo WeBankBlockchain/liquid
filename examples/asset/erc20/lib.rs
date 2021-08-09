@@ -65,7 +65,7 @@ mod asset_erc20 {
                     let allowance =
                         *self.allowances.get(&(caller, spender)).unwrap_or(&0);
                     self.allowances
-                        .insert(&(caller, spender), allowance + amount);
+                        .insert((caller, spender), allowance + amount);
                     true
                 }
             }
@@ -80,7 +80,7 @@ mod asset_erc20 {
             let caller = self.env().get_caller();
             let allowance = *self.allowances.get(&(sender, caller)).unwrap_or(&0);
             if allowance >= amount {
-                self.allowances.insert(&(sender, caller), 0);
+                self.allowances.insert((sender, caller), 0);
                 return match Erc20Token::withdraw_from_self(amount) {
                     None => false,
                     Some(token) => {

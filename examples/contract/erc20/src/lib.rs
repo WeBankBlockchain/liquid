@@ -39,7 +39,7 @@ mod erc20 {
             let caller = self.env().get_caller();
             self.total_supply.initialize(initial_supply);
             self.balances.initialize();
-            self.balances.insert(&caller, initial_supply);
+            self.balances.insert(caller, initial_supply);
             self.allowances.initialize();
         }
 
@@ -58,7 +58,7 @@ mod erc20 {
 
         pub fn approve(&mut self, spender: address, value: Balance) -> bool {
             let owner = self.env().get_caller();
-            self.allowances.insert(&(owner, spender), value);
+            self.allowances.insert((owner, spender), value);
             self.env().emit(Approval {
                 owner,
                 spender,
@@ -79,7 +79,7 @@ mod erc20 {
                 return false;
             }
 
-            self.allowances.insert(&(from, caller), allowance - value);
+            self.allowances.insert((from, caller), allowance - value);
             self.transfer_from_to(from, to, value)
         }
 
@@ -102,9 +102,9 @@ mod erc20 {
                 return false;
             }
 
-            self.balances.insert(&from, from_balance - value);
+            self.balances.insert(from, from_balance - value);
             let to_balance = self.balance_of_or_zero(&to);
-            self.balances.insert(&to, to_balance + value);
+            self.balances.insert(to, to_balance + value);
             self.env().emit(Transfer { from, to, value });
             true
         }

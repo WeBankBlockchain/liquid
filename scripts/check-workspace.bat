@@ -9,7 +9,7 @@ set results=()
 set results[0].name=basic_check
 set results[0].result=0
 for %%f in %features% do (
-    cargo +nightly check ^
+    cargo check ^
         --verbose ^
         --features %%f ^
         --manifest-path lang\Cargo.toml
@@ -17,7 +17,7 @@ for %%f in %features% do (
         set results[0].result=1
     )
 
-    cargo +nightly check ^
+    cargo check ^
         --verbose ^
         --no-default-features ^
         --features %%f ^
@@ -31,7 +31,7 @@ for %%f in %features% do (
 set results[1].name=build_wasm
 set results[1].result=0
 for %%f in %features% do (
-    cargo +nightly build ^
+    cargo build ^
         --verbose ^
         --no-default-features ^
         --features %%f ^
@@ -45,7 +45,7 @@ for %%f in %features% do (
 
 set results[2].name=fmt
 set results[2].result=0
-cargo +nightly fmt --verbose --all -- --check
+cargo fmt --verbose --all -- --check
 if !errorlevel! neq 0 (
     set result[2].result=1
 )
@@ -53,7 +53,7 @@ if !errorlevel! neq 0 (
 set results[3].name=clippy
 set results[3].result=0
 
-cargo +nightly clippy ^
+cargo clippy ^
     --verbose ^
     --all ^
     --features "contract contract-abi-gen" ^
@@ -63,7 +63,7 @@ if !errorlevel! neq 0 (
     set results[3].result=1
 )
 
-cargo +nightly clippy ^
+cargo clippy ^
     --verbose ^
     --all ^
     --no-default-features ^
@@ -78,32 +78,24 @@ if !errorlevel! neq 0 (
 set results[4].name=unit_tests
 set results[4].result=0
 
-cargo +nightly test --verbose --features "contract" --release --manifest-path lang/Cargo.toml
+for %%f in %features% do (
+    cargo test --verbose --features %%f --release --manifest-path lang/Cargo.toml
+    if !errorlevel! neq 0 (
+        set results[4].result=1
+    )
+
+    cargo test --verbose --features %%f --release --manifest-path abi-gen/Cargo.toml
+    if !errorlevel! neq 0 (
+        set results[4].result=1
+    )
+)
+
+cargo test --verbose --features "collaboration" --release --manifest-path lang/macro/Cargo.toml
 if !errorlevel! neq 0 (
     set results[4].result=1
 )
 
-cargo +nightly test --verbose --features "collaboration" --release --manifest-path lang/Cargo.toml
-if !errorlevel! neq 0 (
-    set results[4].result=1
-)
-
-cargo +nightly test --verbose --features "collaboration" --release --manifest-path lang/macro/Cargo.toml
-if !errorlevel! neq 0 (
-    set results[4].result=1
-)
-
-cargo +nightly test --verbose --release --manifest-path primitives/Cargo.toml
-if !errorlevel! neq 0 (
-    set results[4].result=1
-)
-
-cargo +nightly test --verbose --features "contract" --release --manifest-path abi-gen/Cargo.toml
-if !errorlevel! neq 0 (
-    set results[4].result=1
-)
-
-cargo +nightly test --verbose --features "collaboration" --release --manifest-path abi-gen/Cargo.toml
+cargo test --verbose --release --manifest-path primitives/Cargo.toml
 if !errorlevel! neq 0 (
     set results[4].result=1
 )

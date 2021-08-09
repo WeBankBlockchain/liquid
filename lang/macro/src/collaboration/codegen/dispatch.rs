@@ -192,8 +192,8 @@ impl<'a> Dispatch<'a> {
             let right_marker = quote! { Marker::<[(); #right_id as usize]> };
             let sig = &right.sig;
             let right_name = &sig.ident;
-            let input_idents = common::generate_input_idents(&sig);
-            let input_tys = common::generate_input_tys(&sig);
+            let input_idents = common::generate_input_idents(sig);
+            let input_tys = common::generate_input_tys(sig);
             let inputs = input_idents.iter().zip(input_tys.iter()).map(|(ident, ty)| {
                 quote! {
                     let #ident = <#ty as scale::Decode>::decode(data_ptr).map_err(|_| liquid_lang::DispatchError::InvalidParams)?;

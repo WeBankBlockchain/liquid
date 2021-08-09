@@ -265,7 +265,7 @@ fn generate_encode_shadow_struct(
         }
 
         impl scale::Encode for #ident {
-            fn encode(&self) -> __std::Vec<u8> {
+            fn encode(&self) -> Vec<u8> {
                 let encode_shadow: EncodeShadow::<'_> = self.into();
                 encode_shadow.encode()
             }
@@ -344,7 +344,7 @@ fn generate_encode_shadow_enum<'a>(
         }
 
         impl scale::Encode for #ident {
-            fn encode(&self) -> __std::Vec<u8> {
+            fn encode(&self) -> Vec<u8> {
                 let encode_shadow: EncodeShadow::<'_> = self.into();
                 encode_shadow.encode()
             }
@@ -486,7 +486,7 @@ fn generate_abi_struct(
             }
 
             fn generate_param_abi(name: String) -> liquid_abi_gen::ParamAbi {
-                let mut components = __std::Vec::new();
+                let mut components = Vec::new();
                 #(components.push(#field_param_abis);)*
                 liquid_abi_gen::ParamAbi::Composite(
                     liquid_abi_gen::CompositeAbi {
@@ -533,10 +533,14 @@ fn generate_abi_enum(ident: &Ident, variants: &[Variant]) -> TokenStream2 {
                     }
                 }).collect::<Vec<_>>()
             } else {
-                variant.field_names.iter().zip(variant.field_tys.iter()).map(|(field_name, field_ty)| {
-                    quote! {
-                        <#field_ty as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(#field_name.to_owned())
-                    }
+                variant.field_names
+                    .iter()
+                    .map(|name| name.to_string())
+                    .zip(variant.field_tys.iter())
+                    .map(|(field_name, field_ty)| {
+                        quote! {
+                            <#field_ty as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(#field_name.to_owned())
+                        }
                 }).collect::<Vec<_>>()
             };
 
@@ -562,7 +566,7 @@ fn generate_abi_enum(ident: &Ident, variants: &[Variant]) -> TokenStream2 {
             }
 
             fn generate_param_abi(name: String) -> liquid_abi_gen::ParamAbi {
-                let mut components = __std::Vec::new();
+                let mut components = Vec::new();
                 #(components.push(#variant_abis);)*
                 liquid_abi_gen::ParamAbi::Composite(
                     liquid_abi_gen::CompositeAbi {
