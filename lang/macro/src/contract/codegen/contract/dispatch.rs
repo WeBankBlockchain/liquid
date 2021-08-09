@@ -141,8 +141,8 @@ impl<'a> Dispatch<'a> {
 
         let sig = &func.sig;
         let fn_name = &sig.ident;
-        let input_idents = common::generate_input_idents(&sig);
-        let input_tys = common::generate_input_tys(&sig);
+        let input_idents = common::generate_input_idents(sig);
+        let input_tys = common::generate_input_tys(sig);
         let inputs = input_idents.iter().zip(input_tys.iter()).map(|(ident, ty)| {
             quote! {
                 let #ident = <#ty as scale::Decode>::decode(data_ptr).map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
@@ -187,7 +187,7 @@ impl<'a> Dispatch<'a> {
             struct __LIQUID_CONSTRUCTOR_INPUT_TY_CHECKER #constr_input_ty_checker;
 
             impl Storage {
-                pub fn dispatch() -> liquid_lang::DispatchResult {
+                pub fn __liquid_dispatch() -> liquid_lang::DispatchResult {
                     let mut storage = <Storage as liquid_lang::storage::New>::new();
                     let call_data = liquid_lang::env::get_call_data(liquid_lang::env::CallMode::Call)
                         .map_err(|_| liquid_lang::DispatchError::CouldNotReadInput)?;
@@ -264,7 +264,7 @@ impl<'a> Dispatch<'a> {
 
             #[no_mangle]
             fn main() {
-                let ret_info = liquid_lang::DispatchRetInfo::from(Storage::dispatch());
+                let ret_info = liquid_lang::DispatchRetInfo::from(Storage::__liquid_dispatch());
                 if !ret_info.is_success() {
                     liquid_lang::env::revert(&ret_info.get_info_string());
                 }

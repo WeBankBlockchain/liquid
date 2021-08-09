@@ -100,7 +100,7 @@ impl<'a> AstVisitor for PathVisitor<'a> {
 
                 match field {
                     Field::Identifier(ident) => {
-                        let ident = Ident::new(&ident, TokenSpan::call_site());
+                        let ident = Ident::new(ident, TokenSpan::call_site());
                         self.stmts.push(
                             if self.is_array_now {
                                 quote! {

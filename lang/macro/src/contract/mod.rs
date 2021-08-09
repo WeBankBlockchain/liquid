@@ -13,10 +13,10 @@
 mod codegen;
 pub mod ir;
 
-use crate::{common::GenerateCode, utils::check_idents};
+use crate::{common::GenerateCode, error::*, utils::check_idents};
 use proc_macro2::TokenStream as TokenStream2;
-use std::convert::TryFrom;
-use syn::Result;
+use std::{cell::RefCell, convert::TryFrom};
+use syn::{spanned::Spanned, Result};
 
 pub enum GenerateMode {
     Contract,
@@ -34,6 +34,13 @@ pub fn generate(
     }
 }
 
+// It seems that rls may make compiler working in multi-threaded mode to acquire
+// intelli sense information. If this static variable not defined as thread local, the
+// rls will display the error that never exits...
+thread_local! {
+    pub static CONTRACT_DEFINITION_COUNT: RefCell<u8> = RefCell::new(0);
+}
+
 fn generate_impl(
     attr: TokenStream2,
     input: TokenStream2,
@@ -44,7 +51,28 @@ fn generate_impl(
     match mode {
         GenerateMode::Contract => {
             let params = syn::parse2::<ir::ContractParams>(attr)?;
+            let input_span = input.span();
             let item_mod = syn::parse2::<syn::ItemMod>(input)?;
+
+            let had_redefined = CONTRACT_DEFINITION_COUNT.with(|def_count| {
+                let count = *def_count.borrow();
+                if count == 0 {
+                    *def_count.borrow_mut() = count + 1;
+                    false
+                } else {
+                    true
+                }
+            });
+
+            if had_redefined {
+                bail_span!(
+                    input_span,
+                    "contract `{}` redefined here, the project should only contain 1 \
+                     contract definition",
+                    item_mod.ident
+                );
+            }
+
             let liquid_ir = ir::Contract::try_from((params, item_mod))?;
             Ok(liquid_ir.generate_code())
         }

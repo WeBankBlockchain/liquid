@@ -23,6 +23,7 @@ mod utils;
 
 use cfg_if::cfg_if;
 use derive::wrapper;
+use error::*;
 use proc_macro::TokenStream;
 
 cfg_if! {

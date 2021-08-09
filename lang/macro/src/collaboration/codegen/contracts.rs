@@ -238,7 +238,7 @@ impl<'a> Contracts<'a> {
                         let mated = unsafe {
                             core::mem::transmute::<#ident, #mated_name>(contract)
                         };
-                        contracts.insert(&len, (mated, false));
+                        contracts.insert(len, (mated, false));
                         Self {
                             __liquid_id: len,
                             __liquid_marker: Default::default(),
@@ -268,7 +268,7 @@ impl<'a> Contracts<'a> {
                 let sig = &right.sig;
                 let fn_name = &sig.ident;
                 let inputs = &sig.inputs.iter().skip(1).collect::<Vec<_>>();
-                let input_idents = common::generate_input_idents(&sig);
+                let input_idents = common::generate_input_idents(sig);
                 let output = &sig.output;
                 let need_abolish = !sig.is_self_ref();
                 let execute = if need_abolish {

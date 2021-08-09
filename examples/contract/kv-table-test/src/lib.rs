@@ -93,8 +93,8 @@ mod kv_table_test {
         }
 
         pub fn set(&mut self, id: String, item_price: i256, item_name: String) -> i256 {
-            let table = self.table_factory.openTable(TABLE_NAME.clone()).unwrap();
-            let entry = table.newEntry().unwrap();
+            let mut table = self.table_factory.openTable(TABLE_NAME.clone()).unwrap();
+            let mut entry = table.newEntry().unwrap();
             entry.setString(String::from("id"), id.clone());
             entry.setI256(String::from("item_price"), item_price);
             entry.setString(String::from("item_name"), item_name);

@@ -11,6 +11,7 @@
 // limitations under the License.
 
 #![allow(dead_code)]
+#![allow(unknown_lints)]
 
 pub(crate) mod api;
 pub(crate) mod backend;

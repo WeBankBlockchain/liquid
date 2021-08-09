@@ -1,0 +1,11 @@
+error: contract `noop` redefined here, the project should only contain 1 contract definition
+  --> $DIR/50-contract-redefined.rs:17:1
+   |
+17 | / mod noop {
+18 | |     #[liquid(storage)]
+19 | |     struct Noop {}
+20 | |
+...  |
+26 | |     }
+27 | | }
+   | |_^

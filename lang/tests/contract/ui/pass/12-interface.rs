@@ -52,11 +52,7 @@ mod noop {
             let iface2 = Iface2::at(Default::default());
 
             let _ = iface1.getInt(String::from("noop"));
-            iface1.setAddress(String::from("noop"), address::default());
-            iface1.setString(String::from("noop"), String::from("noop"));
-
             let _ = iface2.get();
-            iface2.set();
         }
     }
 }

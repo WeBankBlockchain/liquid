@@ -54,7 +54,7 @@ mod ballot {
 
             self.voters.initialize();
             self.voters.insert(
-                &chairperson,
+                chairperson,
                 Voter {
                     weight: 1,
                     voted: false,
@@ -98,7 +98,7 @@ mod ballot {
                 voter.weight = 1;
             } else {
                 self.voters.insert(
-                    &voter,
+                    voter,
                     Voter {
                         weight: 1,
                         voted: false,
