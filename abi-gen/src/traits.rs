@@ -216,15 +216,25 @@ where
     T: GenerateParamAbi,
 {
     fn generate_ty_name() -> String {
-        String::from("option")
+        String::from("enum")
     }
 
     fn generate_param_abi(name: String) -> ParamAbi {
-        OptionAbi {
+        let some = ParamAbi::Composite(CompositeAbi {
+            trivial: TrivialAbi::new(String::from("Some"), String::new()),
+            components: vec![<T as GenerateParamAbi>::generate_param_abi(String::new())],
+        });
+        let none = ParamAbi::Composite(CompositeAbi {
+            trivial: TrivialAbi::new(String::from("None"), String::new()),
+            components: vec![],
+        });
+
+        let components = vec![some, none];
+
+        ParamAbi::Composite(CompositeAbi {
             trivial: TrivialAbi::new(Self::generate_ty_name(), name),
-            some: Box::new(<T as GenerateParamAbi>::generate_param_abi("".into())),
-        }
-        .into()
+            components,
+        })
     }
 }
 
@@ -234,16 +244,25 @@ where
     E: GenerateParamAbi,
 {
     fn generate_ty_name() -> String {
-        String::from("result")
+        String::from("enum")
     }
 
     fn generate_param_abi(name: String) -> ParamAbi {
-        ResultAbi {
+        let ok = ParamAbi::Composite(CompositeAbi {
+            trivial: TrivialAbi::new(String::from("Ok"), String::new()),
+            components: vec![<T as GenerateParamAbi>::generate_param_abi(String::new())],
+        });
+        let err = ParamAbi::Composite(CompositeAbi {
+            trivial: TrivialAbi::new(String::from("Err"), String::new()),
+            components: vec![<E as GenerateParamAbi>::generate_param_abi(String::new())],
+        });
+
+        let components = vec![ok, err];
+
+        ParamAbi::Composite(CompositeAbi {
             trivial: TrivialAbi::new(Self::generate_ty_name(), name),
-            ok: Box::new(<T as GenerateParamAbi>::generate_param_abi("".into())),
-            err: Box::new(<E as GenerateParamAbi>::generate_param_abi("".into())),
-        }
-        .into()
+            components,
+        })
     }
 }
 

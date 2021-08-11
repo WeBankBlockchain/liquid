@@ -11,8 +11,41 @@
 // limitations under the License.
 
 use cfg_if::cfg_if;
+use derive_more::From;
+use serde::Serialize;
+
 pub mod traits;
 mod type_to_string;
+
+#[derive(Serialize)]
+pub struct TrivialAbi {
+    #[serde(rename = "type")]
+    pub ty: String,
+    #[serde(skip_serializing_if = "::std::string::String::is_empty")]
+    pub name: String,
+}
+
+impl TrivialAbi {
+    pub fn new(ty: String, name: String) -> Self {
+        TrivialAbi { ty, name }
+    }
+}
+
+#[derive(Serialize)]
+pub struct CompositeAbi {
+    #[serde(flatten)]
+    pub trivial: TrivialAbi,
+    #[serde(skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub components: Vec<ParamAbi>,
+}
+
+#[derive(Serialize, From)]
+#[serde(untagged)]
+pub enum ParamAbi {
+    Composite(CompositeAbi),
+    Trivial(TrivialAbi),
+    None,
+}
 
 cfg_if! {
     if #[cfg(feature = "contract")] {

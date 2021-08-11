@@ -10,8 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::traits::*;
-use derive_more::From;
+use crate::{traits::*, ParamAbi};
 use serde::Serialize;
 
 pub struct CollaborationAbi {
@@ -23,53 +22,6 @@ pub struct ContractAbi {
     pub name: String,
     pub data: Vec<ParamAbi>,
     pub rights: Vec<RightAbi>,
-}
-
-#[derive(Serialize)]
-pub struct TrivialAbi {
-    #[serde(rename = "type")]
-    pub ty: String,
-    #[serde(skip_serializing_if = "::std::string::String::is_empty")]
-    pub name: String,
-}
-
-impl TrivialAbi {
-    pub fn new(ty: String, name: String) -> Self {
-        TrivialAbi { ty, name }
-    }
-}
-
-#[derive(Serialize)]
-pub struct CompositeAbi {
-    #[serde(flatten)]
-    pub trivial: TrivialAbi,
-    #[serde(skip_serializing_if = "::std::vec::Vec::is_empty")]
-    pub components: Vec<ParamAbi>,
-}
-
-#[derive(Serialize)]
-pub struct OptionAbi {
-    #[serde(flatten)]
-    pub trivial: TrivialAbi,
-    pub some: Box<ParamAbi>,
-}
-
-#[derive(Serialize)]
-pub struct ResultAbi {
-    #[serde(flatten)]
-    pub trivial: TrivialAbi,
-    pub ok: Box<ParamAbi>,
-    pub err: Box<ParamAbi>,
-}
-
-#[derive(Serialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ParamAbi {
-    Opt(OptionAbi),
-    Res(ResultAbi),
-    Composite(CompositeAbi),
-    Trivial(TrivialAbi),
 }
 
 #[derive(Serialize)]
