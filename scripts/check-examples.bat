@@ -8,22 +8,22 @@ set CARGO_TARGET_DIR=.\examples\target
 for /f %%d in ('dir /b examples') do (
     if /i %%d neq target (
         for /f %%f in ('dir /b examples\%%d') do (
-            cargo +nightly build --release --no-default-features --target=wasm32-unknown-unknown --manifest-path examples\%%d\%%f\Cargo.toml
+            cargo build --release --no-default-features --target=wasm32-unknown-unknown --manifest-path examples\%%d\%%f\Cargo.toml
             if !errorlevel! neq 0 (
                 exit /b %errorlevel%
             )
 
-            cargo +nightly test --manifest-path examples\%%d\%%f\Cargo.toml
+            cargo test --manifest-path examples\%%d\%%f\Cargo.toml
             if !errorlevel! neq 0 (
                 exit /b %errorlevel%
             )
 
-            cargo +nightly run --package abi-gen --manifest-path examples\%%d\%%f\Cargo.toml
+            cargo run --package abi-gen --manifest-path examples\%%d\%%f\Cargo.toml
             if !errorlevel! neq 0 (
                 exit /b %errorlevel%
             )
 
-            cargo +nightly build --release --no-default-features --features "gm" --target=wasm32-unknown-unknown --manifest-path examples\%%d\%%f\Cargo.toml
+            cargo build --release --no-default-features --features "gm" --target=wasm32-unknown-unknown --manifest-path examples\%%d\%%f\Cargo.toml
             if !errorlevel! neq 0 (
                 exit /b %errorlevel%
             )

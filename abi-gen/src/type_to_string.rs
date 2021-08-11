@@ -36,10 +36,25 @@ macro_rules! primitive_type_to_string {
     };
 }
 
+primitive_type_to_string!(bool);
 primitive_type_to_string!(
-    u8, u16, u32, u64, u128, u256, i8, i16, i32, i64, i128, i256, bool
+    String => string,
+    Address => address,
+    Bytes => bytes,
+    Hash => hash,
+    u8 => uint8,
+    u16 => uint16,
+    u32 => uint32,
+    u64 => uint64,
+    u128 => uint128,
+    u256 => uint256,
+    i8 => int8,
+    i16 => int16,
+    i32 => int32,
+    i64 => int64,
+    i128 => int128,
+    i256 => int256
 );
-primitive_type_to_string!(String => string, Address => address, Bytes => bytes, Hash => hash);
 seq!(N in 1..=32 {
     primitive_type_to_string!(Bytes#N => bytes#N);
 });
@@ -56,19 +71,19 @@ mod tests {
 
     #[test]
     fn test_primitive() {
-        assert_eq!(u8::type_to_string(), "u8");
-        assert_eq!(u16::type_to_string(), "u16");
-        assert_eq!(u32::type_to_string(), "u32");
-        assert_eq!(u64::type_to_string(), "u64");
-        assert_eq!(u128::type_to_string(), "u128");
-        assert_eq!(u256::type_to_string(), "u256");
+        assert_eq!(u8::type_to_string(), "uint8");
+        assert_eq!(u16::type_to_string(), "uint16");
+        assert_eq!(u32::type_to_string(), "uint32");
+        assert_eq!(u64::type_to_string(), "uint64");
+        assert_eq!(u128::type_to_string(), "uint128");
+        assert_eq!(u256::type_to_string(), "uint256");
 
-        assert_eq!(i8::type_to_string(), "i8");
-        assert_eq!(i16::type_to_string(), "i16");
-        assert_eq!(i32::type_to_string(), "i32");
-        assert_eq!(i64::type_to_string(), "i64");
-        assert_eq!(i128::type_to_string(), "i128");
-        assert_eq!(i256::type_to_string(), "i256");
+        assert_eq!(i8::type_to_string(), "int8");
+        assert_eq!(i16::type_to_string(), "int16");
+        assert_eq!(i32::type_to_string(), "int32");
+        assert_eq!(i64::type_to_string(), "int64");
+        assert_eq!(i128::type_to_string(), "int128");
+        assert_eq!(i256::type_to_string(), "int256");
 
         assert_eq!(String::type_to_string(), "string");
         assert_eq!(Address::type_to_string(), "address");

@@ -10,48 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::traits::*;
-
-use derive_more::From;
+use crate::{traits::*, ParamAbi};
 use serde::Serialize;
 
 pub struct ContractAbi {
     pub constructor_abi: ConstructorAbi,
     pub external_fn_abis: Vec<ExternalFnAbi>,
     pub event_abis: Vec<EventAbi>,
-}
-
-#[derive(Serialize)]
-pub struct TrivialAbi {
-    #[serde(rename = "type")]
-    pub ty: String,
-    #[serde(skip_serializing_if = "::std::string::String::is_empty")]
-    pub name: String,
-}
-
-#[derive(Serialize)]
-pub struct OptionAbi {
-    #[serde(flatten)]
-    pub trivial: TrivialAbi,
-    pub some: Box<ParamAbi>,
-}
-
-#[derive(Serialize)]
-pub struct ResultAbi {
-    #[serde(flatten)]
-    pub trivial: TrivialAbi,
-    pub ok: Box<ParamAbi>,
-    pub err: Box<ParamAbi>,
-}
-
-#[derive(Serialize, From)]
-#[serde(untagged)]
-pub enum ParamAbi {
-    Opt(OptionAbi),
-    Res(ResultAbi),
-    Composite(CompositeAbi),
-    Trivial(TrivialAbi),
-    None,
 }
 
 #[derive(Serialize)]
@@ -94,20 +59,6 @@ impl ExternalFnAbi {
             },
         }
     }
-}
-
-impl TrivialAbi {
-    pub fn new(ty: String, name: String) -> Self {
-        TrivialAbi { ty, name }
-    }
-}
-
-#[derive(Serialize)]
-pub struct CompositeAbi {
-    #[serde(flatten)]
-    pub trivial: TrivialAbi,
-    #[serde(skip_serializing_if = "::std::vec::Vec::is_empty")]
-    pub components: Vec<ParamAbi>,
 }
 
 pub struct ConstructorAbiBuilder {
