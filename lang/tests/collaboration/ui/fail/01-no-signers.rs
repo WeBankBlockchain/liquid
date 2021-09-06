@@ -4,7 +4,7 @@ use liquid_lang as liquid;
 mod noop {
     #[liquid(contract)]
     pub struct Noop {
-        addr: address
+        addr: Address
     }
 }
 

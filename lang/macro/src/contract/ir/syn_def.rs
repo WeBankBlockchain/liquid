@@ -35,6 +35,7 @@ pub struct ContractMetaInfo {
 }
 
 /// The meta info for an interface.
+#[derive(Debug)]
 pub struct InterfaceMetaInfo {
     pub interface_name: String,
 }
@@ -287,6 +288,7 @@ pub enum FunctionKind {
     External(usize),
 }
 
+#[derive(Debug)]
 pub struct Signature {
     /// The `fn` token.
     pub fn_token: Token![fn],
@@ -322,7 +324,7 @@ impl Signature {
     }
 }
 
-#[derive(From)]
+#[derive(From, Debug)]
 pub enum FnArg {
     Receiver(Box<syn::Receiver>),
     Typed(Box<IdentType>),
@@ -337,6 +339,7 @@ impl ToTokens for FnArg {
     }
 }
 
+#[derive(Debug)]
 pub struct IdentType {
     /// The attributes of the argument
     pub attrs: Vec<syn::Attribute>,
@@ -444,6 +447,7 @@ pub struct Contract {
 }
 
 /// The user-defined data structure declared in an interface.
+#[derive(Debug)]
 pub struct ForeignStruct {
     pub attrs: Vec<syn::Attribute>,
     /// The `struct` token.
@@ -462,6 +466,7 @@ impl Spanned for ForeignStruct {
 }
 
 /// The method declared in an interface.
+#[derive(Debug)]
 pub struct ForeignFn {
     pub attrs: Vec<syn::Attribute>,
     /// The signature of the foreign method.
@@ -481,6 +486,7 @@ impl Spanned for ForeignFn {
 }
 
 /// The interface with all required information.
+#[derive(Debug)]
 pub struct Interface {
     /// The `mod` token.
     pub mod_token: Token![mod],

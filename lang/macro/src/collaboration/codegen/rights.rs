@@ -93,7 +93,8 @@ impl<'a> GenerateCode for Rights<'a> {
                             #[allow(unused_imports)]
                             use liquid_lang::AcquireSigners;
                             #[allow(unused_mut)]
-                            let mut owners = liquid_prelude::collections::BTreeSet::<&'_ address>::new();
+                            let mut owners =
+                                liquid_prelude::collections::BTreeSet::<&'_ Address>::new();
                             #(owners.extend(liquid_lang::acquire_addrs(#selectors));)*
                             if !__liquid_authorization_check(&owners) {
                                 let mut error_info = String::from("exercising right `");
@@ -106,8 +107,16 @@ impl<'a> GenerateCode for Rights<'a> {
                             }
                             let signers = <#mated_name as AcquireSigners>::acquire_signers(#self_ref);
                             let authorizers = __liquid_guard.authorizers();
-                            authorizers.extend(signers);
-                            authorizers.extend(owners);
+                            authorizers.extend(
+                                signers
+                                    .into_iter()
+                                    .map(|signer| signer.clone())
+                            );
+                            authorizers.extend(
+                                owners
+                                    .into_iter()
+                                    .map(|owner| owner.clone())
+                            );
                             authorizers.sort();
                             authorizers.dedup();
                         }

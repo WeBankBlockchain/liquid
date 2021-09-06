@@ -13,10 +13,7 @@
 use cfg_if::cfg_if;
 use liquid_macro::seq;
 use liquid_prelude::{string::String, vec::Vec};
-use liquid_primitives::{
-    types::{hash::HASH_LENGTH, *},
-    Selector,
-};
+use liquid_primitives::{types::*, Selector};
 use scale::Encode;
 
 pub trait FnOutput {
@@ -295,7 +292,6 @@ impl_topic_trait!(
     i128,
     i256,
     bool,
-    Address,
     ()
 );
 
@@ -312,6 +308,12 @@ impl You_Should_Use_An_Valid_Topic_Type for String {
     }
 }
 
+impl You_Should_Use_An_Valid_Topic_Type for Address {
+    fn topic(&self) -> Hash {
+        liquid_primitives::hash::hash(self.as_bytes()).into()
+    }
+}
+
 cfg_if! {
     if #[cfg(feature = "contract")] {
         // `__Liquid_Getter_Index_Placeholder` can only be used in getter for
@@ -323,6 +325,14 @@ cfg_if! {
         pub trait GenerateAbi {
             fn generate_abi() -> liquid_abi_gen::ContractAbi;
         }
+
+        #[cfg(feature = "contract-abi-gen")]
+        pub trait GenerateIfaceAbi {
+            fn generate_abi() -> Vec<liquid_abi_gen::FnAbi>;
+        }
+
+        #[cfg(feature = "contract-abi-gen")]
+        pub use liquid_abi_gen::AbiKind;
     } else if #[cfg(feature = "collaboration")] {
         #[cfg(feature = "collaboration-abi-gen")]
         pub trait GenerateAbi {

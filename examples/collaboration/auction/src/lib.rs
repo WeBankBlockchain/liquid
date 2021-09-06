@@ -20,7 +20,7 @@ mod auction {
     /// Used both to indicate a bid, and to show the final allocations.
     #[derive(Clone, InOut)]
     pub struct Allocation {
-        party: address,
+        party: Address,
         price: u64,
         quantity: u64,
     }
@@ -46,7 +46,7 @@ mod auction {
     pub struct AuctionInvitation {
         #[liquid(signers = "$.seller")]
         auction: Auction,
-        buyer: address,
+        buyer: Address,
     }
 
     #[liquid(rights)]
@@ -73,7 +73,7 @@ mod auction {
         security: String,
         quantity: u64,
         #[liquid(signers)]
-        seller: address,
+        seller: Address,
         start: timestamp,
         end: timestamp,
     }
@@ -81,7 +81,7 @@ mod auction {
     #[liquid(rights_belong_to = "seller")]
     impl Auction {
         /// Sent individually to each participant (bidder) at start of auction.
-        pub fn invite_bidder(&self, buyer: address) -> ContractId<AuctionInvitation> {
+        pub fn invite_bidder(&self, buyer: Address) -> ContractId<AuctionInvitation> {
             sign! { AuctionInvitation =>
                 buyer,
                 auction: self.as_ref().clone(),

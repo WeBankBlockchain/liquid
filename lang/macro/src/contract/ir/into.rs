@@ -192,7 +192,7 @@ impl TryFrom<(ir::ContractParams, syn::ItemMod)> for ir::Contract {
             .collect::<Vec<String>>()
             .join(",");
         let supports_asset_constant = syn::parse2::<syn::ImplItemConst>(quote! {
-        const SUPPORTS_ASSET : &'static str = #assets_names;
+            const SUPPORTS_ASSET : &'static str = #assets_names;
         })
         .unwrap();
         constants.push(supports_asset_constant);

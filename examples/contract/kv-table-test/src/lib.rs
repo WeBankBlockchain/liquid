@@ -10,12 +10,12 @@ mod entry {
     extern "liquid" {
         fn getInt(&self, key: String) -> i256;
         fn getUint(&self, key: String) -> u256;
-        fn getAddress(&self, key: String) -> address;
+        fn getAddress(&self, key: String) -> Address;
         fn getString(&self, key: String) -> String;
 
         fn setI256(&mut self, key: String, value: i256);
         fn setU256(&mut self, key: String, value: u256);
-        fn setAddress(&mut self, key: String, value: address);
+        fn setAddress(&mut self, key: String, value: Address);
         fn setString(&mut self, key: String, value: String);
     }
 }
