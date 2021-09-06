@@ -20,8 +20,8 @@ mod shop {
     #[liquid(contract)]
     pub struct Iou {
         #[liquid(signers)]
-        issuer: address,
-        owner: address,
+        issuer: Address,
+        owner: Address,
         amount: u64,
         currency: String,
     }
@@ -29,7 +29,7 @@ mod shop {
     #[liquid(rights)]
     impl Iou {
         #[liquid(belongs_to = "owner")]
-        pub fn transfer_iou(self, new_owner: address) -> ContractId<Iou> {
+        pub fn transfer_iou(self, new_owner: Address) -> ContractId<Iou> {
             sign! { Iou =>
                 owner: new_owner,
                 ..self
@@ -40,24 +40,24 @@ mod shop {
     #[liquid(contract)]
     pub struct Item {
         #[liquid(signers)]
-        producer: address,
-        owner: address,
+        producer: Address,
+        owner: Address,
         label: String,
         quantity: u64,
         unit: String,
-        observers: Vec<address>,
+        observers: Vec<Address>,
     }
 
     #[liquid(rights_belong_to = "owner")]
     impl Item {
-        pub fn transfer_item(self, new_owner: address) -> ContractId<Item> {
+        pub fn transfer_item(self, new_owner: Address) -> ContractId<Item> {
             sign! { Item =>
                 owner: new_owner,
                 ..self
             }
         }
 
-        pub fn disclose(self, users: Vec<address>) -> ContractId<Item> {
+        pub fn disclose(self, users: Vec<Address>) -> ContractId<Item> {
             sign! { Item =>
                 observers: users,
                 ..self
@@ -68,19 +68,19 @@ mod shop {
     #[liquid(contract)]
     pub struct Offer {
         #[liquid(signers)]
-        owner: address,
+        owner: Address,
         #[liquid(signers)]
-        vendor: address,
+        vendor: Address,
         item_id: ContractId<Item>,
         price: u64,
         currency: String,
-        users: Vec<address>,
+        users: Vec<Address>,
     }
 
     #[liquid(rights)]
     impl Offer {
         #[liquid(belongs_to = "owner")]
-        pub fn settle(self, buyer: address) -> ContractId<Item> {
+        pub fn settle(self, buyer: Address) -> ContractId<Item> {
             self.item_id.transfer_item(buyer)
         }
     }
@@ -88,9 +88,9 @@ mod shop {
     #[liquid(contract)]
     pub struct Shop {
         #[liquid(signers)]
-        owner: address,
-        vendors: Vec<address>,
-        users: Vec<address>,
+        owner: Address,
+        vendors: Vec<Address>,
+        users: Vec<Address>,
         offer_ids: Vec<ContractId<Offer>>,
     }
 
@@ -98,32 +98,34 @@ mod shop {
     impl Shop {
         pub fn invite_vendor(
             mut self,
-            vendor: address,
+            vendor: Address,
         ) -> (ContractId<Shop>, ContractId<VendorInvite>) {
-            self.vendors.push(vendor);
+            self.vendors.push(vendor.clone());
+            let owner = self.owner.clone();
             (
                 sign! { Shop =>
                     ..self
                 },
                 sign! { VendorInvite =>
                     vendor,
-                    owner: self.owner,
+                    owner,
                 },
             )
         }
 
         pub fn invite_user(
             mut self,
-            user: address,
+            user: Address,
         ) -> (ContractId<Shop>, ContractId<UserInvite>) {
-            self.users.push(user);
+            self.users.push(user.clone());
+            let owner = self.owner.clone();
             (
                 sign! { Shop =>
                     ..self
                 },
                 sign! { UserInvite =>
                     user,
-                    owner: self.owner,
+                    owner,
                 },
             )
         }
@@ -132,8 +134,8 @@ mod shop {
     #[liquid(contract)]
     pub struct VendorInvite {
         #[liquid(signers)]
-        owner: address,
-        vendor: address,
+        owner: Address,
+        vendor: Address,
     }
 
     #[liquid(rights)]
@@ -150,9 +152,9 @@ mod shop {
     #[liquid(contract)]
     pub struct VendorRelationship {
         #[liquid(signers)]
-        owner: address,
+        owner: Address,
         #[liquid(signers)]
-        vendor: address,
+        vendor: Address,
     }
 
     #[liquid(rights)]
@@ -168,7 +170,7 @@ mod shop {
             let shop = shop_id.fetch();
 
             let mut users = shop.users.clone();
-            users.push(self.owner);
+            users.push(self.owner.clone());
             let disclosed_item = item_id.disclose(users);
 
             let offer_id = sign! { Offer =>
@@ -176,8 +178,8 @@ mod shop {
                 users: shop.users.clone(),
                 price,
                 currency,
-                owner: self.owner,
-                vendor: self.vendor,
+                owner: self.owner.clone(),
+                vendor: self.vendor.clone(),
             };
 
             let mut offer_ids = shop.offer_ids.clone();
@@ -194,8 +196,8 @@ mod shop {
     #[liquid(contract)]
     pub struct UserInvite {
         #[liquid(signers)]
-        owner: address,
-        user: address,
+        owner: Address,
+        user: Address,
     }
 
     #[liquid(rights)]
@@ -212,9 +214,9 @@ mod shop {
     #[liquid(contract)]
     pub struct UserRelationship {
         #[liquid(signers)]
-        owner: address,
+        owner: Address,
         #[liquid(signers)]
-        user: address,
+        user: Address,
     }
 
     #[liquid(rights)]
@@ -246,7 +248,7 @@ mod shop {
                 ..shop
             };
             let vendor = offer.vendor;
-            let new_item = offer_id.settle(self.user);
+            let new_item = offer_id.settle(self.user.clone());
             let new_iou = iou_id.transfer_iou(vendor);
             (new_shop, new_item, new_iou)
         }

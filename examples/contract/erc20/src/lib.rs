@@ -11,25 +11,25 @@ mod erc20 {
     #[liquid(storage)]
     struct Erc20 {
         pub total_supply: storage::Value<Balance>,
-        balances: storage::Mapping<address, Balance>,
-        allowances: storage::Mapping<(address, address), Balance>,
+        balances: storage::Mapping<Address, Balance>,
+        allowances: storage::Mapping<(Address, Address), Balance>,
     }
 
     #[liquid(event)]
     struct Transfer {
         #[liquid(indexed)]
-        from: address,
+        from: Address,
         #[liquid(indexed)]
-        to: address,
+        to: Address,
         value: u128,
     }
 
     #[liquid(event)]
     struct Approval {
         #[liquid(indexed)]
-        owner: address,
+        owner: Address,
         #[liquid(indexed)]
-        spender: address,
+        spender: Address,
         value: u128,
     }
 
@@ -43,22 +43,23 @@ mod erc20 {
             self.allowances.initialize();
         }
 
-        pub fn balance_of(&self, owner: address) -> Balance {
+        pub fn balance_of(&self, owner: Address) -> Balance {
             self.balance_of_or_zero(&owner)
         }
 
-        pub fn allowance(&self, owner: address, spender: address) -> Balance {
+        pub fn allowance(&self, owner: Address, spender: Address) -> Balance {
             self.allowance_of_or_zero(&owner, &spender)
         }
 
-        pub fn transfer(&mut self, to: address, value: Balance) -> bool {
+        pub fn transfer(&mut self, to: Address, value: Balance) -> bool {
             let from = self.env().get_caller();
             self.transfer_from_to(from, to, value)
         }
 
-        pub fn approve(&mut self, spender: address, value: Balance) -> bool {
+        pub fn approve(&mut self, spender: Address, value: Balance) -> bool {
             let owner = self.env().get_caller();
-            self.allowances.insert((owner, spender), value);
+            self.allowances
+                .insert((owner.clone(), spender.clone()), value);
             self.env().emit(Approval {
                 owner,
                 spender,
@@ -69,8 +70,8 @@ mod erc20 {
 
         pub fn transfer_from(
             &mut self,
-            from: address,
-            to: address,
+            from: Address,
+            to: Address,
             value: Balance,
         ) -> bool {
             let caller = self.env().get_caller();
@@ -79,22 +80,26 @@ mod erc20 {
                 return false;
             }
 
-            self.allowances.insert((from, caller), allowance - value);
+            self.allowances
+                .insert((from.clone(), caller.clone()), allowance - value);
             self.transfer_from_to(from, to, value)
         }
 
-        fn balance_of_or_zero(&self, owner: &address) -> Balance {
+        fn balance_of_or_zero(&self, owner: &Address) -> Balance {
             *self.balances.get(owner).unwrap_or(&0)
         }
 
-        fn allowance_of_or_zero(&self, owner: &address, spender: &address) -> Balance {
-            *self.allowances.get(&(*owner, *spender)).unwrap_or(&0)
+        fn allowance_of_or_zero(&self, owner: &Address, spender: &Address) -> Balance {
+            *self
+                .allowances
+                .get(&(owner.clone(), spender.clone()))
+                .unwrap_or(&0)
         }
 
         fn transfer_from_to(
             &mut self,
-            from: address,
-            to: address,
+            from: Address,
+            to: Address,
             value: Balance,
         ) -> bool {
             let from_balance = self.balance_of_or_zero(&from);
@@ -102,9 +107,9 @@ mod erc20 {
                 return false;
             }
 
-            self.balances.insert(from, from_balance - value);
+            self.balances.insert(from.clone(), from_balance - value);
             let to_balance = self.balance_of_or_zero(&to);
-            self.balances.insert(to, to_balance + value);
+            self.balances.insert(to.clone(), to_balance + value);
             self.env().emit(Transfer { from, to, value });
             true
         }
@@ -133,10 +138,10 @@ mod erc20 {
             let alice = accounts.alice;
             let bob = accounts.bob;
 
-            test::set_caller(alice);
+            test::set_caller(alice.clone());
             let contract = Erc20::new(100);
-            assert_eq!(contract.balance_of(alice), 100);
-            assert_eq!(contract.balance_of(bob), 0);
+            assert_eq!(contract.balance_of(alice.clone()), 100);
+            assert_eq!(contract.balance_of(bob.clone()), 0);
         }
 
         #[test]
@@ -145,11 +150,11 @@ mod erc20 {
             let alice = accounts.alice;
             let bob = accounts.bob;
 
-            test::set_caller(alice);
+            test::set_caller(alice.clone());
             let mut contract = Erc20::new(100);
 
-            assert_eq!(contract.balance_of(bob), 0);
-            assert_eq!(contract.transfer(bob, 10), true);
+            assert_eq!(contract.balance_of(bob.clone()), 0);
+            assert_eq!(contract.transfer(bob.clone(), 10), true);
 
             let events = test::get_events();
             assert_eq!(events.len(), 1);
@@ -163,21 +168,17 @@ mod erc20 {
             );
             assert_eq!(
                 transfer_event.topics[1],
-                "0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff"
-                    .parse()
-                    .unwrap()
+                liquid_primitives::hash::hash(alice.as_bytes()).into(),
             );
             assert_eq!(
                 transfer_event.topics[2],
-                "0x0000000000000000000000000101010101010101010101010101010101010101"
-                    .parse()
-                    .unwrap()
+                liquid_primitives::hash::hash(bob.as_bytes()).into(),
             );
             println!("{:?}", transfer_event);
             assert_eq!(transfer_event.decode_data::<u128>(), 10);
 
-            assert_eq!(contract.balance_of(bob), 10);
-            assert_eq!(contract.balance_of(alice), 90);
+            assert_eq!(contract.balance_of(bob.clone()), 10);
+            assert_eq!(contract.balance_of(alice.clone()), 90);
         }
 
         #[test]
@@ -186,11 +187,11 @@ mod erc20 {
             let alice = accounts.alice;
             let bob = accounts.bob;
 
-            test::set_caller(alice);
+            test::set_caller(alice.clone());
             let mut contract = Erc20::new(100);
 
-            assert_eq!(contract.balance_of(bob), 0);
-            assert_eq!(contract.transfer(bob, 1000), false);
+            assert_eq!(contract.balance_of(bob.clone()), 0);
+            assert_eq!(contract.transfer(bob.clone(), 1000), false);
             assert_eq!(contract.balance_of(bob), 0);
             assert_eq!(contract.balance_of(alice), 100);
         }
@@ -202,16 +203,19 @@ mod erc20 {
             let bob = accounts.bob;
             let charlie = accounts.charlie;
 
-            test::set_caller(alice);
+            test::set_caller(alice.clone());
             let mut contract = Erc20::new(100);
             test::pop_execution_context();
 
-            test::set_caller(bob);
-            assert_eq!(contract.transfer_from(alice, charlie, 10), false);
+            test::set_caller(bob.clone());
+            assert_eq!(
+                contract.transfer_from(alice.clone(), charlie.clone(), 10),
+                false
+            );
             test::pop_execution_context();
 
-            test::set_caller(alice);
-            assert_eq!(contract.approve(bob, 10), true);
+            test::set_caller(alice.clone());
+            assert_eq!(contract.approve(bob.clone(), 10), true);
             test::pop_execution_context();
 
             let events = test::get_events();
@@ -226,20 +230,19 @@ mod erc20 {
             );
             assert_eq!(
                 approval_event.topics[1],
-                "0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff"
-                    .parse()
-                    .unwrap()
+                liquid_primitives::hash::hash(alice.as_bytes()).into()
             );
             assert_eq!(
                 approval_event.topics[2],
-                "0x0000000000000000000000000101010101010101010101010101010101010101"
-                    .parse()
-                    .unwrap()
+                liquid_primitives::hash::hash(bob.as_bytes()).into()
             );
             assert_eq!(approval_event.decode_data::<u128>(), 10);
 
-            test::set_caller(bob);
-            assert_eq!(contract.transfer_from(alice, charlie, 10), true);
+            test::set_caller(bob.clone());
+            assert_eq!(
+                contract.transfer_from(alice.clone(), charlie.clone(), 10),
+                true
+            );
             assert_eq!(contract.balance_of(alice), 90);
             assert_eq!(contract.balance_of(charlie), 10);
             assert_eq!(contract.balance_of(bob), 0);

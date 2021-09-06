@@ -8,7 +8,7 @@ mod iface1 {
     extern "liquid" {
         fn getInt(&self, key: String) -> i256;
 
-        fn setAddress(&mut self, key: String, value: address);
+        fn setAddress(&mut self, key: String, value: Address);
         fn setString(&mut self, key: String, value: String);
     }
 }
@@ -39,7 +39,7 @@ mod noop {
 
             let _ = self.iface1.getInt(String::from("noop"));
             self.iface1
-                .setAddress(String::from("noop"), address::default());
+                .setAddress(String::from("noop"), Address::default());
             self.iface1
                 .setString(String::from("noop"), String::from("noop"));
 

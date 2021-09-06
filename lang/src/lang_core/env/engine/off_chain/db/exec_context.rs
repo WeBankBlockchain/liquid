@@ -26,10 +26,10 @@ impl ExecContext {
     }
 
     pub fn caller(&self) -> Address {
-        self.caller
+        self.caller.clone()
     }
 
     pub fn self_address(&self) -> Address {
-        self.callee
+        self.callee.clone()
     }
 }

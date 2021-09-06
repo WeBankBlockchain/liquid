@@ -30,7 +30,7 @@ impl Decode for CallData {
             }
             _ => (),
         }
-        let mut selector: Selector = Default::default();
+        let mut selector = [0u8; 4];
         input.read(&mut selector)?;
         let remaining_len = if let Some(len) = input.remaining_len()? {
             len
@@ -39,13 +39,16 @@ impl Decode for CallData {
         };
         let mut data = from_elem(0, remaining_len);
         input.read(&mut data)?;
+
+        let selector = u32::from_le_bytes(selector);
         Ok(Self { selector, data })
     }
 }
 
 impl Encode for CallData {
     fn encode(&self) -> Vec<u8> {
-        let mut buf = self.selector.to_vec();
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&self.selector.to_le_bytes());
         buf.extend(self.data.as_slice());
         buf
     }

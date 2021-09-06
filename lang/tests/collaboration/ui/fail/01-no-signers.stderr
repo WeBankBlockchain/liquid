@@ -3,6 +3,6 @@ error: this contract has no signers
   |
 5 | /     #[liquid(contract)]
 6 | |     pub struct Noop {
-7 | |         addr: address
+7 | |         addr: Address
 8 | |     }
   | |_____^

@@ -78,8 +78,6 @@ pub fn generate_primitive_types() -> TokenStream2 {
 
     quote! {
         #[allow(non_camel_case_types)]
-        pub type address = liquid_primitives::types::Address;
-        #[allow(non_camel_case_types)]
         pub type bytes = liquid_primitives::types::Bytes;
         #[allow(non_camel_case_types)]
         pub type byte = liquid_primitives::types::Byte;
@@ -88,6 +86,7 @@ pub fn generate_primitive_types() -> TokenStream2 {
 
         #fixed_size_bytes
 
+        pub use liquid_primitives::types::Address;
         pub use liquid_primitives::types::u256;
         pub use liquid_primitives::types::i256;
         pub use liquid_primitives::types::timestamp;

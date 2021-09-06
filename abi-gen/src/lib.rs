@@ -17,7 +17,7 @@ use serde::Serialize;
 pub mod traits;
 mod type_to_string;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct TrivialAbi {
     #[serde(rename = "type")]
     pub ty: String,
@@ -38,7 +38,7 @@ impl TrivialAbi {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct CompositeAbi {
     #[serde(flatten)]
     pub trivial: TrivialAbi,
@@ -46,7 +46,7 @@ pub struct CompositeAbi {
     pub components: Vec<ParamAbi>,
 }
 
-#[derive(Serialize, From)]
+#[derive(Serialize, From, Clone)]
 #[serde(untagged)]
 pub enum ParamAbi {
     Composite(CompositeAbi),
