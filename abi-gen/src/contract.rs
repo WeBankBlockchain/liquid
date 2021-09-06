@@ -12,11 +12,13 @@
 
 use crate::{traits::*, ParamAbi};
 use serde::Serialize;
+use std::collections::HashMap;
 
 pub struct ContractAbi {
     pub constructor_abi: ConstructorAbi,
-    pub external_fn_abis: Vec<ExternalFnAbi>,
+    pub fn_abis: Vec<FnAbi>,
     pub event_abis: Vec<EventAbi>,
+    pub iface_abis: HashMap<String, Vec<FnAbi>>,
 }
 
 #[derive(Serialize)]
@@ -37,8 +39,8 @@ impl ConstructorAbi {
     }
 }
 
-#[derive(Serialize)]
-pub struct ExternalFnAbi {
+#[derive(Serialize, Clone)]
+pub struct FnAbi {
     constant: bool,
     inputs: Vec<ParamAbi>,
     name: String,
@@ -47,9 +49,9 @@ pub struct ExternalFnAbi {
     ty: String,
 }
 
-impl ExternalFnAbi {
-    pub fn new_builder(name: String, constant: bool) -> ExternalFnAbiBuilder {
-        ExternalFnAbiBuilder {
+impl FnAbi {
+    pub fn new_builder(name: String, constant: bool) -> FnAbiBuilder {
+        FnAbiBuilder {
             abi: Self {
                 constant,
                 inputs: Vec::new(),
@@ -81,17 +83,17 @@ impl ConstructorAbiBuilder {
     }
 }
 
-pub struct ExternalFnAbiBuilder {
-    abi: ExternalFnAbi,
+pub struct FnAbiBuilder {
+    abi: FnAbi,
 }
 
-impl FnOutputBuilder for ExternalFnAbiBuilder {
+impl FnOutputBuilder for FnAbiBuilder {
     fn output(&mut self, param_abi: ParamAbi) {
         self.abi.outputs.push(param_abi);
     }
 }
 
-impl ExternalFnAbiBuilder {
+impl FnAbiBuilder {
     pub fn input(&mut self, param_abi: ParamAbi) {
         match param_abi {
             ParamAbi::None => (),
@@ -101,19 +103,19 @@ impl ExternalFnAbiBuilder {
         }
     }
 
-    pub fn done(self) -> ExternalFnAbi {
+    pub fn done(self) -> FnAbi {
         self.abi
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct EventParamAbi {
     pub indexed: bool,
     #[serde(flatten)]
     pub param_abi: ParamAbi,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct EventAbi {
     anonymous: bool,
     inputs: Vec<EventParamAbi>,
@@ -147,4 +149,12 @@ impl EventAbiBuilder {
     pub fn done(self) -> EventAbi {
         self.abi
     }
+}
+
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum AbiKind {
+    Constructor(ConstructorAbi),
+    ExternalFn(FnAbi),
+    Event(EventAbi),
 }

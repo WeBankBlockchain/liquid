@@ -112,7 +112,7 @@ impl<'a> Dispatch<'a> {
                 impl liquid_lang::FnSelector for #fn_marker {
                     const SELECTOR: liquid_primitives::Selector = {
                         let hash = liquid_primitives::hash::hash(&[#(#fn_name_bytes),*]);
-                        [hash[0], hash[1], hash[2], hash[3]]
+                        u32::from_le_bytes([hash[0], hash[1], hash[2], hash[3]])
                     };
                 }
             }

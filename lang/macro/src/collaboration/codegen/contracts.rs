@@ -160,7 +160,7 @@ impl<'a> Contracts<'a> {
             });
 
             let acquire_signers = quote_spanned! { span =>
-                fn acquire_signers(&self) -> liquid_prelude::collections::BTreeSet::<&address> {
+                fn acquire_signers(&self) -> liquid_prelude::collections::BTreeSet::<&Address> {
                     #[allow(unused_imports)]
                     let mut signers = liquid_prelude::collections::BTreeSet::new();
                     #(signers.extend(liquid_lang::acquire_addrs(#signers));)*

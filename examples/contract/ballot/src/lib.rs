@@ -20,7 +20,7 @@ mod ballot {
         /// if true, that person already voted
         voted: bool,
         /// person delegated to
-        delegate: address,
+        delegate: Address,
         /// index of the voted proposal
         vote: u32,
     }
@@ -37,10 +37,10 @@ mod ballot {
 
     #[liquid(storage)]
     struct Ballot {
-        pub chairperson: storage::Value<address>,
+        pub chairperson: storage::Value<Address>,
         /// This declares a state variable that
         /// stores a `Voter` struct for each possible address.
-        pub voters: storage::Mapping<address, Voter>,
+        pub voters: storage::Mapping<Address, Voter>,
         /// A dynamically-sized array of `Proposal` structs.
         pub proposals: storage::Vec<Proposal>,
     }
@@ -50,7 +50,7 @@ mod ballot {
         /// Create a new ballot to choose one of `proposalNames`.
         pub fn new(&mut self, proposal_names: Vec<String>) {
             let chairperson = self.env().get_caller();
-            self.chairperson.initialize(chairperson);
+            self.chairperson.initialize(chairperson.clone());
 
             self.voters.initialize();
             self.voters.insert(
@@ -58,7 +58,7 @@ mod ballot {
                 Voter {
                     weight: 1,
                     voted: false,
-                    delegate: address::empty(),
+                    delegate: Address::empty(),
                     vote: 0,
                 },
             );
@@ -80,7 +80,7 @@ mod ballot {
 
         /// Give `voter` the right to vote on this ballot.
         /// May only be called by `chairperson`.
-        pub fn give_right_to_vote(&mut self, voter: address) {
+        pub fn give_right_to_vote(&mut self, voter: Address) {
             // If the first argument of `require` evaluates
             // to `false`, execution terminates.
             // It is often a good idea to use `require` to check if
@@ -102,7 +102,7 @@ mod ballot {
                     Voter {
                         weight: 1,
                         voted: false,
-                        delegate: address::empty(),
+                        delegate: Address::empty(),
                         vote: 0,
                     },
                 );
@@ -110,7 +110,7 @@ mod ballot {
         }
 
         /// Delegate your vote to the voter `to`.
-        pub fn delegate(&mut self, mut to: address) {
+        pub fn delegate(&mut self, mut to: Address) {
             require(
                 to != self.env().get_caller(),
                 "Self-delegation is disallowed.",
@@ -125,16 +125,15 @@ mod ballot {
             let sender = &self.voters[caller];
             require(!sender.voted, "You already voted.");
 
-            // Forward the delegation as long as
-            // `to` also delegated.
+            // Forward the delegation as long as `to` also delegated.
             // In general, such loops are very dangerous,
             // because if they run too long, they might
             // need more gas than is available in a block.
             // In this case, the delegation will not be executed,
             // but in other situations, such loops might
             // cause a contract to get "stuck" completely.
-            while self.voters[&to].delegate != address::empty() {
-                to = self.voters[&to].delegate;
+            while self.voters[&to].delegate != Address::empty() {
+                to = self.voters[&to].delegate.clone();
 
                 // We found a loop in the delegation, not allowed.
                 require(to != self.env().get_caller(), "Found loop in delegation.");
@@ -144,7 +143,7 @@ mod ballot {
             // modifies `self.voters`
             let sender = &mut self.voters[caller];
             sender.voted = true;
-            sender.delegate = to;
+            sender.delegate = to.clone();
 
             let weight = sender.weight;
             let delegate_ = &mut self.voters[&to];
@@ -227,7 +226,7 @@ mod ballot {
             let voter = &ballot.voters[&alice];
             assert_eq!(voter.weight, 1);
             assert_eq!(voter.voted, false);
-            assert_eq!(voter.delegate, address::empty());
+            assert_eq!(voter.delegate, Address::empty());
             assert_eq!(voter.vote, 0);
 
             assert_eq!(ballot.proposals.len(), 3);
@@ -257,11 +256,11 @@ mod ballot {
             let mut ballot = deploy_contract();
             let voter = accounts.bob;
 
-            ballot.give_right_to_vote(voter);
-            test::set_caller(voter);
+            ballot.give_right_to_vote(voter.clone());
+            test::set_caller(voter.clone());
             ballot.vote(0);
             test::pop_execution_context();
-            ballot.give_right_to_vote(voter);
+            ballot.give_right_to_vote(voter.clone());
         }
 
         #[test]
@@ -271,10 +270,10 @@ mod ballot {
             let mut ballot = deploy_contract();
             let voter = accounts.bob;
 
-            ballot.give_right_to_vote(voter);
-            test::set_caller(voter);
+            ballot.give_right_to_vote(voter.clone());
+            test::set_caller(voter.clone());
             test::pop_execution_context();
-            ballot.give_right_to_vote(voter);
+            ballot.give_right_to_vote(voter.clone());
         }
 
         #[test]
@@ -283,7 +282,7 @@ mod ballot {
             let mut ballot = deploy_contract();
             let voter = accounts.bob;
 
-            ballot.give_right_to_vote(voter);
+            ballot.give_right_to_vote(voter.clone());
             assert_eq!(ballot.voters.len(), 2);
             assert_eq!(ballot.voters.contains_key(&voter), true);
             assert_eq!(
@@ -291,7 +290,7 @@ mod ballot {
                 Voter {
                     weight: 1,
                     voted: false,
-                    delegate: address::empty(),
+                    delegate: Address::empty(),
                     vote: 0,
                 }
             );
@@ -303,11 +302,11 @@ mod ballot {
             let mut ballot = deploy_contract();
             let bob = accounts.bob;
             let charlie = accounts.charlie;
-            ballot.give_right_to_vote(bob);
-            ballot.give_right_to_vote(charlie);
+            ballot.give_right_to_vote(bob.clone());
+            ballot.give_right_to_vote(charlie.clone());
 
-            test::set_caller(bob);
-            ballot.delegate(charlie);
+            test::set_caller(bob.clone());
+            ballot.delegate(charlie.clone());
             assert_eq!(ballot.voters[&bob].delegate, charlie);
             assert_eq!(ballot.voters[&bob].voted, true);
             assert_eq!(ballot.voters[&charlie].weight, 2);
@@ -319,15 +318,15 @@ mod ballot {
             let mut ballot = deploy_contract();
             let bob = accounts.bob;
             let charlie = accounts.charlie;
-            ballot.give_right_to_vote(bob);
-            ballot.give_right_to_vote(charlie);
-            test::set_caller(charlie);
+            ballot.give_right_to_vote(bob.clone());
+            ballot.give_right_to_vote(charlie.clone());
+            test::set_caller(charlie.clone());
             ballot.vote(0);
             test::pop_execution_context();
             assert_eq!(ballot.proposals[0].vote_count, 1);
 
-            test::set_caller(bob);
-            ballot.delegate(charlie);
+            test::set_caller(bob.clone());
+            ballot.delegate(charlie.clone());
             assert_eq!(ballot.voters[&bob].delegate, charlie);
             assert_eq!(ballot.voters[&bob].voted, true);
             assert_eq!(ballot.voters[&bob].weight, 1);
@@ -340,10 +339,10 @@ mod ballot {
             let accounts = test::default_accounts();
             let mut ballot = deploy_contract();
             let bob = accounts.bob;
-            ballot.give_right_to_vote(bob);
+            ballot.give_right_to_vote(bob.clone());
 
-            test::set_caller(bob);
-            ballot.delegate(bob);
+            test::set_caller(bob.clone());
+            ballot.delegate(bob.clone());
         }
 
         #[test]
@@ -352,11 +351,11 @@ mod ballot {
             let accounts = test::default_accounts();
             let mut ballot = deploy_contract();
             let bob = accounts.bob;
-            ballot.give_right_to_vote(bob);
+            ballot.give_right_to_vote(bob.clone());
 
-            test::set_caller(bob);
+            test::set_caller(bob.clone());
             let charlie = accounts.charlie;
-            ballot.delegate(charlie);
+            ballot.delegate(charlie.clone());
         }
 
         #[test]
@@ -366,12 +365,12 @@ mod ballot {
             let mut ballot = deploy_contract();
             let bob = accounts.bob;
             let charlie = accounts.charlie;
-            ballot.give_right_to_vote(bob);
-            ballot.give_right_to_vote(charlie);
+            ballot.give_right_to_vote(bob.clone());
+            ballot.give_right_to_vote(charlie.clone());
 
-            test::set_caller(bob);
+            test::set_caller(bob.clone());
             ballot.vote(0);
-            ballot.delegate(charlie);
+            ballot.delegate(charlie.clone());
         }
 
         #[test]
@@ -381,15 +380,15 @@ mod ballot {
             let mut ballot = deploy_contract();
             let bob = accounts.bob;
             let charlie = accounts.charlie;
-            ballot.give_right_to_vote(bob);
-            ballot.give_right_to_vote(charlie);
+            ballot.give_right_to_vote(bob.clone());
+            ballot.give_right_to_vote(charlie.clone());
 
-            test::set_caller(charlie);
-            ballot.delegate(bob);
+            test::set_caller(charlie.clone());
+            ballot.delegate(bob.clone());
             test::pop_execution_context();
 
-            test::set_caller(bob);
-            ballot.delegate(charlie);
+            test::set_caller(bob.clone());
+            ballot.delegate(charlie.clone());
         }
 
         #[test]
@@ -399,19 +398,19 @@ mod ballot {
             let bob = accounts.bob;
             let charlie = accounts.charlie;
             let david = accounts.david;
-            ballot.give_right_to_vote(bob);
-            ballot.give_right_to_vote(charlie);
-            ballot.give_right_to_vote(david);
+            ballot.give_right_to_vote(bob.clone());
+            ballot.give_right_to_vote(charlie.clone());
+            ballot.give_right_to_vote(david.clone());
 
-            test::set_caller(bob);
+            test::set_caller(bob.clone());
             ballot.vote(0);
             test::pop_execution_context();
 
-            test::set_caller(charlie);
+            test::set_caller(charlie.clone());
             ballot.vote(0);
             test::pop_execution_context();
 
-            test::set_caller(david);
+            test::set_caller(david.clone());
             ballot.vote(1);
             test::pop_execution_context();
 

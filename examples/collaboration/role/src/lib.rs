@@ -18,16 +18,16 @@ mod iou {
     #[liquid(contract)]
     pub struct Iou {
         #[liquid(signers)]
-        issuer: address,
+        issuer: Address,
         #[liquid(signers)]
-        owner: address,
+        owner: Address,
         cash: u32,
     }
 
     #[liquid(rights)]
     impl Iou {
         #[liquid(belongs_to = "owner, ^new_owner")]
-        pub fn mutual_transfer(self, new_owner: address) -> ContractId<Iou> {
+        pub fn mutual_transfer(self, new_owner: Address) -> ContractId<Iou> {
             sign! { Iou =>
                 owner: new_owner,
                 ..self
@@ -37,9 +37,9 @@ mod iou {
 
     #[liquid(contract)]
     pub struct IouSender {
-        sender: address,
+        sender: Address,
         #[liquid(signers)]
-        receiver: address,
+        receiver: Address,
     }
 
     #[liquid(rights)]
@@ -51,7 +51,7 @@ mod iou {
             let iou = iou_id.fetch();
             assert!(iou.cash > 0);
             assert!(self.sender == iou.owner);
-            iou_id.mutual_transfer(self.receiver)
+            iou_id.mutual_transfer(self.receiver.clone())
         }
     }
 
@@ -60,11 +60,12 @@ mod iou {
         use super::*;
         use liquid_lang::env::test;
 
-        fn create_iou(issuer: address, cash: u32) -> ContractId<Iou> {
-            test::set_caller(issuer);
+        fn create_iou(issuer: Address, cash: u32) -> ContractId<Iou> {
+            test::set_caller(issuer.clone());
+            let owner = issuer.clone();
             let iou_id = sign! { Iou =>
                 issuer,
-                owner: issuer,
+                owner,
                 cash,
             };
             test::pop_execution_context();
@@ -77,25 +78,25 @@ mod iou {
             let alice = default_accounts.alice;
             let bob = default_accounts.bob;
 
-            test::set_caller(bob);
+            test::set_caller(bob.clone());
             let iou_sender_id = sign! { IouSender =>
-                sender: alice,
-                receiver: bob,
+                sender: alice.clone(),
+                receiver: bob.clone(),
             };
             test::pop_execution_context();
 
-            let iou_id = create_iou(alice, 100);
-            test::set_caller(alice);
+            let iou_id = create_iou(alice.clone(), 100);
+            test::set_caller(alice.clone());
             let iou_id = iou_sender_id.send_iou(iou_id);
             test::pop_execution_context();
 
             let iou = iou_id.fetch();
             assert_eq!(iou.issuer, alice);
-            assert_eq!(iou.owner, bob);
+            assert_eq!(iou.owner, bob.clone());
             assert_eq!(iou.cash, 100);
 
-            let iou_id = create_iou(alice, 200);
-            test::set_caller(alice);
+            let iou_id = create_iou(alice.clone(), 200);
+            test::set_caller(alice.clone());
             let iou_id = iou_sender_id.send_iou(iou_id);
             test::pop_execution_context();
 
@@ -113,15 +114,15 @@ mod iou {
             let bob = default_accounts.bob;
             let charlie = default_accounts.charlie;
 
-            test::set_caller(bob);
+            test::set_caller(bob.clone());
             let iou_sender_id = sign! { IouSender =>
-                sender: charlie,
-                receiver: bob,
+                sender: charlie.clone(),
+                receiver: bob.clone(),
             };
             test::pop_execution_context();
 
-            let iou_id = create_iou(alice, 100);
-            test::set_caller(alice);
+            let iou_id = create_iou(alice.clone(), 100);
+            test::set_caller(alice.clone());
             let _ = iou_sender_id.send_iou(iou_id);
             test::pop_execution_context();
         }
@@ -133,10 +134,10 @@ mod iou {
             let alice = default_accounts.alice;
             let bob = default_accounts.bob;
 
-            test::set_caller(bob);
+            test::set_caller(bob.clone());
             let iou_sender_id = sign! { IouSender =>
-                sender: alice,
-                receiver: bob,
+                sender: alice.clone(),
+                receiver: bob.clone(),
             };
             test::pop_execution_context();
 

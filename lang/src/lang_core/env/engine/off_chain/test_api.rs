@@ -12,7 +12,7 @@
 
 use super::{EnvInstance, Event, ExecContext};
 use crate::lang_core::env::engine::OnInstance;
-use liquid_primitives::types::address::*;
+use liquid_primitives::types::Address;
 
 /// Pushes a contract execution context.
 ///
@@ -73,12 +73,12 @@ pub struct DefaultAccounts {
 /// https://en.wikipedia.org/wiki/Alice_and_Bob
 pub fn default_accounts() -> DefaultAccounts {
     DefaultAccounts {
-        alice: [0xffu8; ADDRESS_LENGTH].into(),
-        bob: [0x01u8; ADDRESS_LENGTH].into(),
-        charlie: [0x02u8; ADDRESS_LENGTH].into(),
-        david: [0x03u8; ADDRESS_LENGTH].into(),
-        eve: [0x04u8; ADDRESS_LENGTH].into(),
-        frank: [0x05u8; ADDRESS_LENGTH].into(),
+        alice: "alice".into(),
+        bob: "bob".into(),
+        charlie: "charlie".into(),
+        david: "david".into(),
+        eve: "eve".into(),
+        frank: "frank".into(),
     }
 }
 

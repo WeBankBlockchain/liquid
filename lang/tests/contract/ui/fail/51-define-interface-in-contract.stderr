@@ -1,0 +1,9 @@
+error: definition of interface `foo` must be placed before definition of the contract
+  --> $DIR/51-define-interface-in-contract.rs:8:5
+   |
+8  | /     mod foo {
+9  | |         extern "liquid" {
+10 | |             fn foo(&self);
+11 | |         }
+12 | |     }
+   | |_____^

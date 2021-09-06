@@ -9,9 +9,9 @@ mod asset_erc20 {
     /// Defines the storage of your contract.
     #[liquid(storage)]
     struct Erc721 {
-        allowances: storage::Mapping<u64, (address, address)>,
-        ownership: storage::Mapping<address, Vec<u64>>,
-        operators: storage::Mapping<(address, address), bool>,
+        allowances: storage::Mapping<u64, (Address, Address)>,
+        ownership: storage::Mapping<Address, Vec<u64>>,
+        operators: storage::Mapping<(Address, Address), bool>,
     }
 
     #[liquid(asset(
@@ -39,31 +39,31 @@ mod asset_erc20 {
         pub fn total_supply(&self) -> u64 {
             Erc721Token::total_supply()
         }
-        pub fn balance_of(&self, owner: address) -> u64 {
+        pub fn balance_of(&self, owner: Address) -> u64 {
             Erc721Token::balance_of(&owner)
         }
         pub fn erc721_description(&self) -> String {
             Erc721Token::description().into()
         }
-        pub fn issue_to(&mut self, owner: address, uri: String) -> u64 {
+        pub fn issue_to(&mut self, owner: Address, uri: String) -> u64 {
             Erc721Token::issue_to(&owner, &uri).unwrap()
         }
-        pub fn owner_of(&self, token_id: u64) -> address {
-            match self.allowances.get(&token_id) {
-                Some(&(owner, _)) => owner,
+        pub fn owner_of(&self, token_id: u64) -> Address {
+            match self.allowances.get(&token_id).as_ref() {
+                Some(&(owner, _)) => owner.clone(),
                 None => Default::default(),
             }
         }
 
         pub fn safe_transfer_from(
             &mut self,
-            owner: address,
-            recipient: address,
+            owner: Address,
+            recipient: Address,
             token_id: u64,
         ) -> bool {
             let caller = self.env().get_caller();
 
-            if self.is_approved_or_owner(caller, token_id) {
+            if self.is_approved_or_owner(caller.clone(), token_id) {
                 return match Erc721Token::withdraw_from_self(token_id) {
                     None => false,
                     Some(token) => {
@@ -72,8 +72,8 @@ mod asset_erc20 {
                         true
                     }
                 };
-            } else if self.is_approved_for_all(owner, caller)
-                && self.own_token(owner, token_id)
+            } else if self.is_approved_for_all(owner.clone(), caller)
+                && self.own_token(owner.clone(), token_id)
             {
                 return match Erc721Token::withdraw_from_self(token_id) {
                     None => false,
@@ -93,7 +93,7 @@ mod asset_erc20 {
             }
             false
         }
-        pub fn safe_transfer(&mut self, recipient: address, token_id: u64) -> bool {
+        pub fn safe_transfer(&mut self, recipient: Address, token_id: u64) -> bool {
             match Erc721Token::withdraw_from_caller(token_id) {
                 None => false,
                 Some(token) => {
@@ -103,7 +103,7 @@ mod asset_erc20 {
             }
         }
         // Only a single account can be approved at a time, so approving the zero address clears previous approvals.
-        pub fn approve(&mut self, spender: address, token_id: u64) -> bool {
+        pub fn approve(&mut self, spender: Address, token_id: u64) -> bool {
             // if spender is 0x0, return token to owner
             if spender == Default::default() {
                 return match Erc721Token::withdraw_from_self(token_id) {
@@ -135,13 +135,13 @@ mod asset_erc20 {
                 }
             }
         }
-        pub fn get_approved(&self, token_id: u64) -> address {
-            match self.allowances.get(&token_id) {
-                Some(&(_, operator)) => operator,
+        pub fn get_approved(&self, token_id: u64) -> Address {
+            match self.allowances.get(&token_id).as_ref() {
+                Some(&(_, operator)) => operator.clone(),
                 None => Default::default(),
             }
         }
-        pub fn set_approval_for_all(&mut self, operator: address, approval: bool) {
+        pub fn set_approval_for_all(&mut self, operator: Address, approval: bool) {
             let caller = self.env().get_caller();
             require(caller != operator, "approve to caller");
             if approval {
@@ -151,38 +151,39 @@ mod asset_erc20 {
                     token.deposit(&self.env().get_address());
                 }
                 if !token_ids.is_empty() {
-                    self.ownership.insert(caller, token_ids.clone());
-                    self.operators.insert((caller, caller), approval);
+                    self.ownership.insert(caller.clone(), token_ids.clone());
+                    self.operators
+                        .insert((caller.clone(), caller.clone()), approval);
                 }
             }
-            self.operators.insert((caller, operator), approval);
+            self.operators.insert((caller.clone(), operator), approval);
         }
 
-        pub fn is_approved_for_all(&self, owner: address, operator: address) -> bool {
+        pub fn is_approved_for_all(&self, owner: Address, operator: Address) -> bool {
             match self.operators.get(&(owner, operator)) {
                 Some(approved) => *approved,
                 None => false,
             }
         }
-        fn own_token(&self, owner: address, token_id: u64) -> bool {
+        fn own_token(&self, owner: Address, token_id: u64) -> bool {
             let tokens = self.ownership.get(&owner).unwrap();
             tokens.iter().any(|id| *id == token_id)
         }
-        fn is_owner(&self, spender: address, token_id: u64) -> bool {
-            let default_address: (address, address) =
+        fn is_owner(&self, spender: Address, token_id: u64) -> bool {
+            let default_address: (Address, Address) =
                 (Default::default(), Default::default());
             let (owner, _) = self.allowances.get(&token_id).unwrap_or(&default_address);
             *owner == spender
         }
-        fn is_approved(&self, spender: address, token_id: u64) -> bool {
-            let default_address: (address, address) =
+        fn is_approved(&self, spender: Address, token_id: u64) -> bool {
+            let default_address: (Address, Address) =
                 (Default::default(), Default::default());
             let (_, operator) =
                 self.allowances.get(&token_id).unwrap_or(&default_address);
             *operator == spender
         }
-        fn is_approved_or_owner(&self, spender: address, token_id: u64) -> bool {
-            if self.is_owner(spender, token_id) {
+        fn is_approved_or_owner(&self, spender: Address, token_id: u64) -> bool {
+            if self.is_owner(spender.clone(), token_id) {
                 return true;
             }
             if self.is_approved(spender, token_id) {

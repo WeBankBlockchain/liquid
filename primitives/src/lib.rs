@@ -26,7 +26,7 @@ pub mod types;
 
 /// Typeless generic key into contract storage
 pub type Key = &'static str;
-pub type Selector = [u8; 4];
+pub type Selector = u32;
 
 #[cfg(feature = "std")]
 #[derive(PartialEq, Eq, Clone, Debug)]

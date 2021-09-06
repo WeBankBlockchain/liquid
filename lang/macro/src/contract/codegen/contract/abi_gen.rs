@@ -12,10 +12,13 @@
 
 use crate::{
     common::GenerateCode,
-    contract::ir::{Contract, FnArg, Signature},
+    contract::{
+        ir::{Contract, FnArg, Signature},
+        INTERFACES_INFOS,
+    },
 };
 use derive_more::From;
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
 use quote::quote;
 
 #[derive(From)]
@@ -26,8 +29,9 @@ pub struct AbiGen<'a> {
 impl<'a> GenerateCode for AbiGen<'a> {
     fn generate_code(&self) -> TokenStream2 {
         let constructor_abi = self.generate_constructor_abi();
-        let external_fn_abis = self.generate_external_fn_abis();
+        let fn_abis = self.generate_fn_abis();
         let event_abis = self.generate_event_abis();
+        let iface_abis = self.generate_iface_abis();
 
         quote! {
             #[cfg(feature = "liquid-abi-gen")]
@@ -39,13 +43,15 @@ impl<'a> GenerateCode for AbiGen<'a> {
                 impl liquid_lang::GenerateAbi for __LIQUID_ABI_GEN {
                     fn generate_abi() -> liquid_abi_gen::ContractAbi {
                         let constructor_abi = #constructor_abi;
-                        let external_fn_abis = #external_fn_abis;
+                        let fn_abis = #fn_abis;
                         let event_abis = #event_abis;
+                        let iface_abis = #iface_abis;
 
                         liquid_abi_gen::ContractAbi {
                             constructor_abi,
-                            external_fn_abis,
+                            fn_abis,
                             event_abis,
+                            iface_abis,
                         }
                     }
                 }
@@ -80,7 +86,7 @@ impl<'a> AbiGen<'a> {
         }
     }
 
-    fn generate_external_fn_abis(&self) -> TokenStream2 {
+    fn generate_fn_abis(&self) -> TokenStream2 {
         let external_fns = &self.contract.functions;
         let fn_abis = external_fns.iter().filter(|func| func.is_external_fn() && !func.is_internal_fn()).map(|external_fn| {
             let ident = external_fn.sig.ident.to_string();
@@ -102,7 +108,7 @@ impl<'a> AbiGen<'a> {
 
             quote! {
                 {
-                    let mut builder = liquid_abi_gen::ExternalFnAbi::new_builder(#build_args);
+                    let mut builder = liquid_abi_gen::FnAbi::new_builder(#build_args);
                     #(builder.input(#input_args);)*
                     #output_args
                     builder.done()
@@ -112,9 +118,9 @@ impl<'a> AbiGen<'a> {
 
         quote! {
             {
-                let mut external_fn_abis = Vec::new();
-                #(external_fn_abis.push(#fn_abis);)*
-                external_fn_abis
+                let mut fn_abis = Vec::new();
+                #(fn_abis.push(#fn_abis);)*
+                fn_abis
             }
         }
     }
@@ -149,6 +155,32 @@ impl<'a> AbiGen<'a> {
                 let mut event_abis = Vec::new();
                 #(event_abis.push(#abis);)*
                 event_abis
+            }
+        }
+    }
+
+    fn generate_iface_abis(&self) -> TokenStream2 {
+        let interface_infos = INTERFACES_INFOS.with(|interfaces| {
+            use std::ops::DerefMut;
+            std::mem::take(interfaces.borrow_mut().deref_mut())
+        });
+
+        let iface_abis = interface_infos.iter().map(|interface_info| {
+            let ident_str = &interface_info.ident;
+            let iface_str = &interface_info.interface_ident;
+            let ident = Ident::new(ident_str, Span::call_site());
+            let iface_ident = Ident::new(iface_str, Span::call_site());
+            quote! {
+                String::from(#ident_str),
+                <crate::#ident::#iface_ident as liquid_lang::GenerateIfaceAbi>::generate_abi()
+            }
+        });
+
+        quote! {
+            {
+                let mut iface_abis = std::collections::HashMap::new();
+                #(iface_abis.insert(#iface_abis);)*
+                iface_abis
             }
         }
     }

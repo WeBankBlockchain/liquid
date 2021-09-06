@@ -23,7 +23,7 @@ use crate::env::{
 };
 use core::convert::TryInto;
 use liquid_prelude::{string::String, vec::Vec};
-use liquid_primitives::{types::address::*, Topics};
+use liquid_primitives::{types::Address, Topics};
 
 /// The on-chain environment
 pub struct EnvInstance {
@@ -106,7 +106,7 @@ impl Env for EnvInstance {
             CallData::decode(&mut call_data_buf.as_slice()).map_err(Into::into)
         } else {
             Ok(CallData {
-                selector: [0x00; 4],
+                selector: 0,
                 data: call_data_buf,
             })
         }
@@ -125,7 +125,7 @@ impl Env for EnvInstance {
     where
         R: scale::Decode,
     {
-        let status = ext::call(&addr.0, data);
+        let status = ext::call(addr.as_bytes(), data);
         if status != 0 {
             return Err(EnvError::FailToCallForeignContract);
         }
@@ -169,27 +169,24 @@ impl Env for EnvInstance {
     }
 
     fn get_caller(&mut self) -> Address {
-        self.buffer.resize(ADDRESS_LENGTH);
-        ext::get_caller(&mut self.buffer[..ADDRESS_LENGTH]);
-        let mut addr = [0u8; ADDRESS_LENGTH];
-        addr.copy_from_slice(&self.buffer[..ADDRESS_LENGTH]);
-        Address::new(addr)
+        let size = ext::get_caller(&mut self.buffer[..]);
+        String::from_utf8_lossy(&self.buffer[..size as usize])
+            .into_owned()
+            .into()
     }
 
     fn get_tx_origin(&mut self) -> Address {
-        self.buffer.resize(ADDRESS_LENGTH);
-        ext::get_tx_origin(&mut self.buffer[..ADDRESS_LENGTH]);
-        let mut addr = [0u8; ADDRESS_LENGTH];
-        addr.copy_from_slice(&self.buffer[..ADDRESS_LENGTH]);
-        Address::new(addr)
+        let size = ext::get_tx_origin(&mut self.buffer[..]);
+        String::from_utf8_lossy(&self.buffer[..size as usize])
+            .into_owned()
+            .into()
     }
 
     fn get_address(&mut self) -> Address {
-        self.buffer.resize(ADDRESS_LENGTH);
-        ext::get_address(&mut self.buffer[..ADDRESS_LENGTH]);
-        let mut addr = [0u8; ADDRESS_LENGTH];
-        addr.copy_from_slice(&self.buffer[..ADDRESS_LENGTH]);
-        Address::new(addr)
+        let size = ext::get_address(&mut self.buffer[..]);
+        String::from_utf8_lossy(&self.buffer[..size as usize])
+            .into_owned()
+            .into()
     }
 
     fn now(&mut self) -> u64 {
@@ -201,7 +198,7 @@ impl Env for EnvInstance {
     }
 
     fn get_external_code_size(&self, account: &Address) -> u32 {
-        ext::get_external_code_size(&account.0)
+        ext::get_external_code_size(account.as_bytes())
     }
 
     fn register_asset(
@@ -212,7 +209,7 @@ impl Env for EnvInstance {
         total: u64,
         description: &[u8],
     ) -> bool {
-        ext::register_asset(asset_name, &issuer.0, fungible, total, description)
+        ext::register_asset(asset_name, issuer.as_bytes(), fungible, total, description)
     }
 
     fn issue_fungible_asset(
@@ -221,7 +218,7 @@ impl Env for EnvInstance {
         asset_name: &[u8],
         amount: u64,
     ) -> bool {
-        ext::issue_fungible_asset(&to.0, asset_name, amount)
+        ext::issue_fungible_asset(to.as_bytes(), asset_name, amount)
     }
 
     fn issue_not_fungible_asset(
@@ -230,7 +227,7 @@ impl Env for EnvInstance {
         asset_name: &[u8],
         uri: &[u8],
     ) -> u64 {
-        ext::issue_not_fungible_asset(&to.0, asset_name, uri)
+        ext::issue_not_fungible_asset(to.as_bytes(), asset_name, uri)
     }
 
     fn transfer_asset(
@@ -240,11 +237,11 @@ impl Env for EnvInstance {
         amount_or_id: u64,
         from_self: bool,
     ) -> bool {
-        ext::transfer_asset(&to.0, asset_name, amount_or_id, from_self)
+        ext::transfer_asset(to.as_bytes(), asset_name, amount_or_id, from_self)
     }
 
     fn get_asset_balance(&self, to: &Address, asset_name: &[u8]) -> u64 {
-        ext::get_asset_balance(&to.0, asset_name)
+        ext::get_asset_balance(to.as_bytes(), asset_name)
     }
 
     fn get_not_fungible_asset_info(
@@ -254,7 +251,7 @@ impl Env for EnvInstance {
         asset_id: u64,
     ) -> String {
         let size = ext::get_not_fungible_asset_info(
-            &account.0,
+            account.as_bytes(),
             asset_name,
             asset_id,
             &mut self.buffer[..],
@@ -272,9 +269,11 @@ impl Env for EnvInstance {
         asset_name: &[u8],
     ) -> Vec<u64> {
         let mut ret = Vec::new();
-        if let Ok(size) =
-            ext::get_not_fungible_asset_ids(&account.0, asset_name, &mut self.buffer[..])
-        {
+        if let Ok(size) = ext::get_not_fungible_asset_ids(
+            account.as_bytes(),
+            asset_name,
+            &mut self.buffer[..],
+        ) {
             self.buffer.resize(size as usize);
             let mut start: usize = 0;
             while start < size as usize {

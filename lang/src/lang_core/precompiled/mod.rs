@@ -13,13 +13,14 @@
 mod cns;
 
 pub use cns::Cns;
+use lazy_static::lazy_static;
 use liquid_prelude::vec::{self, Vec};
 use liquid_primitives::types::Address;
 
-pub const CNS_ADDRESS: Address = Address::new([
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x10, 0x04,
-]);
+lazy_static! {
+    pub static ref CNS_ADDRESS: Address =
+        "0x0000000000000000000000000000000000001004".into();
+}
 
 struct ReturnDataWrapper {
     pub data: Vec<u8>,

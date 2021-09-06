@@ -23,23 +23,23 @@ mod voting {
 
     #[derive(InOut)]
     pub struct Proposal {
-        proposer: address,
+        proposer: Address,
         content: String,
     }
 
     #[liquid(contract)]
     pub struct Decision {
         #[liquid(signers)]
-        government: address,
+        government: Address,
         proposal: Proposal,
         #[liquid(signers)]
-        voters: Vec<address>,
+        voters: Vec<Address>,
         accept: bool,
     }
 
     #[derive(InOut)]
     pub struct Voter {
-        addr: address,
+        addr: Address,
         voted: bool,
         choice: bool,
     }
@@ -47,7 +47,7 @@ mod voting {
     #[liquid(contract)]
     pub struct Ballot {
         #[liquid(signers)]
-        government: address,
+        government: Address,
         #[liquid(signers = "$[..](?@.voted).addr")]
         voters: Vec<Voter>,
         proposal: Proposal,
@@ -55,7 +55,7 @@ mod voting {
 
     #[liquid(rights_belong_to = "government")]
     impl Ballot {
-        pub fn add(mut self, voter_addr: address) -> ContractId<Ballot> {
+        pub fn add(mut self, voter_addr: Address) -> ContractId<Ballot> {
             assert!(self
                 .voters
                 .iter()
@@ -86,7 +86,7 @@ mod voting {
             require(yays != nays, "cannot decide on tie");
 
             let accept = yays > nays;
-            let voters = self.voters.iter().map(|voter| voter.addr).collect();
+            let voters = self.voters.iter().map(|voter| voter.addr.clone()).collect();
             sign! { Decision =>
                 accept,
                 government: self.government,
@@ -129,33 +129,33 @@ mod voting {
             let charlie = default_accounts.charlie;
             let david = default_accounts.david;
 
-            test::set_caller(government);
+            test::set_caller(government.clone());
             let ballot_id = sign! { Ballot =>
-                government,
+                government: government.clone(),
                 voters: Vec::new(),
                 proposal: Proposal {
-                    proposer: government,
+                    proposer: government.clone(),
                     content: String::from("take a holiday"),
                 },
             };
-            let ballot_id = ballot_id.add(bob);
-            let ballot_id = ballot_id.add(charlie);
-            let ballot_id = ballot_id.add(david);
+            let ballot_id = ballot_id.add(bob.clone());
+            let ballot_id = ballot_id.add(charlie.clone());
+            let ballot_id = ballot_id.add(david.clone());
             test::pop_execution_context();
 
-            test::set_caller(bob);
+            test::set_caller(bob.clone());
             ballot_id.vote(true);
             test::pop_execution_context();
 
-            test::set_caller(charlie);
+            test::set_caller(charlie.clone());
             ballot_id.vote(true);
             test::pop_execution_context();
 
-            test::set_caller(david);
+            test::set_caller(david.clone());
             ballot_id.vote(true);
             test::pop_execution_context();
 
-            test::set_caller(government);
+            test::set_caller(government.clone());
             let decision_id = ballot_id.decide();
             let decision = decision_id.fetch();
             assert_eq!(decision.government, government);
@@ -174,36 +174,36 @@ mod voting {
             let charlie = default_accounts.charlie;
             let david = default_accounts.david;
 
-            test::set_caller(government);
+            test::set_caller(government.clone());
             let ballot_id = sign! { Ballot =>
-                government,
+                government: government.clone(),
                 voters: Vec::new(),
                 proposal: Proposal {
-                    proposer: government,
+                    proposer: government.clone(),
                     content: String::from("let's 996"),
                 },
             };
-            let ballot_id = ballot_id.add(bob);
+            let ballot_id = ballot_id.add(bob.clone());
             test::pop_execution_context();
 
-            test::set_caller(bob);
+            test::set_caller(bob.clone());
             ballot_id.vote(true);
             test::pop_execution_context();
 
-            test::set_caller(government);
-            let ballot_id = ballot_id.add(charlie);
-            let ballot_id = ballot_id.add(david);
+            test::set_caller(government.clone());
+            let ballot_id = ballot_id.add(charlie.clone());
+            let ballot_id = ballot_id.add(david.clone());
             test::pop_execution_context();
 
-            test::set_caller(charlie);
+            test::set_caller(charlie.clone());
             ballot_id.vote(false);
             test::pop_execution_context();
 
-            test::set_caller(david);
+            test::set_caller(david.clone());
             ballot_id.vote(false);
             test::pop_execution_context();
 
-            test::set_caller(government);
+            test::set_caller(government.clone());
             let decision_id = ballot_id.decide();
             let decision = decision_id.fetch();
             assert_eq!(decision.government, government);
@@ -221,23 +221,23 @@ mod voting {
             let government = default_accounts.alice;
             let bob = default_accounts.bob;
 
-            test::set_caller(government);
+            test::set_caller(government.clone());
             let ballot_id = sign! { Ballot =>
-                government,
+                government: government.clone(),
                 voters: Vec::new(),
                 proposal: Proposal {
-                    proposer: government,
+                    proposer: government.clone(),
                     content: String::from("let's 996"),
                 },
             };
-            let ballot_id = ballot_id.add(bob);
+            let ballot_id = ballot_id.add(bob.clone());
             test::pop_execution_context();
 
-            test::set_caller(bob);
+            test::set_caller(bob.clone());
             ballot_id.vote(true);
             test::pop_execution_context();
 
-            test::set_caller(bob);
+            test::set_caller(bob.clone());
             ballot_id.vote(false);
             test::pop_execution_context();
         }
@@ -249,12 +249,12 @@ mod voting {
             let government = default_accounts.alice;
             let bob = default_accounts.bob;
 
-            test::set_caller(government);
+            test::set_caller(government.clone());
             sign! { Ballot =>
-                government: bob,
+                government: bob.clone(),
                 voters: Vec::new(),
                 proposal: Proposal {
-                    proposer: government,
+                    proposer: government.clone(),
                     content: String::from("let's 996"),
                 },
             };
@@ -269,18 +269,18 @@ mod voting {
             let government = default_accounts.alice;
             let bob = default_accounts.bob;
 
-            test::set_caller(government);
+            test::set_caller(government.clone());
             let ballot_id = sign! {Ballot =>
-                government,
+                government: government.clone(),
                 voters: Vec::new(),
                 proposal: Proposal {
-                    proposer: government,
+                    proposer: government.clone(),
                     content: String::from("take a holiday"),
                 },
             };
             test::pop_execution_context();
 
-            test::set_caller(bob);
+            test::set_caller(bob.clone());
             ballot_id.decide();
             test::pop_execution_context();
         }
@@ -293,28 +293,28 @@ mod voting {
             let bob = default_accounts.bob;
             let charlie = default_accounts.charlie;
 
-            test::set_caller(government);
+            test::set_caller(government.clone());
             let ballot_id = sign! { Ballot =>
-                government,
+                government: government.clone(),
                 voters: Vec::new(),
                 proposal: Proposal {
-                    proposer: government,
+                    proposer: government.clone(),
                     content: String::from("take a holiday"),
                 },
             };
-            let ballot_id = ballot_id.add(bob);
-            let ballot_id = ballot_id.add(charlie);
+            let ballot_id = ballot_id.add(bob.clone());
+            let ballot_id = ballot_id.add(charlie.clone());
             test::pop_execution_context();
 
-            test::set_caller(bob);
+            test::set_caller(bob.clone());
             ballot_id.vote(true);
             test::pop_execution_context();
 
-            test::set_caller(charlie);
+            test::set_caller(charlie.clone());
             ballot_id.vote(false);
             test::pop_execution_context();
 
-            test::set_caller(government);
+            test::set_caller(government.clone());
             ballot_id.decide();
             test::pop_execution_context();
         }
@@ -327,24 +327,24 @@ mod voting {
             let bob = default_accounts.bob;
             let charlie = default_accounts.charlie;
 
-            test::set_caller(government);
+            test::set_caller(government.clone());
             let ballot_id = sign! { Ballot =>
-                government,
+                government: government.clone(),
                 voters: Vec::new(),
                 proposal: Proposal {
-                    proposer: government,
+                    proposer: government.clone(),
                     content: String::from("take a holiday"),
                 },
             };
-            let ballot_id = ballot_id.add(bob);
-            let ballot_id = ballot_id.add(charlie);
+            let ballot_id = ballot_id.add(bob.clone());
+            let ballot_id = ballot_id.add(charlie.clone());
             test::pop_execution_context();
 
-            test::set_caller(bob);
+            test::set_caller(bob.clone());
             ballot_id.vote(true);
             test::pop_execution_context();
 
-            test::set_caller(government);
+            test::set_caller(government.clone());
             ballot_id.decide();
             test::pop_execution_context();
         }
@@ -356,18 +356,18 @@ mod voting {
             let government = default_accounts.alice;
             let bob = default_accounts.bob;
 
-            test::set_caller(government);
+            test::set_caller(government.clone());
             let ballot_id = sign! { Ballot =>
-                government,
+                government: government.clone(),
                 voters: Vec::new(),
                 proposal: Proposal {
-                    proposer: government,
+                    proposer: government.clone(),
                     content: String::from("take a holiday"),
                 },
             };
             test::pop_execution_context();
 
-            test::set_caller(bob);
+            test::set_caller(bob.clone());
             ballot_id.vote(true);
             test::pop_execution_context();
         }

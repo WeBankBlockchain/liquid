@@ -86,4 +86,5 @@ fn compile_tests() {
     t.compile_fail("tests/contract/ui/fail/48-overriding-interface.rs");
     t.compile_fail("tests/contract/ui/fail/49-invalid-state-type.rs");
     t.compile_fail("tests/contract/ui/fail/50-contract-redefined.rs");
+    t.compile_fail("tests/contract/ui/fail/51-define-interface-in-contract.rs")
 }
