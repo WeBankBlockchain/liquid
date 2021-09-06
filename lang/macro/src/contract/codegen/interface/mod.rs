@@ -14,7 +14,7 @@ mod mockable;
 
 use crate::{
     common,
-    contract::ir::{ForeignFn, Interface},
+    contract::ir::{FnArg, ForeignFn, Interface, Signature},
     utils,
 };
 use either::Either;
@@ -34,6 +34,7 @@ impl common::GenerateCode for Interface {
 
         let foreign_structs = self.generate_foreign_structs();
         let foreign_contract = self.generate_foreign_contract();
+        let abi_gen = self.generate_abi_gen();
         let mockable_contract = mockable.generate_code();
 
         quote! {
@@ -52,6 +53,7 @@ impl common::GenerateCode for Interface {
                     pub mod __liquid_interface {
                         use super::*;
                         #foreign_contract
+                        #abi_gen
                     }
 
                     #[cfg(test)]
@@ -120,13 +122,12 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
             #[allow(dead_code)]
             struct __LiquidInputTyChecker #input_ty_checker;
 
-            #[allow(dead_code)]
-            const __LIQUID_SELECTOR: liquid_primitives::Selector = {
+            const __LIQUID_SELECTOR: u32 = {
                 let hash = liquid_primitives::hash::hash(&[#(#fn_name_bytes),*]);
-                [hash[0], hash[1], hash[2], hash[3]]
+                u32::from_le_bytes([hash[0], hash[1], hash[2], hash[3]])
             };
 
-            let mut __liquid_encoded = __LIQUID_SELECTOR.to_vec();
+            let mut __liquid_encoded = __LIQUID_SELECTOR.to_le_bytes().to_vec();
             #(
                 __liquid_encoded.extend(#input_encodes);
             )*
@@ -135,7 +136,62 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
     }
 }
 
+fn generate_fn_inputs(sig: &Signature) -> impl Iterator<Item = TokenStream2> + '_ {
+    sig.inputs.iter().skip(1).map(|arg| match arg {
+        FnArg::Typed(ident_type) => {
+            let ident = &ident_type.ident.to_string();
+            let ty = &ident_type.ty;
+
+            quote! {
+                <#ty as liquid_abi_gen::traits::GenerateParamAbi>::generate_param_abi(#ident.to_owned())
+            }
+        }
+        _ => unreachable!(),
+    })
+}
+
 impl Interface {
+    fn generate_abi_gen(&self) -> TokenStream2 {
+        let fn_abis = &self.foreign_fns.values().map(|external_fn| {
+            let ident = external_fn.sig.ident.to_string();
+            let input_args = generate_fn_inputs(&external_fn.sig);
+            let output = &external_fn.sig.output;
+            let output_args = match output {
+                syn::ReturnType::Default => quote! {},
+                syn::ReturnType::Type(_, ty) => {
+                    quote! {
+                        <#ty as liquid_abi_gen::traits::GenerateOutputs>::generate_outputs(&mut builder);
+                    }
+                }
+            };
+            let constant = !external_fn.sig.is_mut();
+            let build_args = quote! {
+                String::from(#ident), #constant
+            };
+            quote! {
+                {
+                    let mut builder = liquid_abi_gen::FnAbi::new_builder(#build_args);
+                    #(builder.input(#input_args);)*
+                    #output_args
+                    builder.done()
+                }
+            }
+        }).collect::<Vec<TokenStream2>>();
+
+        quote! {
+            #[cfg(feature = "liquid-abi-gen")]
+            const _: () = {
+                impl liquid_lang::GenerateIfaceAbi for Interface {
+                    fn generate_abi() -> Vec<liquid_abi_gen::FnAbi> {
+                        let mut fn_abis = Vec::new();
+                        #(fn_abis.push(#fn_abis);)*
+                        fn_abis
+                    }
+                }
+            };
+        }
+    }
+
     fn generate_foreign_structs(&self) -> impl Iterator<Item = TokenStream2> + '_ {
         self.foreign_structs.iter().map(|foreign_struct| {
             let attrs = &foreign_struct.attrs;
@@ -207,7 +263,8 @@ impl Interface {
             #[cfg(feature = "liquid-abi-gen")]
             impl liquid_abi_gen::traits::TypeToString for Interface {
                 fn type_to_string() -> liquid_prelude::string::String {
-                    <liquid_primitives::types::Address as liquid_abi_gen::traits::TypeToString>::type_to_string()
+                    <liquid_primitives::types::Address as
+                        liquid_abi_gen::traits::TypeToString>::type_to_string()
                 }
             }
 

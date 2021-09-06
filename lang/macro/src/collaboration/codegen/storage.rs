@@ -68,7 +68,7 @@ impl<'a> Storage<'a> {
 
         quote! {
             pub struct Storage {
-                pub __liquid_authorizers: liquid_prelude::vec::Vec<address>,
+                pub __liquid_authorizers: liquid_prelude::vec::Vec<Address>,
                 #(#fields)*
             }
 
@@ -95,12 +95,12 @@ impl<'a> Storage<'a> {
             }
 
             pub struct AuthorizersGuard {
-                authorizers: &'static mut liquid_prelude::vec::Vec<address>,
+                authorizers: &'static mut liquid_prelude::vec::Vec<Address>,
                 len: usize,
             }
 
             impl  AuthorizersGuard {
-                pub fn authorizers(&mut self) -> &mut liquid_prelude::vec::Vec<address> {
+                pub fn authorizers(&mut self) -> &mut liquid_prelude::vec::Vec<Address> {
                     self.authorizers
                 }
             }
@@ -111,7 +111,7 @@ impl<'a> Storage<'a> {
                 }
             }
 
-            fn acquire_authorizers() -> &'static mut liquid_prelude::vec::Vec<address> {
+            fn acquire_authorizers() -> &'static mut liquid_prelude::vec::Vec<Address> {
                 let storage = __liquid_acquire_storage_instance();
                 &mut storage.__liquid_authorizers
             }
@@ -125,7 +125,7 @@ impl<'a> Storage<'a> {
                 }
             }
 
-            pub fn __liquid_authorization_check(parties: &liquid_prelude::collections::BTreeSet<&address>) -> bool {
+            pub fn __liquid_authorization_check(parties: &liquid_prelude::collections::BTreeSet<&Address>) -> bool {
                 let authorizers = acquire_authorizers();
                 if authorizers.is_empty() {
                     let caller = liquid_lang::env::get_caller();
@@ -137,7 +137,7 @@ impl<'a> Storage<'a> {
                     true
                 } else {
                     for party in parties {
-                        if !authorizers.contains(*party) {
+                        if !authorizers.contains(party) {
                             return false;
                         }
                     }

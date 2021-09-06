@@ -150,7 +150,8 @@ impl<'a> Dispatch<'a> {
                 struct #input_ty_checker_ident #input_ty_checker;
 
                 impl liquid_lang::FnSelector for #right_marker {
-                    const SELECTOR: liquid_primitives::Selector = [#(#selector,)*];
+                    const SELECTOR: liquid_primitives::Selector =
+                        u32::from_le_bytes([#(#selector,)*]);
                 }
             }
         };
@@ -169,7 +170,8 @@ impl<'a> Dispatch<'a> {
         let contract_selector = {
             quote! {
                 impl liquid_lang::FnSelector for #contract_marker {
-                    const SELECTOR: liquid_primitives::Selector = [#(#selector,)*];
+                    const SELECTOR: liquid_primitives::Selector =
+                        u32::from_le_bytes([#(#selector,)*]);
                 }
             }
         };
@@ -258,7 +260,8 @@ impl<'a> Dispatch<'a> {
                 }
             })
             .collect::<Vec<_>>();
-        let fetch_selector = Self::generate_contract_selector(item_contract, true);
+        let fetch_selector =
+            u32::from_le_bytes(Self::generate_contract_selector(item_contract, true));
         quote! {
             if selector == <#contract_marker as liquid_lang::FnSelector>::SELECTOR {
                 let data_ptr = &mut data.as_slice();
@@ -270,7 +273,7 @@ impl<'a> Dispatch<'a> {
                 return Ok(());
             }
 
-            if selector == [#(#fetch_selector,)*] {
+            if selector == #fetch_selector {
                 let data_ptr = &mut data.as_slice();
                 let contract_id = <ContractId<#contract_ident> as scale::Decode>::decode(data_ptr)
                     .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
@@ -345,7 +348,7 @@ impl<'a> Dispatch<'a> {
                     quote! {
                         let addr = Cns::get_contract_address(#name, #version);
                         if let Some(addr) = addr {
-                            if addr != address::empty() {
+                            if addr != Address::empty() {
                                 liquid_lang::env::revert(#error)
                             }
                         }

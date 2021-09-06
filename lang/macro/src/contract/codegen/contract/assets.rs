@@ -67,11 +67,12 @@ impl<'a> Assets<'a> {
                     };
                     if is_contract {
                         type Input = (String,);
-                        const SUPPORTS_ASSET: liquid_primitives::Selector = {
-                            let hash = liquid_primitives::hash::hash(&#supports_asset_signature.as_bytes());
+                        let mut encoded = {
+                            let hash = liquid_primitives::hash::hash(
+                                &#supports_asset_signature.as_bytes()
+                            );
                             [hash[0], hash[1], hash[2], hash[3]]
-                        };
-                        let mut encoded = SUPPORTS_ASSET.to_vec();
+                        }.to_vec();
                         encoded.extend(<Input as scale::Encode>::encode(&(String::from(Self::ASSET_NAME),)));
                         match liquid_lang::env::call::<bool>(&to, &encoded) {
                             Ok(true) =>(),
@@ -120,19 +121,19 @@ impl<'a> Assets<'a> {
                         pub fn total_supply() -> u64 {
                             Self::TOTAL_SUPPLY
                         }
-                        pub fn issuer() -> address {
+                        pub fn issuer() -> Address {
                             Self::ISSUER.parse().unwrap()
                         }
                         pub fn description() -> &'a str {
                             Self::DESCRIPTION
                         }
-                        pub fn balance_of(owner: &address) -> u64 {
+                        pub fn balance_of(owner: &Address) -> u64 {
                             liquid_lang::env::get_asset_balance(
                                 owner,
                                 Self::ASSET_NAME.as_bytes(),
                             )
                         }
-                        pub fn issue_to(to: &address, amount: u64) -> bool {
+                        pub fn issue_to(to: &Address, amount: u64) -> bool {
                             liquid_lang::env::issue_fungible_asset(
                                 to,
                                 Self::ASSET_NAME.as_bytes(),
@@ -163,7 +164,7 @@ impl<'a> Assets<'a> {
                                 from_self: true,
                             })
                         }
-                        pub fn deposit(mut self, to: &address) {
+                        pub fn deposit(mut self, to: &Address) {
                             #call_supports_asset
                             self.stored = liquid_lang::env::transfer_asset(
                                 to,
@@ -217,25 +218,25 @@ impl<'a> Assets<'a> {
                         pub fn total_supply() -> u64 {
                             Self::TOTAL_SUPPLY
                         }
-                        pub fn issuer() -> address {
+                        pub fn issuer() -> Address {
                             Self::ISSUER.parse().unwrap()
                         }
                         pub fn description() -> &'a str {
                             Self::DESCRIPTION
                         }
-                        pub fn balance_of(owner: &address) -> u64 {
+                        pub fn balance_of(owner: &Address) -> u64 {
                             liquid_lang::env::get_asset_balance(
                                 owner,
                                 Self::ASSET_NAME.as_bytes(),
                             )
                         }
-                        pub fn tokens_of(owner: &address) -> Vec<u64> {
+                        pub fn tokens_of(owner: &Address) -> Vec<u64> {
                             liquid_lang::env::get_not_fungible_asset_ids(
                                 owner,
                                 Self::ASSET_NAME.as_bytes(),
                             )
                         }
-                        pub fn issue_to(to: &address, uri: &str) -> Option<u64> {
+                        pub fn issue_to(to: &Address, uri: &str) -> Option<u64> {
                             match liquid_lang::env::issue_not_fungible_asset(
                                 to,
                                 Self::ASSET_NAME.as_bytes(),
@@ -279,7 +280,7 @@ impl<'a> Assets<'a> {
                                 from_self: true,
                             })
                         }
-                        pub fn deposit(mut self, to: &address) {
+                        pub fn deposit(mut self, to: &Address) {
                             #call_supports_asset
                             self.stored = liquid_lang::env::transfer_asset(
                                 to,

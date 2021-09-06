@@ -45,21 +45,29 @@ mod sys {
             topic4: u32,
         );
 
-        pub fn getCaller(data_offset: u32);
+        pub fn getCaller(data_offset: u32) -> u32;
 
-        pub fn getTxOrigin(data_offset: u32);
+        pub fn getTxOrigin(data_offset: u32) -> u32;
 
         pub fn getBlockTimestamp() -> u64;
 
         pub fn getBlockNumber() -> u64;
 
-        pub fn call(address_offset: u32, data_offset: u32, data_length: u32) -> u32;
+        pub fn call(
+            address_offset: u32,
+            address_length: u32,
+            data_offset: u32,
+            data_length: u32,
+        ) -> u32;
 
         pub fn getReturnDataSize() -> u32;
 
         pub fn getReturnData(result_offset: u32);
-        pub fn getAddress(result_offset: u32);
-        pub fn getExternalCodeSize(address_offset: u32) -> u32;
+
+        pub fn getAddress(result_offset: u32) -> u32;
+
+        pub fn getExternalCodeSize(address_offset: u32, address_length: u32) -> u32;
+
         pub fn registerAsset(
             asset_name_offset: u32,
             asset_name_length: u32,
@@ -71,12 +79,14 @@ mod sys {
         ) -> u32;
         pub fn issueFungibleAsset(
             address_offset: u32,
+            address_length: u32,
             asset_name_offset: u32,
             asset_name_length: u32,
             amount: u64,
         ) -> i32;
         pub fn issueNotFungibleAsset(
             address_offset: u32,
+            address_length: u32,
             asset_name_offset: u32,
             asset_name_length: u32,
             uri_offset: u32,
@@ -84,6 +94,7 @@ mod sys {
         ) -> u64;
         pub fn transferAsset(
             address_offset: u32,
+            address_length: u32,
             asset_name_offset: u32,
             asset_name_length: u32,
             amount_or_id: u64,
@@ -91,11 +102,13 @@ mod sys {
         ) -> u32;
         pub fn getAssetBalance(
             address_offset: u32,
+            address_length: u32,
             asset_name_offset: u32,
             asset_name_length: u32,
         ) -> u64;
         pub fn getNotFungibleAssetIDs(
             address_offset: u32,
+            address_length: u32,
             asset_name_offset: u32,
             asset_name_length: u32,
             result_offset: u32,
@@ -103,6 +116,7 @@ mod sys {
         ) -> i32;
         pub fn getNotFungibleAssetInfo(
             address_offset: u32,
+            address_length: u32,
             asset_name_offset: u32,
             asset_name_length: u32,
             asset_id: u64,
@@ -221,26 +235,20 @@ pub fn log(data: &[u8], topics: &[Hash]) {
     }
 }
 
-pub fn get_caller(result_offset: &mut [u8]) {
-    unsafe {
-        sys::getCaller(result_offset.as_mut_ptr() as u32);
-    }
+pub fn get_caller(result_offset: &mut [u8]) -> u32 {
+    unsafe { sys::getCaller(result_offset.as_mut_ptr() as u32) }
 }
 
-pub fn get_tx_origin(result_offset: &mut [u8]) {
-    unsafe {
-        sys::getTxOrigin(result_offset.as_mut_ptr() as u32);
-    }
+pub fn get_tx_origin(result_offset: &mut [u8]) -> u32 {
+    unsafe { sys::getTxOrigin(result_offset.as_mut_ptr() as u32) }
 }
 
-pub fn get_address(result_offset: &mut [u8]) {
-    unsafe {
-        sys::getAddress(result_offset.as_mut_ptr() as u32);
-    }
+pub fn get_address(result_offset: &mut [u8]) -> u32 {
+    unsafe { sys::getAddress(result_offset.as_mut_ptr() as u32) }
 }
 
 pub fn get_external_code_size(account: &[u8]) -> u32 {
-    unsafe { sys::getExternalCodeSize(account.as_ptr() as u32) }
+    unsafe { sys::getExternalCodeSize(account.as_ptr() as u32, account.len() as u32) }
 }
 
 pub fn get_block_timestamp() -> u64 {
@@ -255,6 +263,7 @@ pub fn call(address: &[u8], data: &[u8]) -> u32 {
     unsafe {
         sys::call(
             address.as_ptr() as u32,
+            address.len() as u32,
             data.as_ptr() as u32,
             data.len() as u32,
         )
@@ -299,6 +308,7 @@ pub fn issue_fungible_asset(to: &[u8], asset_name: &[u8], amount: u64) -> bool {
         !matches!(
             sys::issueFungibleAsset(
                 to.as_ptr() as u32,
+                to.len() as u32,
                 asset_name.as_ptr() as u32,
                 asset_name.len() as u32,
                 amount,
@@ -312,6 +322,7 @@ pub fn issue_not_fungible_asset(to: &[u8], asset_name: &[u8], uri: &[u8]) -> u64
     unsafe {
         sys::issueNotFungibleAsset(
             to.as_ptr() as u32,
+            to.len() as u32,
             asset_name.as_ptr() as u32,
             asset_name.len() as u32,
             uri.as_ptr() as u32,
@@ -330,6 +341,7 @@ pub fn transfer_asset(
         !matches!(
             sys::transferAsset(
                 to.as_ptr() as u32,
+                to.len() as u32,
                 asset_name.as_ptr() as u32,
                 asset_name.len() as u32,
                 amount_or_id,
@@ -344,6 +356,7 @@ pub fn get_asset_balance(account: &[u8], asset_name: &[u8]) -> u64 {
     unsafe {
         sys::getAssetBalance(
             account.as_ptr() as u32,
+            account.len() as u32,
             asset_name.as_ptr() as u32,
             asset_name.len() as u32,
         )
@@ -358,6 +371,7 @@ pub fn get_not_fungible_asset_ids(
     let size = unsafe {
         sys::getNotFungibleAssetIDs(
             account.as_ptr() as u32,
+            account.len() as u32,
             asset_name.as_ptr() as u32,
             asset_name.len() as u32,
             asset_ids.as_mut_ptr() as u32,
@@ -380,6 +394,7 @@ pub fn get_not_fungible_asset_info(
     unsafe {
         sys::getNotFungibleAssetInfo(
             account.as_ptr() as u32,
+            account.len() as u32,
             asset_name.as_ptr() as u32,
             asset_name.len() as u32,
             asset_id,

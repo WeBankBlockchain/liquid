@@ -5,7 +5,7 @@ mod auction {
     #[liquid(contract)]
     pub struct Noop {
         #[liquid(signers)]
-        addr: address,
+        addr: Address,
     }
 
     #[liquid(rights_belong_to = "addr")]

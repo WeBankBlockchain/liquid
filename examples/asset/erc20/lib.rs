@@ -9,7 +9,7 @@ mod asset_erc20 {
     /// Defines the storage of your contract.
     #[liquid(storage)]
     struct Erc20 {
-        allowances: storage::Mapping<(address, address), u64>,
+        allowances: storage::Mapping<(Address, Address), u64>,
     }
 
     #[liquid(asset(
@@ -35,16 +35,16 @@ mod asset_erc20 {
         pub fn total_supply(&self) -> u64 {
             Erc20Token::total_supply()
         }
-        pub fn balance_of(&self, owner: address) -> u64 {
+        pub fn balance_of(&self, owner: Address) -> u64 {
             Erc20Token::balance_of(&owner)
         }
         pub fn erc20_description(&self) -> String {
             Erc20Token::description().into()
         }
-        pub fn issue_to(&mut self, owner: address, amount: u64) -> bool {
+        pub fn issue_to(&mut self, owner: Address, amount: u64) -> bool {
             Erc20Token::issue_to(&owner, amount)
         }
-        pub fn transfer(&mut self, recipient: address, amount: u64) -> bool {
+        pub fn transfer(&mut self, recipient: Address, amount: u64) -> bool {
             match Erc20Token::withdraw_from_caller(amount) {
                 None => false,
                 Some(token) => {
@@ -53,17 +53,19 @@ mod asset_erc20 {
                 }
             }
         }
-        pub fn allowance(&mut self, owner: address, spender: address) -> u64 {
+        pub fn allowance(&mut self, owner: Address, spender: Address) -> u64 {
             *self.allowances.get(&(owner, spender)).unwrap_or(&0)
         }
-        pub fn approve(&mut self, spender: address, amount: u64) -> bool {
+        pub fn approve(&mut self, spender: Address, amount: u64) -> bool {
             match Erc20Token::withdraw_from_caller(amount) {
                 None => false,
                 Some(token) => {
                     token.deposit(&self.env().get_address());
                     let caller = self.env().get_caller();
-                    let allowance =
-                        *self.allowances.get(&(caller, spender)).unwrap_or(&0);
+                    let allowance = *self
+                        .allowances
+                        .get(&(caller.clone(), spender.clone()))
+                        .unwrap_or(&0);
                     self.allowances
                         .insert((caller, spender), allowance + amount);
                     true
@@ -73,12 +75,15 @@ mod asset_erc20 {
 
         pub fn transfer_from(
             &mut self,
-            sender: address,
-            recipient: address,
+            sender: Address,
+            recipient: Address,
             amount: u64,
         ) -> bool {
             let caller = self.env().get_caller();
-            let allowance = *self.allowances.get(&(sender, caller)).unwrap_or(&0);
+            let allowance = *self
+                .allowances
+                .get(&(sender.clone(), caller.clone()))
+                .unwrap_or(&0);
             if allowance >= amount {
                 self.allowances.insert((sender, caller), 0);
                 return match Erc20Token::withdraw_from_self(amount) {

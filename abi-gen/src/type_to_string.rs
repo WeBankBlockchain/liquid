@@ -39,7 +39,7 @@ macro_rules! primitive_type_to_string {
 primitive_type_to_string!(bool);
 primitive_type_to_string!(
     String => string,
-    Address => address,
+    Address => string,
     Bytes => bytes,
     Hash => hash,
     u8 => uint8,

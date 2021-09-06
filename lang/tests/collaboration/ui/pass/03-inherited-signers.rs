@@ -5,7 +5,7 @@ mod noop {
     #[liquid(contract)]
     pub struct Foo {
         #[liquid(signers)]
-        addr: address,
+        addr: Address,
     }
 
     #[liquid(contract)]

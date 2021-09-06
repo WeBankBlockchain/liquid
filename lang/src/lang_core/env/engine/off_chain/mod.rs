@@ -18,7 +18,7 @@ use crate::lang_core::env::{
     backend::Env, calldata::CallData, engine::OnInstance, error::Result, CallMode,
 };
 use core::cell::RefCell;
-use liquid_primitives::{types::address::Address, Topics};
+use liquid_primitives::{types::Address, Topics};
 use std::{collections::HashMap, str};
 
 struct AssetInfo {
@@ -172,7 +172,7 @@ impl Env for EnvInstance {
         self.assets_info.insert(
             asset_name.to_string(),
             AssetInfo {
-                issuer: *issuer,
+                issuer: issuer.clone(),
                 fungible,
                 total_supply: total,
                 _description: str::from_utf8(description).unwrap().to_string(),
@@ -215,7 +215,7 @@ impl Env for EnvInstance {
             .fungible_asset
             .entry(asset_name.to_string())
             .or_insert_with(HashMap::new)
-            .entry(*to)
+            .entry(to.clone())
             .or_insert(0);
         *account_balance += amount;
         true
@@ -247,7 +247,7 @@ impl Env for EnvInstance {
             .not_fungible_asset
             .entry(asset_name.to_string())
             .or_insert_with(HashMap::new)
-            .entry(*to)
+            .entry(to.clone())
             .or_insert_with(HashMap::new);
         tokens.insert(
             asset_info.supplied,
@@ -290,7 +290,7 @@ impl Env for EnvInstance {
                     .fungible_asset
                     .get_mut(asset_name)
                     .unwrap()
-                    .entry(*to)
+                    .entry(to.clone())
                     .or_insert(0);
                 *to_balance += amount;
                 return true;
@@ -312,7 +312,7 @@ impl Env for EnvInstance {
                 .not_fungible_asset
                 .get_mut(asset_name)
                 .unwrap()
-                .entry(*to)
+                .entry(to.clone())
                 .or_insert_with(HashMap::new);
             to_balance.insert(token_id, token_uri);
             true

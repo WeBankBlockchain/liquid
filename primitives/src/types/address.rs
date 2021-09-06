@@ -11,94 +11,58 @@
 // limitations under the License.
 
 use crate::Error;
-use core::fmt;
-use liquid_prelude::{str::FromStr, string::String};
+use core::{
+    convert::AsRef,
+    ops::{Deref, DerefMut},
+};
+use liquid_prelude::{
+    str::FromStr,
+    string::{String, ToString},
+};
 
-pub const ADDRESS_LENGTH: usize = 20;
-
-#[derive(
-    Copy, Clone, PartialEq, Eq, PartialOrd, Ord, scale::Decode, scale::Encode, Hash,
-)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, scale::Decode, scale::Encode, Hash)]
 #[cfg_attr(feature = "std", derive(Debug))]
-pub struct Address(pub [u8; ADDRESS_LENGTH]);
+pub struct Address(String);
 
 impl Address {
-    pub const fn new(addr: [u8; ADDRESS_LENGTH]) -> Self {
-        Self(addr)
-    }
-
-    pub const fn empty() -> Self {
-        Self([0u8; ADDRESS_LENGTH])
+    #[allow(dead_code)]
+    pub fn empty() -> Self {
+        Self(String::new())
     }
 }
 
 impl Default for Address {
     fn default() -> Self {
-        Self([0; ADDRESS_LENGTH])
+        Self::empty()
     }
 }
 
-impl fmt::Display for Address {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut ret = String::with_capacity(ADDRESS_LENGTH * 2 + 2);
-        ret.push_str("0x");
+impl Deref for Address {
+    type Target = String;
 
-        for digit in self.0.iter() {
-            let low = digit & 0x0fu8;
-            let high = digit >> 4;
-            ret.push(core::char::from_digit(high.into(), 16).unwrap());
-            ret.push(core::char::from_digit(low.into(), 16).unwrap());
-        }
-        write!(f, "{}", ret)
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
-impl FromStr for Address {
-    type Err = Error;
-
-    fn from_str(mut s: &str) -> Result<Self, Self::Err> {
-        if !s.is_ascii() {
-            return Err("invalid address representation".into());
-        }
-
-        if s.starts_with("0x") || s.starts_with("0X") {
-            if s.len() > ADDRESS_LENGTH * 2 + 2 {
-                return Err("invalid address representation".into());
-            }
-            s = &s[2..];
-        } else if s.len() > ADDRESS_LENGTH * 2 {
-            return Err("invalid address representation".into());
-        }
-
-        let mut addr = [0u8; ADDRESS_LENGTH];
-        let bytes = s.as_bytes();
-        let padding_len = ADDRESS_LENGTH * 2 - bytes.len();
-        for i in 0..ADDRESS_LENGTH {
-            let (low, high) = if i * 2 + 1 < padding_len {
-                (0, 0)
-            } else {
-                (
-                    (bytes[i * 2 + 1 - padding_len] as char)
-                        .to_digit(16)
-                        .unwrap(),
-                    if i * 2 < padding_len {
-                        0
-                    } else {
-                        (bytes[i * 2 - padding_len] as char).to_digit(16).unwrap()
-                    },
-                )
-            };
-
-            let digit = (high << 4) + low;
-            addr[i] = digit as u8;
-        }
-        Ok(Self(addr))
+impl DerefMut for Address {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
-impl From<[u8; ADDRESS_LENGTH]> for Address {
-    fn from(bytes: [u8; ADDRESS_LENGTH]) -> Self {
-        Self(bytes)
+impl From<String> for Address {
+    fn from(addr: String) -> Self {
+        Self(addr)
+    }
+}
+
+impl<S> From<&S> for Address
+where
+    S: AsRef<str> + ?Sized,
+{
+    fn from(addr: &S) -> Self {
+        Self(addr.as_ref().to_string())
     }
 }
 
@@ -106,6 +70,14 @@ impl From<[u8; ADDRESS_LENGTH]> for Address {
 pub struct AddressIter {
     ptr: core::ptr::NonNull<Address>,
     end: *const Address,
+}
+
+impl FromStr for Address {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.to_string()))
+    }
 }
 
 impl<'a> IntoIterator for &'a Address {
@@ -128,93 +100,17 @@ impl<'a> IntoIterator for &'a Address {
 mod tests {
     use super::*;
 
-    const TEST_ADDR: [u8; ADDRESS_LENGTH] = [
-        0x3e, 0x9A, 0xFa, 0xA4, 0xa0, 0x62, 0xA4, 0x9d, 0x64, 0xb8, 0xAb, 0x05, 0x7B,
-        0x3C, 0xb5, 0x18, 0x92, 0xe1, 0x7E, 0xcb,
-    ];
-
     #[test]
-    fn test_copy() {
-        let origin = TEST_ADDR.clone();
-        let mut address_0 = Address(origin);
-        let address_1 = address_0;
-        let address_2 = address_1;
+    fn test() {
+        let _: Address = "/usr/bin/".into();
 
-        assert_eq!(address_0, address_1);
-        assert_eq!(address_1, address_2);
+        let addr_str = String::from("/usr/bin/");
+        let _: Address = addr_str.into();
 
-        (address_0.0)[ADDRESS_LENGTH - 1] = 0x00;
+        let addr_str = String::from("/usr/bin/");
+        let addr: Address = (&addr_str).into();
+        assert_eq!(addr.as_bytes(), addr_str.as_bytes());
 
-        assert_ne!(address_0, address_1);
-        assert_eq!(address_1, address_2);
-    }
-
-    #[test]
-    fn test_cmp() {
-        let small_addr = [0u8; ADDRESS_LENGTH];
-        let big_addr = TEST_ADDR.clone();
-
-        assert_eq!(small_addr < big_addr, true);
-        assert_eq!(small_addr <= big_addr, true);
-        assert_eq!(small_addr <= big_addr, true);
-        assert_eq!(small_addr > big_addr, false);
-        assert_eq!(small_addr >= big_addr, false);
-        assert_eq!(small_addr != big_addr, true);
-        assert_eq!(small_addr == small_addr, true);
-    }
-
-    #[test]
-    fn string_convert() {
-        let addr = Address(TEST_ADDR.clone());
-        let addr_str = "0x3e9afaa4a062a49d64b8ab057b3cb51892e17ecb";
-        assert_eq!(addr.to_string(), addr_str);
-        assert_eq!(addr_str.parse::<Address>().unwrap(), addr);
-
-        let addr_str = String::from(addr_str);
-        assert_eq!(addr_str.parse::<Address>().unwrap(), addr);
-    }
-
-    #[test]
-    fn padding_1() {
-        let addr: Address = "0x12".parse().unwrap();
-        assert_eq!(
-            addr,
-            "0x0000000000000000000000000000000000000012"
-                .parse()
-                .unwrap()
-        );
-        assert_eq!(
-            addr.to_string(),
-            "0x0000000000000000000000000000000000000012"
-        );
-    }
-
-    #[test]
-    fn padding_2() {
-        let addr: Address = "0x121".parse().unwrap();
-        assert_eq!(
-            addr,
-            "0x0000000000000000000000000000000000000121"
-                .parse()
-                .unwrap()
-        );
-        assert_eq!(
-            addr.to_string(),
-            "0x0000000000000000000000000000000000000121"
-        );
-    }
-
-    #[test]
-    #[should_panic(expected = "invalid address representation")]
-    fn invalid_addr_start() {
-        let _: Address = "0b3e9afaa4a062a49d64b8ab057b3cb51892e17ecb"
-            .parse()
-            .unwrap();
-    }
-
-    #[test]
-    #[should_panic(expected = "invalid address representation")]
-    fn invalid_addr_str_encode() {
-        let _: Address = "羞答答小白虎头李荣浩".parse().unwrap();
+        assert_eq!(Address::empty().len(), 0);
     }
 }

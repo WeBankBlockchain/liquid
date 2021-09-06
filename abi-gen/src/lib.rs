@@ -17,21 +17,28 @@ use serde::Serialize;
 pub mod traits;
 mod type_to_string;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct TrivialAbi {
     #[serde(rename = "type")]
     pub ty: String,
+    #[serde(skip_serializing_if = "::std::string::String::is_empty")]
+    #[serde(rename = "internalType")]
+    pub internal_ty: String,
     #[serde(skip_serializing_if = "::std::string::String::is_empty")]
     pub name: String,
 }
 
 impl TrivialAbi {
-    pub fn new(ty: String, name: String) -> Self {
-        TrivialAbi { ty, name }
+    pub fn new(ty: String, internal_ty: String, name: String) -> Self {
+        TrivialAbi {
+            ty,
+            internal_ty,
+            name,
+        }
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct CompositeAbi {
     #[serde(flatten)]
     pub trivial: TrivialAbi,
@@ -39,7 +46,7 @@ pub struct CompositeAbi {
     pub components: Vec<ParamAbi>,
 }
 
-#[derive(Serialize, From)]
+#[derive(Serialize, From, Clone)]
 #[serde(untagged)]
 pub enum ParamAbi {
     Composite(CompositeAbi),
