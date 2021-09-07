@@ -122,12 +122,12 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
             #[allow(dead_code)]
             struct __LiquidInputTyChecker #input_ty_checker;
 
-            const __LIQUID_SELECTOR_BYTES: [u8; 4] =  {
+            const __LIQUID_SELECTOR: u32 = {
                 let hash = liquid_primitives::hash::hash(&[#(#fn_name_bytes),*]);
-                [hash[0], hash[1], hash[2], hash[3]]
+                u32::from_le_bytes([hash[0], hash[1], hash[2], hash[3]])
             };
 
-            let mut __liquid_encoded = __LIQUID_SELECTOR_BYTES.to_vec();
+            let mut __liquid_encoded = __LIQUID_SELECTOR.to_le_bytes().to_vec();
             #(
                 __liquid_encoded.extend(#input_encodes);
             )*
