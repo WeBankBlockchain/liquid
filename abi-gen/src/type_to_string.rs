@@ -39,7 +39,7 @@ macro_rules! primitive_type_to_string {
 primitive_type_to_string!(bool);
 primitive_type_to_string!(
     String => string,
-    Address => address,
+    Address => string,
     Bytes => bytes,
     Hash => hash,
     u8 => uint8,
@@ -86,7 +86,7 @@ mod tests {
         assert_eq!(i256::type_to_string(), "int256");
 
         assert_eq!(String::type_to_string(), "string");
-        assert_eq!(Address::type_to_string(), "address");
+        assert_eq!(Address::type_to_string(), "string");
         assert_eq!(Bytes::type_to_string(), "bytes");
         assert_eq!(Hash::type_to_string(), "hash");
 
