@@ -69,73 +69,6 @@ impl common::GenerateCode for Interface {
     }
 }
 
-fn generate_trivial_fn(foreign_fn: &ForeignFn) -> TokenStream2 {
-    let attrs = utils::filter_non_liquid_attributes(foreign_fn.attrs.iter());
-    let sig = &foreign_fn.sig;
-    let span = foreign_fn.span;
-    let fn_ident = &sig.ident;
-
-    let inputs = &sig.inputs;
-    let input_tys = common::generate_input_tys(sig);
-    let input_ty_checker = common::generate_ty_checker(input_tys.as_slice());
-    let input_idents = common::generate_input_idents(sig);
-
-    let output = &sig.output;
-    let output_ty = match output {
-        syn::ReturnType::Default => {
-            quote! { () }
-        }
-        syn::ReturnType::Type(_, ty) => quote! {
-            <#ty as liquid_lang::You_Should_Use_An_Valid_Output_Type>::T
-        },
-    };
-
-    let fn_name = fn_ident.to_string();
-    let fn_name_bytes = fn_name.as_bytes();
-
-    let is_mut = sig.is_mut();
-    let input_encodes = input_idents
-        .iter()
-        .zip(input_tys.iter())
-        .map(|(ident, ty)| {
-            quote! {
-                <#ty as scale::Encode>::encode(&#ident)
-            }
-        });
-
-    // Although it seems redundant here, if I don't do this, the error message
-    // will display twice when type of inputs or outputs is not suitable, what
-    // is ugly to developer. The key to prevent this phenomenon is the `span`
-    // used in `quote_spanned` macro.
-    let receiver = if is_mut {
-        quote_spanned!(span => &mut self)
-    } else {
-        quote_spanned!(span => &self)
-    };
-    let actual_inputs = inputs.iter().skip(1);
-
-    quote_spanned! { span =>
-        #(#attrs)*
-        #[allow(non_snake_case)]
-        #[allow(unused_mut)]
-        pub fn #fn_ident(#receiver, #(#actual_inputs,)*) -> Option<#output_ty> {
-            #[allow(dead_code)]
-            struct __LiquidInputTyChecker #input_ty_checker;
-
-            const __LIQUID_SELECTOR: u32 = {
-                let hash = liquid_primitives::hash::hash(&[#(#fn_name_bytes),*]);
-                u32::from_le_bytes([hash[0], hash[1], hash[2], hash[3]])
-            };
-
-            let mut __liquid_encoded = __LIQUID_SELECTOR.to_le_bytes().to_vec();
-            #(
-                __liquid_encoded.extend(#input_encodes);
-            )*
-            liquid_lang::env::call::<#output_ty>(&self.0, &__liquid_encoded).ok()
-        }
-    }
-}
-
 fn generate_fn_inputs(sig: &Signature) -> impl Iterator<Item = TokenStream2> + '_ {
     sig.inputs.iter().skip(1).map(|arg| match arg {
         FnArg::Typed(ident_type) => {
@@ -180,15 +113,13 @@ impl Interface {
 
         quote! {
             #[cfg(feature = "liquid-abi-gen")]
-            const _: () = {
-                impl liquid_lang::GenerateIfaceAbi for Interface {
-                    fn generate_abi() -> Vec<liquid_abi_gen::FnAbi> {
-                        let mut fn_abis = Vec::new();
-                        #(fn_abis.push(#fn_abis);)*
-                        fn_abis
-                    }
+            impl liquid_lang::GenerateIfaceAbi for Interface {
+                fn generate_abi() -> Vec<liquid_abi_gen::FnAbi> {
+                    let mut fn_abis = Vec::new();
+                    #(fn_abis.push(#fn_abis);)*
+                    fn_abis
                 }
-            };
+            }
         }
     }
 
@@ -217,13 +148,87 @@ impl Interface {
         })
     }
 
+    fn generate_trivial_fn(&self, foreign_fn: &ForeignFn) -> TokenStream2 {
+        let attrs = utils::filter_non_liquid_attributes(foreign_fn.attrs.iter());
+        let sig = &foreign_fn.sig;
+        let span = foreign_fn.span;
+        let fn_ident = &sig.ident;
+
+        let inputs = &sig.inputs;
+        let input_tys = common::generate_input_tys(sig);
+        let input_ty_checker = common::generate_ty_checker(input_tys.as_slice());
+        let input_idents = common::generate_input_idents(sig);
+
+        let output = &sig.output;
+        let output_ty = match output {
+            syn::ReturnType::Default => {
+                quote! { () }
+            }
+            syn::ReturnType::Type(_, ty) => quote! {
+                <#ty as liquid_lang::You_Should_Use_An_Valid_Output_Type>::T
+            },
+        };
+
+        let fn_name = fn_ident.to_string();
+        let fn_name_bytes = fn_name.as_bytes();
+        let mod_name = self.ident.to_string();
+        let mod_name_bytes = mod_name.as_bytes();
+
+        let is_mut = sig.is_mut();
+        let input_encodes =
+            input_idents
+                .iter()
+                .zip(input_tys.iter())
+                .map(|(ident, ty)| {
+                    quote! {
+                        <#ty as scale::Encode>::encode(&#ident)
+                    }
+                });
+
+        // Although it seems redundant here, if I don't do this, the error message
+        // will display twice when type of inputs or outputs is not suitable, what
+        // is ugly to developer. The key to prevent this phenomenon is the `span`
+        // used in `quote_spanned` macro.
+        let receiver = if is_mut {
+            quote_spanned!(span => &mut self)
+        } else {
+            quote_spanned!(span => &self)
+        };
+        let actual_inputs = inputs.iter().skip(1);
+
+        quote_spanned! { span =>
+            #(#attrs)*
+            #[allow(non_snake_case)]
+            #[allow(unused_mut)]
+            pub fn #fn_ident(#receiver, #(#actual_inputs,)*) -> Option<#output_ty> {
+                #[allow(dead_code)]
+                struct __LiquidInputTyChecker #input_ty_checker;
+
+                const __LIQUID_SELECTOR: liquid_primitives::Selector = {
+                    let hash = liquid_primitives::hash::hash(&[
+                        #(#mod_name_bytes),*,
+                        #(#fn_name_bytes),*]);
+                    liquid_primitives::Selector::from_le_bytes(
+                        [hash[0], hash[1], hash[2], hash[3]]
+                    )
+                };
+
+                let mut __liquid_encoded = __LIQUID_SELECTOR.to_le_bytes().to_vec();
+                #(
+                    __liquid_encoded.extend(#input_encodes);
+                )*
+                liquid_lang::env::call::<#output_ty>(&self.0, &__liquid_encoded).ok()
+            }
+        }
+    }
+
     fn generate_foreign_contract(&self) -> TokenStream2 {
         let span = self.span;
 
         let trivial_fns = self
             .foreign_fns
             .iter()
-            .map(|(_, foreign_fn)| generate_trivial_fn(foreign_fn))
+            .map(|(_, foreign_fn)| self.generate_trivial_fn(foreign_fn))
             .collect::<Vec<_>>();
 
         let impls = quote_spanned! { span =>
