@@ -40,7 +40,7 @@ impl Decode for CallData {
         let mut data = from_elem(0, remaining_len);
         input.read(&mut data)?;
 
-        let selector = u32::from_le_bytes(selector);
+        let selector = Selector::from_le_bytes(selector);
         Ok(Self { selector, data })
     }
 }
