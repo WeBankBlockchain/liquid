@@ -11,7 +11,7 @@
 // limitations under the License.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![feature(const_fn)]
+#![feature(const_fn_trait_bound)]
 #![allow(incomplete_features)]
 #![feature(specialization)]
 #![feature(const_panic)]

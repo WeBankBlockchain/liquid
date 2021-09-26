@@ -11,7 +11,6 @@
 // limitations under the License.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![feature(const_fn)]
 #![feature(const_mut_refs)]
 
 #[macro_use]

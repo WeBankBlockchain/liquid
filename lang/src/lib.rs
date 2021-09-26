@@ -12,7 +12,6 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(incomplete_features)]
-#![feature(const_fn)]
 #![feature(associated_type_defaults)]
 #![feature(const_panic)]
 #![feature(specialization)]
