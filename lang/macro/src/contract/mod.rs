@@ -75,9 +75,7 @@ fn generate_impl(
             if had_redefined {
                 bail_span!(
                     input_span,
-                    "contract `{}` redefined here, the project should only contain 1 \
-                     contract definition",
-                    item_mod.ident
+                    "project should only contain one contract definition"
                 );
             }
 
