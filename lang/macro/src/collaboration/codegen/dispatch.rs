@@ -197,8 +197,14 @@ impl<'a> Dispatch<'a> {
             let input_idents = common::generate_input_idents(sig);
             let input_tys = common::generate_input_tys(sig);
             let inputs = input_idents.iter().zip(input_tys.iter()).map(|(ident, ty)| {
+                let ident_str = ident.to_string();
                 quote! {
-                    let #ident = <#ty as scale::Decode>::decode(data_ptr).map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+                    let #ident = <#ty as scale::Decode>::decode(data_ptr).map_err(|_|
+                        liquid_lang::DispatchError::InvalidParams(
+                            liquid_prelude::string::String::from(#ident_str),
+                            data_ptr.to_vec(),
+                        )
+                    )?;
                 }
             });
 
@@ -214,7 +220,13 @@ impl<'a> Dispatch<'a> {
                 if selector == <#right_marker as liquid_lang::FnSelector>::SELECTOR {
                     let data_ptr = &mut data.as_slice();
                     #[allow(unused_mut)]
-                    let mut contract_id = <ContractId<#ty> as scale::Decode>::decode(data_ptr).map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+                    let mut contract_id = <ContractId<#ty> as scale::Decode>::decode(data_ptr)
+                        .map_err(
+                            |_| liquid_lang::DispatchError::InvalidParams(
+                                liquid_prelude::string::String::from("contract id"),
+                                data_ptr.to_vec(),
+                            )
+                        )?;
                     #(#inputs)*
 
                     let result = contract_id.#right_name(#(#input_idents,)*);
@@ -255,8 +267,18 @@ impl<'a> Dispatch<'a> {
             .map(|field| {
                 let ident = &field.ident;
                 let ty = &field.ty;
+                let ident_str = if let Some(ref ident) = ident {
+                    ident.to_string()
+                } else {
+                    liquid_prelude::string::String::from("#")
+                };
                 quote! {
-                    let #ident = <#ty as scale::Decode>::decode(data_ptr).map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+                    let #ident = <#ty as scale::Decode>::decode(data_ptr).map_err(|_|
+                        liquid_lang::DispatchError::InvalidParams(
+                            liquid_prelude::string::String::from(#ident_str),
+                            data_ptr.to_vec(),
+                        )
+                    )?;
                 }
             })
             .collect::<Vec<_>>();
@@ -277,7 +299,11 @@ impl<'a> Dispatch<'a> {
             if selector == #fetch_selector {
                 let data_ptr = &mut data.as_slice();
                 let contract_id = <ContractId<#contract_ident> as scale::Decode>::decode(data_ptr)
-                    .map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
+                    .map_err(|_| liquid_lang::DispatchError::InvalidParams(
+                        liquid_prelude::string::String::from("contract id"),
+                        data_ptr.to_vec(),
+                    )
+                )?;
 
                 let contract = <ContractId<#contract_ident> as liquid_lang::ContractVisitor>::fetch(&contract_id);
                 liquid_lang::env::finish(&contract);
@@ -308,7 +334,11 @@ impl<'a> Dispatch<'a> {
                     #(#rights_fragments)*
                     #(#contract_fragments)*
 
-                    Err(liquid_lang::DispatchError::UnknownSelector)
+                    Err(
+                        liquid_lang::DispatchError::UnknownSelector(
+                            selector.to_le_bytes().to_vec()
+                        )
+                    )
                 }
             }
         }
@@ -391,7 +421,12 @@ impl<'a> Dispatch<'a> {
                     let data = call_data.data;
                     let abis = <Vec<String> as scale::Decode>::decode(&mut data.as_slice());
                     if abis.is_err() {
-                        let ret_info = liquid_lang::DispatchRetInfo::from(liquid_lang::DispatchError::InvalidParams);
+                        let ret_info = liquid_lang::DispatchRetInfo::from(
+                            liquid_lang::DispatchError::InvalidParams(
+                                liquid_prelude::string::String::from("abi"),
+                                data.clone(),
+                            )
+                        );
                         liquid_lang::env::revert(&ret_info.get_info_string());
                     }
                     let abis = abis.unwrap();
