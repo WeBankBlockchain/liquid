@@ -145,11 +145,20 @@ impl<'a> Dispatch<'a> {
         let fn_name = &sig.ident;
         let input_idents = common::generate_input_idents(sig);
         let input_tys = common::generate_input_tys(sig);
-        let inputs = input_idents.iter().zip(input_tys.iter()).map(|(ident, ty)| {
-            quote! {
-                let #ident = <#ty as scale::Decode>::decode(data_ptr).map_err(|_| liquid_lang::DispatchError::InvalidParams)?;
-            }
-        });
+        let inputs = input_idents
+            .iter()
+            .zip(input_tys.iter())
+            .map(|(ident, ty)| {
+                let ident_str = ident.to_string();
+                quote! {
+                    let #ident = <#ty as scale::Decode>::decode(data_ptr).map_err(|_|
+                        liquid_lang::DispatchError::InvalidParams(
+                            liquid_prelude::string::String::from(#ident_str),
+                            data_ptr.to_vec(),
+                        )
+                    )?;
+                }
+            });
 
         quote! {
             if selector == <#namespace as liquid_lang::FnSelector>::SELECTOR {
@@ -198,7 +207,11 @@ impl<'a> Dispatch<'a> {
 
                     #(#fragments)*
 
-                    Err(liquid_lang::DispatchError::UnknownSelector)
+                    Err(
+                        liquid_lang::DispatchError::UnknownSelector(
+                            selector.to_le_bytes().to_vec()
+                        )
+                    )
                 }
             }
         }
@@ -230,9 +243,14 @@ impl<'a> Dispatch<'a> {
         let constr_input_tys = common::generate_input_tys(&constr_sig);
         let constr_input_idents = common::generate_input_idents(&constr_sig);
         let constr_inputs = constr_input_idents.iter().zip(constr_input_tys.iter()).map(|(ident, ty)| {
+            let ident_str = ident.to_string();
             quote! {
                 let #ident = <#ty as scale::Decode>::decode(data_ptr).unwrap_or_else(|_| {
-                    liquid_lang::env::revert(&String::from("invalid params"));
+                    let mut error_info = String::from("invalid params for `");
+                    error_info.push_str(#ident_str);
+                    error_info.push_str("`: ");
+                    error_info.push_str(&liquid_lang::bytes_to_hex(&data));
+                    liquid_lang::env::revert(&error_info);
                     unreachable!();
                 });
             }

@@ -56,3 +56,17 @@ cfg_if! {
         pub use liquid_lang_macro::{contract, interface};
     }
 }
+
+use liquid_prelude::string::String;
+
+pub fn bytes_to_hex(bytes: &[u8]) -> String {
+    const HEX_DIGITS: &[u8; 16] = b"0123456789abcdef";
+    let mut s = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        let high = byte >> 4;
+        let low = byte & 0x0f;
+        s.push((HEX_DIGITS[high as usize]) as char);
+        s.push((HEX_DIGITS[low as usize]) as char);
+    }
+    s
+}
