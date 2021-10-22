@@ -15,7 +15,7 @@ pub mod ir;
 
 use crate::{common::GenerateCode, error::*, utils::check_idents};
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
-use std::{cell::RefCell, convert::TryFrom};
+use std::{cell::RefCell, collections::HashSet, convert::TryFrom};
 use syn::{punctuated::Punctuated, spanned::Spanned, Result, Token};
 
 pub enum GenerateMode {
@@ -43,7 +43,7 @@ pub struct InterfaceInfo {
 // intelli sense information. If this static variable not defined as thread local,
 // RLS will display the error that never exits...
 thread_local! {
-    pub static CONTRACT_DEFINITION_COUNT: RefCell<u8> = RefCell::new(0);
+    pub static CONTRACT_DEFINITIONS: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
     pub static INTERFACES_INFOS: RefCell<Vec<InterfaceInfo>> = RefCell::new(Vec::new());
 }
 
@@ -61,21 +61,19 @@ fn generate_impl(
             let params = syn::parse2::<ir::ContractParams>(attr)?;
             let input_span = input.span();
             let item_mod = syn::parse2::<syn::ItemMod>(input)?;
+            let ident_str = item_mod.ident.to_string();
 
-            let had_redefined = CONTRACT_DEFINITION_COUNT.with(|def_count| {
-                let count = *def_count.borrow();
-                if count == 0 {
-                    *def_count.borrow_mut() = count + 1;
-                    false
-                } else {
-                    true
-                }
+            let def_count = CONTRACT_DEFINITIONS.with(move |definitions| {
+                (*definitions.borrow_mut()).insert(ident_str);
+                (*definitions.borrow()).len()
             });
 
-            if had_redefined {
+            if def_count > 1 {
                 bail_span!(
                     input_span,
-                    "project should only contain one contract definition"
+                    "project should only contain exactly one contract definition, but \
+                     now found {} definitions",
+                    def_count
                 );
             }
 
@@ -88,10 +86,7 @@ fn generate_impl(
             let item_mod = syn::parse2::<syn::ItemMod>(input)?;
 
             let had_defined_contract_before =
-                CONTRACT_DEFINITION_COUNT.with(|def_count| {
-                    let count = *def_count.borrow();
-                    count != 0
-                });
+                CONTRACT_DEFINITIONS.with(|definitions| definitions.borrow().len() != 0);
 
             if had_defined_contract_before {
                 bail_span!(
