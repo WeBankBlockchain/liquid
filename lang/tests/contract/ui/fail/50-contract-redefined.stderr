@@ -1,4 +1,4 @@
-error: project should only contain one contract definition
+error: project should only contain exactly one contract definition, but now found 2 definitions
   --> $DIR/50-contract-redefined.rs:17:1
    |
 17 | / mod noop {

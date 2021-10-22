@@ -74,15 +74,21 @@ impl<'a> Storage<'a> {
             })
             .collect::<Vec<_>>();
 
+        let field_tys = fields
+            .named
+            .iter()
+            .map(|field| field.ty.clone())
+            .collect::<Vec<_>>();
+
         let keys = field_idents
             .iter()
             .map(|ident| syn::LitStr::new(ident.to_string().as_str(), Span::call_site()))
             .collect::<Punctuated<syn::LitStr, Token![,]>>();
         let keys_count = keys.len();
 
-        let bind_stats = field_idents.iter().enumerate().map(|(i, ident)| {
+        let bind_stats = field_idents.iter().zip(field_tys.iter()).enumerate().map(|(i, (ident, ty))| {
             quote_spanned! { span =>
-                #ident: liquid_lang::storage::Bind::bind_with(Self::STORAGE_KEYS[#i].as_bytes()),
+                #ident: <#ty as liquid_lang::storage::Bind>::bind_with(Self::STORAGE_KEYS[#i].as_bytes()),
             }
         });
 
