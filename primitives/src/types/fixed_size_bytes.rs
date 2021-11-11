@@ -47,13 +47,16 @@ seq!(N in 1..=32 {
                 }
             }
 
-            self.0[0] <<= internal_shift;
-            let mask = u8::MAX << (8 - internal_shift);
-            for i in 1..(N as usize) {
-                let carry = self.0[i] & mask;
-                let carry = carry >> (8 - internal_shift);
-                self.0[i - 1] |= carry;
-                self.0[i] <<= internal_shift;
+            if internal_shift > 0 {
+                self.0[0] <<= internal_shift;
+                let mask = u8::MAX << (8 - internal_shift);
+
+                for i in 1..(N as usize) {
+                    let carry = self.0[i] & mask;
+                    let carry = carry >> (8 - internal_shift);
+                    self.0[i - 1] |= carry;
+                    self.0[i] <<= internal_shift;
+                }
             }
 
             self
@@ -336,5 +339,9 @@ mod tests {
         assert_eq!(b6[1], 2);
         assert_eq!(b6[2], 168);
         assert_eq!(b6 << 13, b4);
+
+        let b7: Bytes2 = 1u16.into();
+        assert_eq!(b7, 0b0000000000000001u16.into());
+        assert_eq!(b7 << 8, 0b0000000100000000u16.into())
     }
 }
