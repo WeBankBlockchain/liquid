@@ -12,7 +12,7 @@
 
 use liquid_prelude::vec::Vec;
 
-#[derive(PartialEq, Eq, scale::Decode, scale::Encode)]
+#[derive(PartialEq, Eq, scale::Decode, scale::Encode, Clone)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub struct Bytes(Vec<u8>);
 
