@@ -167,6 +167,7 @@ impl<'a> Storage<'a> {
 
         quote_spanned! { span =>
             #(#attrs)*
+            #[allow(dead_code)]
             #vis fn #ident(#inputs) #output
                 #body
         }
