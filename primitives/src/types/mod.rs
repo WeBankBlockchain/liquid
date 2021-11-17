@@ -16,6 +16,7 @@ mod fixed_size_bytes;
 mod hash;
 mod int256;
 mod uint256;
+mod fixed_point_simple;
 
 pub use address::Address;
 pub use bytes::Bytes;
@@ -23,5 +24,6 @@ pub use fixed_size_bytes::*;
 pub use hash::{Hash, HASH_LENGTH};
 pub use int256::i256;
 pub use uint256::u256;
+pub use fixed_point_simple::FixedPointU64F16;
 #[allow(non_camel_case_types)]
 pub type timestamp = u64;

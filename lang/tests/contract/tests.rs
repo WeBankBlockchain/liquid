@@ -36,6 +36,7 @@ fn compile_tests() {
     t.pass("tests/contract/ui/pass/20-vec-unit-return.rs");
     t.pass("tests/contract/ui/pass/21-tuple-unit-return.rs");
     t.pass("tests/contract/ui/pass/22-many-inputs.rs");
+    t.pass("tests/contract/ui/pass/23-fixed-point-simple.rs");
     t.compile_fail("tests/contract/ui/fail/01-constructor-returns.rs");
     t.compile_fail("tests/contract/ui/fail/02-missing-constructor.rs");
     t.compile_fail("tests/contract/ui/fail/03-multiple-constructors.rs");

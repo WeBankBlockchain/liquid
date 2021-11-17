@@ -197,7 +197,8 @@ impl_basic_trait! {
     String,
     Hash,
     Bytes,
-    ()
+    (),
+    FixedPointU64F16
 }
 
 impl<T> You_Should_Use_An_Valid_Input_Type for Vec<T> where

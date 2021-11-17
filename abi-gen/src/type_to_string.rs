@@ -53,7 +53,9 @@ primitive_type_to_string!(
     i32 => int32,
     i64 => int64,
     i128 => int128,
-    i256 => int256
+    i256 => int256,
+    // change by xvv
+    FixedPointU64F16 => Fixed64x16
 );
 seq!(N in 1..=32 {
     primitive_type_to_string!(Bytes#N => bytes#N);
@@ -89,6 +91,8 @@ mod tests {
         assert_eq!(Address::type_to_string(), "string");
         assert_eq!(Bytes::type_to_string(), "bytes");
         assert_eq!(Hash::type_to_string(), "hash");
+        // change by xvv
+        assert_eq!(FixedPointU64F16::type_to_string(), "Fixed64x16");
 
         seq!(N in 1..=32 {
             assert_eq!(

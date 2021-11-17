@@ -87,6 +87,7 @@ pub fn generate_primitive_types() -> TokenStream2 {
         #fixed_size_bytes
 
         pub use liquid_primitives::types::Address;
+        pub use liquid_primitives::types::FixedPointU64F16;
         pub use liquid_primitives::types::u256;
         pub use liquid_primitives::types::i256;
         pub use liquid_primitives::types::timestamp;
