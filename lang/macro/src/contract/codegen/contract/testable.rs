@@ -96,9 +96,9 @@ impl<'a> Testable<'a> {
 
         quote! {
             #(#attrs)*
-            pub fn #ident(#(#args)*) -> Self {
+            pub fn #ident(#(#args,)*) -> Self {
                 let mut contract = <Storage as liquid_lang::storage::New>::new();
-                contract.#ident(#(#arg_idents)*);
+                contract.#ident(#(#arg_idents,)*);
                 Self {
                     contract
                 }
