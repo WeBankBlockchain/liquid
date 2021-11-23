@@ -14,7 +14,7 @@
 use core::{default::Default, ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign}, panic, str::FromStr, cmp::Ordering, fmt, ops::Shr};
 use liquid_prelude::vec::{from_elem, Vec};
 pub use fixed::{FixedU64, types::extra::{U16}};
-use num::{Bounded, CheckedAdd};
+use num::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedSub};
 
 #[derive(Copy, Clone, PartialEq, Eq, Default)]
 pub struct FixedPointU64F16{
@@ -136,15 +136,6 @@ impl fmt::Debug for FixedPointU64F16 {
     }
 }
 
-// impl Deref for FixedPointU64F16 {
-//     type Target = FixedPointU64F16;
-
-//     fn deref(&self) -> &Self::Target {
-//         &self
-//     }
-// }
-
-
 impl Add for FixedPointU64F16 {
     type Output = FixedPointU64F16;
     fn add(self, rhs: Self) -> Self::Output {
@@ -166,13 +157,6 @@ impl Add for FixedPointU64F16 {
             panic!("the value exceed MAX")
         }
         ans
-    }
-}
-
-impl CheckedAdd for FixedPointU64F16 {
-    fn checked_add(&self, v: &Self) -> Option<Self> {
-        let a = self;
-        Some(a.add(*v))
     }
 }
 
@@ -223,6 +207,19 @@ macro_rules! forward_op {
 forward_op!{impl Mul for FixedPointU64F16 { fn mul} }
 forward_op!{impl Div for FixedPointU64F16 { fn div} }
 
+macro_rules! forward_checked_op {
+    (impl $trait_:ident for $type_:ident { fn $method: ident} $methodinvoke: ident) => {
+        impl $trait_ for $type_ {
+            fn $method(&self, b: &$type_) -> Option<$type_> {
+                Some(self.$methodinvoke(*b))
+            }
+        }
+    }
+}
+forward_checked_op! { impl CheckedAdd for FixedPointU64F16 { fn checked_add } add}
+forward_checked_op! { impl CheckedSub for FixedPointU64F16 { fn checked_sub } sub}
+forward_checked_op! { impl CheckedMul for FixedPointU64F16 { fn checked_mul } mul}
+forward_checked_op! { impl CheckedDiv for FixedPointU64F16 { fn checked_div } div}
 
 macro_rules! forward_assign_op {
     (impl $trait_: ident for $type_: ident { fn $method: ident} $methodinvoke: ident) => {
@@ -375,5 +372,13 @@ mod tests {
     fn fixed_point_shr1() {
         let origin2:FixedPointU64F16 = FixedPointU64F16::from_user("1.25");
         assert_eq!(origin2>>1, FixedPointU64F16::from_user("0.625"))
+    }
+
+    #[test]
+    fn fixed_point_checkadd1() {
+        let origin2:FixedPointU64F16 = FixedPointU64F16::from_user("1.2");
+        let origin = FixedPointU64F16::from_user("-2.1");
+        let origin3= origin.checked_add(&origin2);
+        assert_eq!(origin3, Some(FixedPointU64F16::from_user("-0.90001")))
     }
 }
