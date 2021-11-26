@@ -170,6 +170,7 @@ impl Env for EnvInstance {
 
     fn get_caller(&mut self) -> Address {
         let size = ext::get_caller(&mut self.buffer[..]);
+        self.buffer.resize(size as usize);
         String::from_utf8_lossy(&self.buffer[..size as usize])
             .into_owned()
             .into()
@@ -177,6 +178,7 @@ impl Env for EnvInstance {
 
     fn get_tx_origin(&mut self) -> Address {
         let size = ext::get_tx_origin(&mut self.buffer[..]);
+        self.buffer.resize(size as usize);
         String::from_utf8_lossy(&self.buffer[..size as usize])
             .into_owned()
             .into()
@@ -184,6 +186,7 @@ impl Env for EnvInstance {
 
     fn get_address(&mut self) -> Address {
         let size = ext::get_address(&mut self.buffer[..]);
+        self.buffer.resize(size as usize);
         String::from_utf8_lossy(&self.buffer[..size as usize])
             .into_owned()
             .into()

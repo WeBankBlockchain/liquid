@@ -15,18 +15,13 @@ use crate::lang_core::{
     precompiled::{ReturnDataWrapper, CNS_ADDRESS},
 };
 use liquid_prelude::string::String;
-use liquid_primitives::types::{u256, Address};
+use liquid_primitives::types::Address;
 use scale::{Decode, Encode};
 
 pub struct Cns;
 
 impl Cns {
-    pub fn insert(
-        name: String,
-        version: String,
-        addr: String,
-        abi: String,
-    ) -> Option<u256> {
+    pub fn insert(name: String, version: String, addr: Address, abi: String) -> bool {
         let mut input_data = if cfg!(feature = "gm") {
             [0xb8, 0xea, 0xa0, 0x8d]
         } else {
@@ -35,8 +30,11 @@ impl Cns {
         .to_vec();
 
         input_data.extend(&(name, version, addr, abi).encode());
-        let ret = call::<ReturnDataWrapper>(&CNS_ADDRESS, &input_data).ok()?;
-        <u256 as Decode>::decode(&mut ret.data.as_slice()).ok()
+        let ret = call::<ReturnDataWrapper>(&CNS_ADDRESS, &input_data);
+        match ret {
+            Ok(ret) => ret.data.len() == 1 && ret.data[0] == 0,
+            _ => false,
+        }
     }
 
     pub fn get_contract_address(name: String, version: String) -> Option<Address> {
