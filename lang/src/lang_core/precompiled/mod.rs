@@ -18,8 +18,7 @@ use liquid_prelude::vec::{self, Vec};
 use liquid_primitives::types::Address;
 
 lazy_static! {
-    pub static ref CNS_ADDRESS: Address =
-        "0x0000000000000000000000000000000000001004".into();
+    pub static ref CNS_ADDRESS: Address = "/sys/cns".into();
 }
 
 struct ReturnDataWrapper {
