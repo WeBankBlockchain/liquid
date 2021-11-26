@@ -232,6 +232,7 @@ impl Interface {
             .collect::<Vec<_>>();
 
         let impls = quote_spanned! { span =>
+            #[derive(Clone)]
             pub struct Interface(liquid_primitives::types::Address);
 
             impl Interface {

@@ -388,13 +388,11 @@ impl<'a> Dispatch<'a> {
         let register = contract_names.iter().zip(register_errors).enumerate().map(
             |(i, (name, error))| {
                 quote! {
-                    let ret = Cns::insert(#name, #version, self_addr.clone(), abis[#i as usize].clone());
+                    let is_success = Cns::insert(#name, #version, self_addr.clone(), abis[#i as usize].clone());
                     let error = #error;
-                    match ret {
-                        Some(code) => if code == 0.into() {
-                            liquid_lang::env::revert(error);
-                        }
-                        None => liquid_lang::env::revert(error),
+                    if !is_success {
+                        liquid_lang::env::revert(&is_success.to_string());
+                        unreachable!()
                     }
                 }
             },
@@ -414,7 +412,7 @@ impl<'a> Dispatch<'a> {
                 use liquid_prelude::string::ToString;
                 use liquid_lang::precompiled::Cns;
 
-                let self_addr = liquid_lang::env::get_address().to_string();
+                let self_addr = liquid_lang::env::get_address();
 
                 let call_data = liquid_lang::env::get_call_data(liquid_lang::env::CallMode::Deploy);
                 if let Ok(call_data) = call_data {
