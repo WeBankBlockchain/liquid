@@ -47,6 +47,9 @@ impl i256 {
     pub fn to_be_bytes(&self) -> [u8; 32] {
         let bytes = self.0.to_signed_bytes_be();
         let mut res = [0u8; 32];
+        if self.0 < BigInt::from(0) {
+            res = [0xff; 32]
+        }
         res[32 - bytes.len()..].copy_from_slice(&bytes);
         res
     }
@@ -268,25 +271,21 @@ forward_unary_op! { impl Neg for i256 { fn neg } }
 
 impl scale::Encode for i256 {
     fn size_hint(&self) -> usize {
-        let bits = self.0.bits() as usize;
-        ((bits + 7) >> 3) + 1
+        32
     }
-
     fn encode(&self) -> Vec<u8> {
-        let size = self.size_hint();
-        debug_assert!(size < 34 && size > 0);
-
+        let encoded_data = self.to_be_bytes();
+        let size = encoded_data.len();
         let mut buf = Vec::with_capacity(size);
-        buf.push(size as u8);
-        buf.extend(self.0.to_signed_bytes_be());
+        buf.extend(encoded_data);
         buf
     }
 }
 
 impl scale::Decode for i256 {
     fn decode<I: scale::Input>(value: &mut I) -> Result<Self, scale::Error> {
-        let size = value.read_byte()?;
-        let mut buf = from_elem(0, (size - 1) as usize);
+        let size = 32;
+        let mut buf = from_elem(0, size as usize);
         value.read(buf.as_mut_slice())?;
 
         Ok(Self(BigInt::from_signed_bytes_be(&buf)))
@@ -297,12 +296,62 @@ impl scale::Decode for i256 {
 mod tests {
     use super::*;
 
+    fn check_i256(number: &i256) {
+        let encoded = scale::Encode::encode(&number);
+        let decoded: i256 = scale::Decode::decode(&mut encoded.as_slice()).unwrap();
+        assert_eq!(number, &decoded);
+    }
     #[test]
     fn i256_codec() {
         let origin: i256 = (-1).into();
         let encoded = scale::Encode::encode(&origin);
         let decoded: i256 = scale::Decode::decode(&mut encoded.as_slice()).unwrap();
         assert!(origin == decoded);
+        let number: i256 = i256::from(-1);
+        check_i256(&number);
+        let number: i256 = i256::from(-127);
+        check_i256(&number);
+        let number: i256 = i256::from(-128);
+        check_i256(&number);
+        let number: i256 = i256::from(-129);
+        check_i256(&number);
+        let number: i256 = i256::from(-255);
+        check_i256(&number);
+        let number: i256 = i256::from(-256);
+        check_i256(&number);
+        let number: i256 = i256::from(-257);
+        check_i256(&number);
+        let number: i256 = i256::from(-65535);
+        check_i256(&number);
+        let number: i256 = i256::from(-65536);
+        check_i256(&number);
+        let number: i256 = i256::from(-65537);
+        check_i256(&number);
+        let number: i256 = i256::from(-2147483647);
+        check_i256(&number);
+
+        let number: i256 = i256::from(1);
+        check_i256(&number);
+        let number: i256 = i256::from(127);
+        check_i256(&number);
+        let number: i256 = i256::from(128);
+        check_i256(&number);
+        let number: i256 = i256::from(129);
+        check_i256(&number);
+        let number: i256 = i256::from(255);
+        check_i256(&number);
+        let number: i256 = i256::from(256);
+        check_i256(&number);
+        let number: i256 = i256::from(257);
+        check_i256(&number);
+        let number: i256 = i256::from(65535);
+        check_i256(&number);
+        let number: i256 = i256::from(65536);
+        check_i256(&number);
+        let number: i256 = i256::from(65537);
+        check_i256(&number);
+        let number: i256 = i256::from(2147483647);
+        check_i256(&number);
     }
 
     #[test]

@@ -29,7 +29,6 @@ use num::{
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Zero)]
 #[allow(non_camel_case_types)]
 pub struct u256(pub BigUint);
-
 impl u256 {
     pub fn from_le_bytes(slice: &[u8]) -> Self {
         Self(BigUint::from_bytes_le(slice))
@@ -219,25 +218,21 @@ forward_assign_op! { impl DivAssign for u256 { fn div_assign } }
 
 impl scale::Encode for u256 {
     fn size_hint(&self) -> usize {
-        let bits = self.0.bits() as usize;
-        ((bits + 7) >> 3) + 1
+        32
     }
-
     fn encode(&self) -> Vec<u8> {
-        let size = self.size_hint();
-        debug_assert!(size < 34 && size > 0);
-
+        let encoded_data = self.to_be_bytes();
+        let size = encoded_data.len();
         let mut buf = Vec::with_capacity(size);
-        buf.push(size as u8);
-        buf.extend(self.0.to_bytes_be());
+        buf.extend(encoded_data);
         buf
     }
 }
 
 impl scale::Decode for u256 {
     fn decode<I: scale::Input>(value: &mut I) -> Result<Self, scale::Error> {
-        let size = value.read_byte()?;
-        let mut buf = from_elem(0, (size - 1) as usize);
+        let size = 32;
+        let mut buf = from_elem(0, size as usize);
         value.read(buf.as_mut_slice())?;
         Ok(Self::from_be_bytes(&buf))
     }
@@ -247,12 +242,42 @@ impl scale::Decode for u256 {
 mod tests {
     use super::*;
 
+    fn check_u256(number: &u256) {
+        let encoded = scale::Encode::encode(&number);
+        let decoded: u256 = scale::Decode::decode(&mut encoded.as_slice()).unwrap();
+        assert_eq!(number, &decoded);
+    }
     #[test]
     fn u256_codec() {
         let origin: u256 = 0x1234567890abcdefu64.into();
         let encoded = scale::Encode::encode(&origin);
         let decoded: u256 = scale::Decode::decode(&mut encoded.as_slice()).unwrap();
         assert_eq!(origin, decoded);
+
+        let number: u256 = u256::from(1);
+        check_u256(&number);
+        let number: u256 = u256::from(127);
+        check_u256(&number);
+        let number: u256 = u256::from(128);
+        check_u256(&number);
+        let number: u256 = u256::from(129);
+        check_u256(&number);
+
+        let number: u256 = u256::from(255);
+        check_u256(&number);
+
+        let number: u256 = u256::from(256);
+        check_u256(&number);
+        let number: u256 = u256::from(257);
+        check_u256(&number);
+        let number: u256 = u256::from(65535);
+        check_u256(&number);
+        let number: u256 = u256::from(65536);
+        check_u256(&number);
+        let number: u256 = u256::from(65537);
+        check_u256(&number);
+        let number: u256 = u256::from(2147483647);
+        check_u256(&number);
     }
 
     #[test]
