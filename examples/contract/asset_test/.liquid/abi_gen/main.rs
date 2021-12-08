@@ -3,12 +3,10 @@ use std::{collections::HashMap, env};
 fn main() -> Result<(), std::io::Error> {
     let mut abi = HashMap::new();
 
-    let contract_abi =
-        <contract::__LIQUID_ABI_GEN as liquid_lang::GenerateAbi>::generate_abi();
+    let contract_abi = <contract::__LIQUID_ABI_GEN as liquid_lang::GenerateAbi>::generate_abi();
 
-    let mut local_abi = Vec::with_capacity(
-        contract_abi.event_abis.len() + contract_abi.fn_abis.len() + 1,
-    );
+    let mut local_abi =
+        Vec::with_capacity(contract_abi.event_abis.len() + contract_abi.fn_abis.len() + 1);
     local_abi.extend(
         contract_abi
             .event_abis
@@ -36,9 +34,6 @@ fn main() -> Result<(), std::io::Error> {
 
     let target_dir = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
     std::fs::create_dir(&target_dir).ok();
-    std::fs::write(
-        format!("{}/kv_table_test.abi", target_dir),
-        serde_json::to_string(&abi).unwrap(),
-    )?;
+    std::fs::write("asset_test.abi", serde_json::to_string(&abi).unwrap())?;
     Ok(())
 }
