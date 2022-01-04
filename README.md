@@ -1,7 +1,7 @@
 # Liquid - Makes Smart Contract Smarter
 
-[![GitHub license](https://img.shields.io/badge/%20license-Apache%202.0-green)](https://github.com/vita-dounai/liquid/blob/dev/LICENSE)
-[![Code Lines](https://tokei.rs/b1/github/WeBankBlockchain/Liquid/)](https://github.com/WeBankBlockchain/Liquid)
+[![GitHub license](https://img.shields.io/badge/%20license-Apache%202.0-green)](https://github.com/WeBankBlockchain/liquid/blob/main/LICENSE)
+[![Code Lines](https://tokei.rs/b1/github/WeBankBlockchain/liquid)](https://github.com/WeBankBlockchain/liquid)
 [![Latest release](https://img.shields.io/github/release/WebankBlockchain/liquid.svg)](https://github.com/WebankBlockchain/liquid/releases/latest)
 [![Language](https://img.shields.io/badge/Language-Rust-blue.svg)](https://www.rust-lang.org/)
 

@@ -1,10 +1,10 @@
 error[E0277]: `&u8` is not an iterator
-  --> $DIR/03-invalid-signers.rs:8:9
+  --> tests/collaboration/ui/fail/03-invalid-signers.rs:8:9
    |
 8  |         addr: u8,
    |         ^^^^ `&u8` is not an iterator
    |
-  ::: $WORKSPACE/lang/src/traits.rs
+  ::: src/traits.rs
    |
    |             T: Parties_Should_Be_Address_Or_Address_Collection<'a>,
    |                --------------------------------------------------- required by this bound in `liquid_lang::acquire_addrs`
