@@ -12,25 +12,25 @@
 
 use crate::lang_core::{
     env::call,
-    precompiled::{ReturnDataWrapper, CNS_ADDRESS},
+    precompiled::{ReturnDataWrapper, BFS_ADDRESS},
 };
 use liquid_prelude::string::String;
 use liquid_primitives::types::Address;
 use scale::{Decode, Encode};
 
-pub struct Cns;
+pub struct Bfs;
 
-impl Cns {
+impl Bfs {
     pub fn insert(name: String, version: String, addr: Address, abi: String) -> bool {
         let mut input_data = if cfg!(feature = "gm") {
-            [0xb8, 0xea, 0xa0, 0x8d]
+            [0x48, 0xfd, 0x6f, 0x59]
         } else {
-            [0xa2, 0x16, 0x46, 0x4b]
+            [0xe1, 0x9c, 0x2f, 0xcf]
         }
         .to_vec();
 
         input_data.extend(&(name, version, addr, abi).encode());
-        let ret = call::<ReturnDataWrapper>(&CNS_ADDRESS, &input_data);
+        let ret = call::<ReturnDataWrapper>(&BFS_ADDRESS, &input_data);
         match ret {
             Ok(ret) => ret.data.len() == 1 && ret.data[0] == 0,
             _ => false,
@@ -38,14 +38,15 @@ impl Cns {
     }
 
     pub fn get_contract_address(name: String, version: String) -> Option<Address> {
+        let name_version = String::from("/apps/") + &name + &String::from("/") + &version;
         let mut input_data = if cfg!(feature = "gm") {
-            [0xf1, 0xa3, 0x1b, 0xfa]
+            [0xe1, 0xb8, 0x25, 0xad]
         } else {
-            [0xf8, 0x5f, 0x81, 0x26]
+            [0x1d, 0x05, 0xa8, 0x36]
         }
         .to_vec();
-        input_data.extend(&(name, version).encode());
-        let ret = call::<ReturnDataWrapper>(&CNS_ADDRESS, &input_data).ok()?;
+        input_data.extend(&(name_version).encode());
+        let ret = call::<ReturnDataWrapper>(&BFS_ADDRESS, &input_data).ok()?;
         <Address as Decode>::decode(&mut ret.data.as_slice()).ok()
     }
 }
