@@ -10,15 +10,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod cns;
+mod bfs;
 
-pub use cns::Cns;
+pub use bfs::Bfs;
 use lazy_static::lazy_static;
 use liquid_prelude::vec::{self, Vec};
 use liquid_primitives::types::Address;
 
 lazy_static! {
-    pub static ref CNS_ADDRESS: Address = "/sys/cns".into();
+    pub static ref BFS_ADDRESS: Address = "/sys/bfs".into();
 }
 
 struct ReturnDataWrapper {

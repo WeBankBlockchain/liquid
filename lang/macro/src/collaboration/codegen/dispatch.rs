@@ -377,7 +377,7 @@ impl<'a> Dispatch<'a> {
                 .zip(existent_errors)
                 .map(|(name, error)| {
                     quote! {
-                        let addr = Cns::get_contract_address(#name, #version);
+                        let addr = Bfs::get_contract_address(#name, #version);
                         if let Some(addr) = addr {
                             if addr != Address::empty() {
                                 liquid_lang::env::revert(#error)
@@ -388,7 +388,7 @@ impl<'a> Dispatch<'a> {
         let register = contract_names.iter().zip(register_errors).enumerate().map(
             |(i, (name, error))| {
                 quote! {
-                    let is_success = Cns::insert(#name, #version, self_addr.clone(), abis[#i as usize].clone());
+                    let is_success = Bfs::insert(#name, #version, self_addr.clone(), abis[#i as usize].clone());
                     let error = #error;
                     if !is_success {
                         liquid_lang::env::revert(&is_success.to_string());
@@ -410,7 +410,7 @@ impl<'a> Dispatch<'a> {
             #[no_mangle]
             fn deploy() {
                 use liquid_prelude::string::ToString;
-                use liquid_lang::precompiled::Cns;
+                use liquid_lang::precompiled::Bfs;
 
                 let self_addr = liquid_lang::env::get_address();
 
