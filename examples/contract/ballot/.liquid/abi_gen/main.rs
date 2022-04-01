@@ -36,9 +36,6 @@ fn main() -> Result<(), std::io::Error> {
 
     let target_dir = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
     std::fs::create_dir(&target_dir).ok();
-    std::fs::write(
-        format!("{}/ballot.abi", target_dir),
-        serde_json::to_string(&abi).unwrap(),
-    )?;
+    std::fs::write("ballot.abi", serde_json::to_string(&abi).unwrap())?;
     Ok(())
 }

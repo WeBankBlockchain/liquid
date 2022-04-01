@@ -253,6 +253,7 @@ seq!(N in 1..=32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use scale::Encode;
 
     #[test]
     fn bytes1_from_str() {
@@ -262,6 +263,14 @@ mod tests {
         assert_eq!(b1, b2);
         assert_eq!(b1[0], b'1');
         assert_eq!(b3[0], 0);
+    }
+
+    #[test]
+    fn bytes1_scale() {
+        let b1: Bytes1 = "1".parse().unwrap();
+        b1.using_encoded(|ref slice| {
+            assert_eq!(slice, &b"1");
+        });
     }
 
     #[test]
