@@ -2,41 +2,32 @@
 
 use liquid::storage;
 use liquid_lang as liquid;
-use liquid_lang::InOut;
-use liquid_prelude::{
-    string::{String, ToString},
-    vec::Vec,
-};
-
-#[derive(InOut)]
-pub struct KVField {
-    key: String,
-    value: String,
-}
-#[derive(InOut)]
-pub struct Entry {
-    fileds: Vec<KVField>,
-}
+use liquid_prelude::string::ToString;
 
 #[liquid::interface(name = auto)]
-mod kv_table {
-    use super::*;
+mod table_manager {
 
     extern "liquid" {
-        fn createTable(
+        fn createKVTable(
             &mut self,
             table_name: String,
             key: String,
             value_fields: String,
-        ) -> i256;
-        fn get(&self, table_name: String, key: String) -> (bool, Entry);
-        fn set(&mut self, table_name: String, key: String, entry: Entry) -> i256;
+        ) -> i32;
+    }
+}
+#[liquid::interface(name = auto)]
+mod kv_table {
+
+    extern "liquid" {
+        fn get(&self, key: String) -> (bool, String);
+        fn set(&mut self, key: String, value: String) -> i32;
     }
 }
 
 #[liquid::contract]
-mod asset_test {
-    use super::{kv_table::*, *};
+mod asset {
+    use super::{kv_table::*, table_manager::*, *};
 
     #[liquid(event)]
     struct RegisterEvent {
@@ -58,32 +49,31 @@ mod asset_test {
     }
 
     #[liquid(storage)]
-    struct AssetTableTest {
+    struct Asset {
         table: storage::Value<KvTable>,
+        tm: storage::Value<TableManager>,
+        table_name: storage::Value<String>,
     }
 
     #[liquid(methods)]
-    impl AssetTableTest {
+    impl Asset {
         pub fn new(&mut self) {
-            self.table
-                .initialize(KvTable::at("/sys/kv_storage".parse().unwrap()));
-            self.table.createTable(
-                String::from("t_asset").clone(),
-                String::from("account").clone(),
-                String::from("asset_value").clone(),
+            self.table_name.initialize(String::from("t_asset"));
+            self.tm
+                .initialize(TableManager::at("/sys/table_manager".parse().unwrap()));
+            let result = self.tm.createKVTable(
+                self.table_name.clone(),
+                String::from("account"),
+                String::from("asset_value"),
             );
+            require(result.unwrap() == 0, "create table failed");
+            self.table
+                .initialize(KvTable::at("/tables/t_asset".parse().unwrap()));
         }
 
         pub fn select(&mut self, account: String) -> (bool, u128) {
-            if let Some((result, entry)) =
-                (*self.table).get(String::from("t_asset"), account)
-            {
-                return (
-                    result,
-                    u128::from_str_radix(&entry.fileds[0].value.clone(), 10)
-                        .ok()
-                        .unwrap(),
-                );
+            if let Some((result, value)) = (*self.table).get(account) {
+                return (result, u128::from_str_radix(&value, 10).ok().unwrap());
             }
             return (false, Default::default());
         }
@@ -92,20 +82,8 @@ mod asset_test {
             let ret_code: i16;
             let (ok, _) = self.select(account.clone());
             if ok == false {
-                let kv0 = KVField {
-                    key: String::from("account"),
-                    value: account.clone(),
-                };
-                let kv1 = KVField {
-                    key: String::from("asset_value"),
-                    value: asset_value.to_string(),
-                };
-                let mut kv_fields = Vec::new();
-                kv_fields.push(kv0);
-                kv_fields.push(kv1);
-                let entry = Entry { fileds: kv_fields };
                 let result = (*self.table)
-                    .set(String::from("t_asset"), account.clone(), entry)
+                    .set(account.clone(), asset_value.to_string())
                     .unwrap();
 
                 if result == 1.into() {
@@ -199,18 +177,7 @@ mod asset_test {
         }
 
         pub fn update(&mut self, account: String, value: u128) -> i16 {
-            let kv0 = KVField {
-                key: String::from("asset_value"),
-                value: value.to_string(),
-            };
-            let mut kv_fields = Vec::new();
-            kv_fields.push(kv0);
-
-            let entry = Entry { fileds: kv_fields };
-
-            let r = (*self.table)
-                .set(String::from("t_asset"), account, entry)
-                .unwrap();
+            let r = (*self.table).set(account, value.to_string()).unwrap();
             if r == 1.into() {
                 return 1;
             }
