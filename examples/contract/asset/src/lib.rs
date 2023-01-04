@@ -61,18 +61,20 @@ mod asset {
             self.table_name.initialize(String::from("t_asset"));
             self.tm
                 .initialize(TableManager::at("/sys/table_manager".parse().unwrap()));
-            let result = self.tm.createKVTable(
+            self.tm.createKVTable(
                 self.table_name.clone(),
                 String::from("account"),
                 String::from("asset_value"),
             );
-            require(result.unwrap() == 0, "create table failed");
             self.table
                 .initialize(KvTable::at("/tables/t_asset".parse().unwrap()));
         }
 
-        pub fn select(&mut self, account: String) -> (bool, u128) {
+        pub fn select(&self, account: String) -> (bool, u128) {
             if let Some((result, value)) = (*self.table).get(account) {
+                if value.len() == 0 {
+                    return (false, Default::default());
+                }
                 return (result, u128::from_str_radix(&value, 10).ok().unwrap());
             }
             return (false, Default::default());
@@ -106,7 +108,7 @@ mod asset {
         pub fn transfer(&mut self, from: String, to: String, value: u128) -> i16 {
             let mut ret_code: i16 = 0;
             let (ok, from_value) = self.select(from.clone());
-            if ok == true.into() {
+            if ok != true.into() {
                 ret_code = -1;
                 self.env().emit(TransferEvent {
                     ret_code,
