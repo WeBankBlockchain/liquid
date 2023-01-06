@@ -42,7 +42,7 @@ impl<T> CacheEntry<T> {
 
     /// Returns an immutable reference to the synchronized cached value.
     pub fn get(&self) -> Option<&T> {
-        (&*self.cell_val).as_ref()
+        (*self.cell_val).as_ref()
     }
 
     /// Returns a mutable reference to the synchronized cached value.
@@ -51,7 +51,7 @@ impl<T> CacheEntry<T> {
     /// the callee could potentially mutate the value.
     pub fn get_mut(&mut self) -> Option<&mut T> {
         self.mark_dirty();
-        (&mut *self.cell_val).as_mut()
+        (*self.cell_val).as_mut()
     }
 
     /// Updates the value of the cached cell.
