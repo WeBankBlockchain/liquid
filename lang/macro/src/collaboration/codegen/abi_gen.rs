@@ -110,10 +110,10 @@ impl<'a> AbiGen<'a> {
             };
             let right_abis = self.collaboration.all_item_rights.iter().filter(|item_rights| {
                 item_rights.ident == contract_ident
-            }).map(|item_rights| {
+            }).flat_map(|item_rights| {
                 let rights = &item_rights.rights;
                 generate_right_abis(rights.as_slice())
-            }).flatten();
+            });
             quote! {
                 liquid_abi_gen::ContractAbi {
                     name: String::from(#contract_ident),

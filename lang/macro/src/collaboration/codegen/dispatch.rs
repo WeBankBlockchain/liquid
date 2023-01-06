@@ -55,18 +55,16 @@ impl<'a> Dispatch<'a> {
         let sig = &right.sig;
         let right_name = &sig.ident;
         let from = &right.from;
-        let hash = liquid_primitives::hash::hash(
-            format!("{}({})", from.to_string(), right_name.to_string()).as_bytes(),
-        );
+        let hash =
+            liquid_primitives::hash::hash(format!("{from}({right_name})").as_bytes());
         [hash[0], hash[1], hash[2], hash[3]]
     }
 
     fn generate_contract_selector(contract: &ItemContract, for_fetch: bool) -> [u8; 4] {
         let contract_name = &contract.ident;
         let prefix = if for_fetch { "$" } else { "" };
-        let hash = liquid_primitives::hash::hash(
-            format!("{}{}", prefix, contract_name.to_string()).as_bytes(),
-        );
+        let hash =
+            liquid_primitives::hash::hash(format!("{prefix}{contract_name}").as_bytes());
         [hash[0], hash[1], hash[2], hash[3]]
     }
 
@@ -86,15 +84,12 @@ impl<'a> Dispatch<'a> {
 
     fn generate_right_traits(&self) -> TokenStream2 {
         let all_item_rights = &self.collaboration.all_item_rights;
-        let traits = all_item_rights
-            .iter()
-            .map(|item_rights| {
-                let rights = &item_rights.rights;
-                rights
-                    .iter()
-                    .map(move |right| self.generate_right_trait(right))
-            })
-            .flatten();
+        let traits = all_item_rights.iter().flat_map(|item_rights| {
+            let rights = &item_rights.rights;
+            rights
+                .iter()
+                .map(move |right| self.generate_right_trait(right))
+        });
 
         quote! {
             #(#traits)*
@@ -121,7 +116,7 @@ impl<'a> Dispatch<'a> {
         let (output_ty_checker, output_span) = match output {
             syn::ReturnType::Default => (quote! {()}, output.span()),
             syn::ReturnType::Type(_, ty) => {
-                let return_ty = &*ty;
+                let return_ty = ty;
                 (
                     quote! {
                         <#return_ty as liquid_lang::You_Should_Use_An_Valid_Output_Type>::T
@@ -141,7 +136,7 @@ impl<'a> Dispatch<'a> {
             let input_tys = common::generate_input_tys(sig);
             let input_ty_checker = common::generate_ty_checker(input_tys.as_slice());
             let input_ty_checker_ident = Ident::new(
-                &format!("__LIQUID_RIGHT_INPUT_CHECKER_{}", right_id),
+                &format!("__LIQUID_RIGHT_INPUT_CHECKER_{right_id}"),
                 right.span,
             );
 

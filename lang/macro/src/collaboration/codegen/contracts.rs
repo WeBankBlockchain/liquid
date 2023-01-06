@@ -261,8 +261,7 @@ impl<'a> Contracts<'a> {
                 .all_item_rights
                 .iter()
                 .filter(|item_rights| item_rights.ident == *ident)
-                .map(|item_rights| item_rights.rights.iter())
-                .flatten();
+                .flat_map(|item_rights| item_rights.rights.iter());
 
             let fns = rights.map(|right| {
                 let sig = &right.sig;
@@ -323,9 +322,9 @@ impl<'a> Contracts<'a> {
             let ident = &contract.ident;
             let ident_str = ident.to_string();
             let unauthorized_signing_error =
-                format!("signing of contract `{}` is not permitted", ident_str);
+                format!("signing of contract `{ident_str}` is not permitted");
             let no_available_signers_error =
-                format!("no available signers to sign this `{}` contract", ident_str);
+                format!("no available signers to sign this `{ident_str}` contract");
             quote! {
                 impl liquid_lang::You_Should_Use_An_Valid_Contract_Type for #ident {}
 

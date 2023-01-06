@@ -13,7 +13,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(incomplete_features)]
 #![feature(associated_type_defaults)]
-#![feature(const_panic)]
 #![feature(specialization)]
 
 mod dispatch_error;
