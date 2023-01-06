@@ -227,8 +227,8 @@ impl Interface {
 
         let trivial_fns = self
             .foreign_fns
-            .iter()
-            .map(|(_, foreign_fn)| self.generate_trivial_fn(foreign_fn))
+            .values()
+            .map(|foreign_fn| self.generate_trivial_fn(foreign_fn))
             .collect::<Vec<_>>();
 
         let impls = quote_spanned! { span =>

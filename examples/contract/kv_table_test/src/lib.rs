@@ -6,89 +6,84 @@ use liquid_lang::InOut;
 use liquid_prelude::{string::String, vec::Vec};
 
 #[derive(InOut)]
-pub struct KVField {
-    key: String,
-    value: String,
-}
-#[derive(InOut)]
-pub struct Entry {
-    fileds: Vec<KVField>,
+pub struct TableInfo {
+    key_column: String,
+    value_columns: Vec<String>,
 }
 
 #[liquid::interface(name = auto)]
-mod kv_table {
+mod table_manager {
     use super::*;
 
     extern "liquid" {
-        fn createTable(
+        fn createKVTable(
             &mut self,
             table_name: String,
             key: String,
             value_fields: String,
-        ) -> i256;
-        fn get(&self, table_name: String, key: String) -> (bool, Entry);
-        fn set(&mut self, table_name: String, key: String, entry: Entry) -> i256;
+        ) -> i32;
+        fn desc(&self, table_name: String) -> TableInfo;
+    }
+}
+#[liquid::interface(name = auto)]
+mod kv_table {
+
+    extern "liquid" {
+        fn get(&self, key: String) -> (bool, String);
+        fn set(&mut self, key: String, value: String) -> i32;
     }
 }
 
 #[liquid::contract]
 mod kv_table_test {
-    use super::{kv_table::*, *};
+    use super::{kv_table::*, table_manager::*, *};
 
     #[liquid(storage)]
     struct KvTableTest {
         table: storage::Value<KvTable>,
+        tm: storage::Value<TableManager>,
+        table_name: storage::Value<String>,
     }
 
     #[liquid(event)]
-    struct SetResult {
-        count: i256,
+    struct SetEvent {
+        count: i32,
     }
 
     #[liquid(methods)]
     impl KvTableTest {
         pub fn new(&mut self) {
-            self.table
-                .initialize(KvTable::at("/sys/kv_storage".parse().unwrap()));
-            self.table.createTable(
-                String::from("t_kv_test"),
+            self.table_name.initialize(String::from("t_kv_test"));
+            self.tm
+                .initialize(TableManager::at("/sys/table_manager".parse().unwrap()));
+            self.tm.createKVTable(
+                self.table_name.clone(),
                 String::from("id"),
-                [String::from("item_price"), String::from("item_name")].join(","),
+                String::from("item_name"),
             );
+            self.table
+                .initialize(KvTable::at("/tables/t_kv_test".parse().unwrap()));
         }
 
-        pub fn get(&self, id: String) -> (bool, String, String) {
-            if let Some((ok, entry)) = (*self.table).get(String::from("t_kv_test"), id) {
-                return (
-                    ok,
-                    entry.fileds[0].value.clone(),
-                    entry.fileds[1].value.clone(),
-                );
+        pub fn get(&self, id: String) -> (bool, String) {
+            if let Some((ok, value)) = (*self.table).get(id) {
+                return (ok, value);
             }
-            return (false, Default::default(), Default::default());
+            return (false, Default::default());
         }
 
-        pub fn set(&mut self, id: String, item_price: String, item_name: String) -> i256 {
-            let kv1 = KVField {
-                key: String::from("item_price"),
-                value: item_price,
-            };
-            let kv2 = KVField {
-                key: String::from("item_name"),
-                value: item_name,
-            };
-            let mut kv_fields = Vec::new();
-            kv_fields.push(kv1);
-            kv_fields.push(kv2);
-            let entry = Entry { fileds: kv_fields };
-            let count = (*self.table)
-                .set(String::from("t_kv_test"), id, entry)
-                .unwrap();
+        pub fn set(&mut self, id: String, item_name: String) -> i32 {
+            let count = (*self.table).set(id, item_name).unwrap();
 
-            self.env().emit(SetResult {
+            self.env().emit(SetEvent {
                 count: count.clone(),
             });
             count
+        }
+
+        pub fn desc(&self, table_name: String) -> (String, String) {
+            let ti = self.tm.desc(table_name).unwrap();
+            return (ti.key_column, ti.value_columns.get(0).unwrap().clone());
         }
     }
 }

@@ -20,6 +20,7 @@ use liquid_prelude::str::FromStr;
 seq!(N in 1..=32 {
     #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, scale::Decode, scale::Encode)]
     #[cfg_attr(feature = "std", derive(Debug))]
+    #[derive(Default)]
     pub struct Bytes#N(pub [u8; N as usize]);
 
     impl Bytes#N {
@@ -151,12 +152,6 @@ seq!(N in 1..=32 {
     impl From<[u8; N as usize]> for Bytes#N {
         fn from(bytes: [u8; N as usize]) -> Self {
             Self(bytes)
-        }
-    }
-
-    impl Default for Bytes#N {
-        fn default() -> Self {
-            Self(Default::default())
         }
     }
 });

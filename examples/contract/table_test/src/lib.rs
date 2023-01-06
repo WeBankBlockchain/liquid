@@ -3,195 +3,203 @@
 use liquid::storage;
 use liquid_lang as liquid;
 use liquid_lang::InOut;
-use liquid_prelude::{string::String, vec::Vec};
+use liquid_prelude::{
+    string::{String, ToString},
+    vec::Vec,
+};
 
 #[derive(InOut)]
-pub struct KVField {
-    key: String,
-    value: String,
+pub struct TableInfo {
+    key_order: u8,
+    key_column: String,
+    value_columns: Vec<String>,
 }
+
 #[derive(InOut)]
 pub struct Entry {
-    fileds: Vec<KVField>,
+    key: String,
+    fields: Vec<String>,
 }
 
 #[derive(InOut)]
-pub enum Comparator {
-    EQ(u8),
-    NE(u8),
-    GT(u8),
-    GE(u8),
-    LT(u8),
-    LE(u8),
-}
-
-#[derive(InOut)]
-pub struct CompareTriple {
-    lvalue: String,
-    rvalue: String,
-    cmp: Comparator,
+pub struct UpdateField {
+    column_name: String,
+    value: String,
 }
 
 #[derive(InOut)]
 pub struct Condition {
-    cond_fields: Vec<CompareTriple>,
+    op: u8,
+    field: String,
+    value: String,
 }
 
+#[derive(InOut)]
+pub struct Limit {
+    offset: u32,
+    count: u32,
+}
+
+#[liquid::interface(name = auto)]
+mod table_manager {
+    use super::*;
+
+    extern "liquid" {
+        fn createTable(&mut self, path: String, table_info: TableInfo) -> i32;
+    }
+}
 #[liquid::interface(name = auto)]
 mod table {
     use super::*;
 
     extern "liquid" {
-        fn createTable(
-            &mut self,
-            table_name: String,
-            key: String,
-            value_fields: String,
-        ) -> i256;
-        fn select(&self, table_name: String, condition: Condition) -> Vec<Entry>;
-        fn insert(&mut self, table_name: String, entry: Entry) -> i256;
+        fn select(&self, key: Vec<Condition>, limit: Limit) -> Vec<Entry>;
+        fn insert(&mut self, entry: Entry) -> i32;
         fn update(
             &mut self,
-            table_name: String,
-            entry: Entry,
-            condition: Condition,
-        ) -> i256;
-        fn remove(&mut self, table_name: String, condition: Condition) -> i256;
-        fn desc(&self, table_name: String) -> (String, String);
+            key: Vec<Condition>,
+            limit: Limit,
+            update_fields: Vec<UpdateField>,
+        ) -> i32;
+        fn remove(&mut self, key: Vec<Condition>, limit: Limit) -> i32;
     }
 }
 
 #[liquid::contract]
 mod table_test {
-    use super::{table::*, *};
+    use super::{table::*, table_manager::*, *};
 
     #[liquid(event)]
     struct InsertResult {
-        count: i256,
+        count: i32,
     }
 
     #[liquid(event)]
     struct UpdateResult {
-        count: i256,
+        count: i32,
     }
     #[liquid(event)]
     struct RemoveResult {
-        count: i256,
+        count: i32,
     }
 
     #[liquid(storage)]
     struct TableTest {
         table: storage::Value<Table>,
+        tm: storage::Value<TableManager>,
+        table_name: storage::Value<String>,
     }
 
     #[liquid(methods)]
     impl TableTest {
         pub fn new(&mut self) {
+            self.table_name.initialize(String::from("t_testV320"));
+            self.tm
+                .initialize(TableManager::at("/sys/table_manager".parse().unwrap()));
+
+            let mut column_names: Vec<String> = Vec::new();
+            column_names.push(String::from("name"));
+            column_names.push(String::from("age"));
+            column_names.push(String::from("status"));
+            let ti = TableInfo {
+                key_order: 1,
+                key_column: String::from("id"),
+                value_columns: column_names,
+            };
+
+            self.tm.createTable(self.table_name.clone(), ti);
             self.table
-                .initialize(Table::at("/sys/table_storage".parse().unwrap()));
-            self.table.createTable(
-                String::from("t_test").clone(),
-                String::from("id").clone(),
-                [String::from("name").clone(), String::from("age").clone()].join(","),
-            );
+                .initialize(Table::at("/tables/t_testV320".parse().unwrap()));
         }
 
-        pub fn select(&mut self, id: String) -> (String, String) {
-            let cmp_triple = CompareTriple {
-                lvalue: String::from("id"),
-                rvalue: id,
-                cmp: Comparator::EQ(0),
+        pub fn select(&self, id_low: i64, id_high: i64) -> Vec<Entry> {
+            let limit = Limit {
+                offset: 0,
+                count: 500,
             };
-            let mut compare_fields = Vec::new();
-            compare_fields.push(cmp_triple);
-            let cond = Condition {
-                cond_fields: compare_fields,
-            };
+            let mut conditions: Vec<Condition> = Vec::new();
+            conditions.push(Condition {
+                op: 0,
+                field: String::from("id"),
+                value: id_low.to_string(),
+            });
 
-            let entries = self.table.select(String::from("t_test"), cond).unwrap();
+            conditions.push(Condition {
+                op: 3,
+                field: String::from("id"),
+                value: id_high.to_string(),
+            });
 
-            if entries.len() < 1 {
-                return (Default::default(), Default::default());
-            }
-
-            return (
-                entries[0].fileds[0].value.clone(),
-                entries[0].fileds[1].value.clone(),
-            );
+            let entries = self.table.select(conditions, limit).unwrap();
+            return entries;
         }
 
-        pub fn insert(&mut self, id: String, name: String, age: String) -> i256 {
-            let kv0 = KVField {
-                key: String::from("id"),
-                value: id,
+        pub fn insert(&mut self, id: i64, name: String, age: String) -> i32 {
+            let mut values = Vec::new();
+            values.push(name);
+            values.push(age);
+            values.push(String::from("init"));
+
+            let entry = Entry {
+                key: id.to_string(),
+                fields: values,
             };
-            let kv1 = KVField {
-                key: String::from("name"),
-                value: name,
-            };
-            let kv2 = KVField {
-                key: String::from("age"),
-                value: age,
-            };
-            let mut kv_fields = Vec::new();
-            kv_fields.push(kv0);
-            kv_fields.push(kv1);
-            kv_fields.push(kv2);
-            let entry = Entry { fileds: kv_fields };
-            let result = self.table.insert(String::from("t_test"), entry).unwrap();
+            let result = self.table.insert(entry).unwrap();
             self.env().emit(InsertResult {
                 count: result.clone(),
             });
             return result;
         }
 
-        pub fn update(&mut self, id: String, name: String, age: String) -> i256 {
-            let kv1 = KVField {
-                key: String::from("name"),
-                value: name,
-            };
-            let kv2 = KVField {
-                key: String::from("age"),
-                value: age,
-            };
-            let mut kv_fields = Vec::new();
-            kv_fields.push(kv1);
-            kv_fields.push(kv2);
-            let entry = Entry { fileds: kv_fields };
+        pub fn update(&mut self, id_low: i64, id_high: i64) -> i32 {
+            let mut update_fields = Vec::new();
+            update_fields.push(UpdateField {
+                column_name: String::from("status"),
+                value: String::from("updated"),
+            });
 
-            let cmp_triple = CompareTriple {
-                lvalue: String::from("id"),
-                rvalue: id,
-                cmp: Comparator::EQ(0),
+            let limit = Limit {
+                offset: 0,
+                count: 500,
             };
-            let mut compare_fields = Vec::new();
-            compare_fields.push(cmp_triple);
-            let cond = Condition {
-                cond_fields: compare_fields,
-            };
+            let mut conditions: Vec<Condition> = Vec::new();
+            conditions.push(Condition {
+                op: 0,
+                field: String::from("id"),
+                value: id_low.to_string(),
+            });
 
-            let result = self
-                .table
-                .update(String::from("t_test"), entry, cond)
-                .unwrap();
+            conditions.push(Condition {
+                op: 3,
+                field: String::from("id"),
+                value: id_high.to_string(),
+            });
+
+            let result = self.table.update(conditions, limit, update_fields).unwrap();
             self.env().emit(UpdateResult {
                 count: result.clone(),
             });
             return result;
         }
 
-        pub fn remove(&mut self, id: String) -> i256 {
-            let cmp_triple = CompareTriple {
-                lvalue: String::from("id"),
-                rvalue: id,
-                cmp: Comparator::EQ(0),
+        pub fn remove(&mut self, id_low: i64, id_high: i64) -> i32 {
+            let limit = Limit {
+                offset: 0,
+                count: 500,
             };
-            let mut compare_fields = Vec::new();
-            compare_fields.push(cmp_triple);
-            let cond = Condition {
-                cond_fields: compare_fields,
-            };
-            let result = self.table.remove(String::from("t_test"), cond).unwrap();
+            let mut conditions: Vec<Condition> = Vec::new();
+            conditions.push(Condition {
+                op: 0,
+                field: String::from("id"),
+                value: id_low.to_string(),
+            });
+
+            conditions.push(Condition {
+                op: 3,
+                field: String::from("id"),
+                value: id_high.to_string(),
+            });
+            let result = self.table.remove(conditions, limit).unwrap();
             self.env().emit(RemoveResult {
                 count: result.clone(),
             });

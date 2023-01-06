@@ -1,5 +1,16 @@
 error[E0277]: the trait bound `std::vec::Vec<i32>: You_Should_Use_An_Valid_Topic_Type` is not satisfied
-  --> $DIR/29-invalid-event-topic-type.rs:13:13
+  --> tests/contract/ui/fail/29-invalid-event-topic-type.rs:13:13
    |
 13 |         tv: Vec<i32>,
    |             ^^^^^^^^ the trait `You_Should_Use_An_Valid_Topic_Type` is not implemented for `std::vec::Vec<i32>`
+   |
+   = help: the following other types implement trait `You_Should_Use_An_Valid_Topic_Type`:
+             ()
+             Address
+             Bytes1
+             Bytes10
+             Bytes11
+             Bytes12
+             Bytes13
+             Bytes14
+           and $N others
