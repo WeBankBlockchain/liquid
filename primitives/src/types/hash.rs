@@ -23,13 +23,8 @@ pub const HASH_LENGTH: usize = 32;
     Copy, Clone, PartialEq, Eq, PartialOrd, Ord, scale::Decode, scale::Encode, Hash,
 )]
 #[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Default)]
 pub struct Hash([u8; HASH_LENGTH]);
-
-impl Default for Hash {
-    fn default() -> Self {
-        Self(Default::default())
-    }
-}
 
 impl Hash {
     pub fn as_ptr(&self) -> *const [u8; HASH_LENGTH] {

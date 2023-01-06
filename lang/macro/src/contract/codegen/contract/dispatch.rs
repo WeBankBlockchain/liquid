@@ -79,7 +79,7 @@ impl<'a> Dispatch<'a> {
         let (output_ty_checker, output_span) = match output {
             syn::ReturnType::Default => (quote! {()}, output.span()),
             syn::ReturnType::Type(_, ty) => {
-                let return_ty = &*ty;
+                let return_ty = &**ty;
                 (
                     quote! {
                         <#return_ty as liquid_lang::You_Should_Use_An_Valid_Output_Type>::T
@@ -101,7 +101,7 @@ impl<'a> Dispatch<'a> {
             let input_tys = common::generate_input_tys(sig);
             let input_ty_checker = common::generate_ty_checker(input_tys.as_slice());
             let input_ty_checker_ident = Ident::new(
-                &format!("__LIQUID_EXTERNAL_INPUT_CHECKER_{}", fn_id),
+                &format!("__LIQUID_EXTERNAL_INPUT_CHECKER_{fn_id}"),
                 func.span(),
             );
 

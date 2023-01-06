@@ -127,13 +127,13 @@ where
 {
     fn generate_ty_name() -> String {
         let mut sub_ty = <T as GenerateParamAbi>::generate_ty_name();
-        sub_ty.push_str(&format!("[{}]", N));
+        sub_ty.push_str(&format!("[{N}]"));
         sub_ty
     }
 
     fn generate_internal_ty_name() -> String {
         let mut internal_sub_ty = <T as GenerateParamAbi>::generate_internal_ty_name();
-        internal_sub_ty.push_str(&format!("[{}]", N));
+        internal_sub_ty.push_str(&format!("[{N}]"));
         internal_sub_ty
     }
 

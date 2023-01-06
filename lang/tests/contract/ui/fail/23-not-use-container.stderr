@@ -1,5 +1,11 @@
 error[E0277]: the trait bound `bool: You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage` is not satisfied
- --> $DIR/23-not-use-container.rs:7:12
+ --> tests/contract/ui/fail/23-not-use-container.rs:7:12
   |
 7 |         b: bool,
   |            ^^^^ the trait `You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage` is not implemented for `bool`
+  |
+  = help: the following other types implement trait `You_Should_Use_A_Container_To_Wrap_Your_State_Field_In_Storage`:
+            IterableMapping<K, V>
+            Mapping<K, V>
+            Value<T>
+            liquid_lang::storage::Vec<T>
