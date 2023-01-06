@@ -68,8 +68,8 @@ where
 pub fn generate_primitive_types() -> TokenStream2 {
     let mut fixed_size_bytes = quote! {};
     for i in 1..=32 {
-        let old_ident = Ident::new(&format!("Bytes{}", i), Span::call_site());
-        let new_ident = Ident::new(&format!("bytes{}", i), Span::call_site());
+        let old_ident = Ident::new(&format!("Bytes{i}"), Span::call_site());
+        let new_ident = Ident::new(&format!("bytes{i}"), Span::call_site());
         fixed_size_bytes.extend(quote! {
             #[allow(non_camel_case_types)]
             pub type #new_ident = liquid_primitives::types::#old_ident;

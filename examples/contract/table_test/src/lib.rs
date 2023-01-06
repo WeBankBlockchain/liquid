@@ -9,14 +9,8 @@ use liquid_prelude::{
 };
 
 #[derive(InOut)]
-pub enum KeyOrder {
-    Lexicographic(u8),
-    Numerical(u8),
-}
-
-#[derive(InOut)]
 pub struct TableInfo {
-    key_order: KeyOrder,
+    key_order: u8,
     key_column: String,
     value_columns: Vec<String>,
 }
@@ -34,16 +28,8 @@ pub struct UpdateField {
 }
 
 #[derive(InOut)]
-pub enum ConditionOP {
-    GT(u8),
-    GE(u8),
-    LT(u8),
-    LE(u8),
-}
-
-#[derive(InOut)]
 pub struct Condition {
-    op: ConditionOP,
+    op: u8,
     field: String,
     value: String,
 }
@@ -107,7 +93,7 @@ mod table_test {
     #[liquid(methods)]
     impl TableTest {
         pub fn new(&mut self) {
-            self.table_name.initialize(String::from("t_test"));
+            self.table_name.initialize(String::from("t_testV320"));
             self.tm
                 .initialize(TableManager::at("/sys/table_manager".parse().unwrap()));
 
@@ -116,14 +102,14 @@ mod table_test {
             column_names.push(String::from("age"));
             column_names.push(String::from("status"));
             let ti = TableInfo {
-                key_order: KeyOrder::Numerical(1),
+                key_order: 1,
                 key_column: String::from("id"),
                 value_columns: column_names,
             };
 
             self.tm.createTable(self.table_name.clone(), ti);
             self.table
-                .initialize(Table::at("/tables/t_test".parse().unwrap()));
+                .initialize(Table::at("/tables/t_testV320".parse().unwrap()));
         }
 
         pub fn select(&self, id_low: i64, id_high: i64) -> Vec<Entry> {
@@ -133,13 +119,13 @@ mod table_test {
             };
             let mut conditions: Vec<Condition> = Vec::new();
             conditions.push(Condition {
-                op: ConditionOP::GT(0),
+                op: 0,
                 field: String::from("id"),
                 value: id_low.to_string(),
             });
 
             conditions.push(Condition {
-                op: ConditionOP::LE(3),
+                op: 3,
                 field: String::from("id"),
                 value: id_high.to_string(),
             });
@@ -178,13 +164,13 @@ mod table_test {
             };
             let mut conditions: Vec<Condition> = Vec::new();
             conditions.push(Condition {
-                op: ConditionOP::GT(0),
+                op: 0,
                 field: String::from("id"),
                 value: id_low.to_string(),
             });
 
             conditions.push(Condition {
-                op: ConditionOP::LE(3),
+                op: 3,
                 field: String::from("id"),
                 value: id_high.to_string(),
             });
@@ -203,13 +189,13 @@ mod table_test {
             };
             let mut conditions: Vec<Condition> = Vec::new();
             conditions.push(Condition {
-                op: ConditionOP::GT(0),
+                op: 0,
                 field: String::from("id"),
                 value: id_low.to_string(),
             });
 
             conditions.push(Condition {
-                op: ConditionOP::LE(3),
+                op: 3,
                 field: String::from("id"),
                 value: id_high.to_string(),
             });

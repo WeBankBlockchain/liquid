@@ -1,14 +1,39 @@
 error[E0277]: `&u8` is not an iterator
-  --> tests/collaboration/ui/fail/03-invalid-signers.rs:8:9
-   |
-8  |         addr: u8,
-   |         ^^^^ `&u8` is not an iterator
-   |
-  ::: src/traits.rs
-   |
-   |             T: Parties_Should_Be_Address_Or_Address_Collection<'a>,
-   |                --------------------------------------------------- required by this bound in `liquid_lang::acquire_addrs`
-   |
-   = help: the trait `Iterator` is not implemented for `&u8`
-   = note: required because of the requirements on the impl of `IntoIterator` for `&u8`
-   = note: required because of the requirements on the impl of `Parties_Should_Be_Address_Or_Address_Collection<'_>` for `&u8`
+ --> tests/collaboration/ui/fail/03-invalid-signers.rs:8:9
+  |
+5 | /     #[liquid(contract)]
+6 | |     pub struct Noop {
+7 | |         #[liquid(signers)]
+8 | |         addr: u8,
+  | |         ^^^^ `&u8` is not an iterator
+9 | |     }
+  | |_____- required by a bound introduced by this call
+  |
+  = help: the trait `Iterator` is not implemented for `&u8`
+  = note: required for `&u8` to implement `IntoIterator`
+  = note: required for `&u8` to implement `Parties_Should_Be_Address_Or_Address_Collection<'_>`
+note: required by a bound in `liquid_lang::acquire_addrs`
+ --> src/traits.rs
+  |
+  |             T: Parties_Should_Be_Address_Or_Address_Collection<'a>,
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `acquire_addrs`
+
+error[E0277]: `&u8` is not an iterator
+ --> tests/collaboration/ui/fail/03-invalid-signers.rs:8:9
+  |
+5 | /     #[liquid(contract)]
+6 | |     pub struct Noop {
+7 | |         #[liquid(signers)]
+8 | |         addr: u8,
+  | |         ^^^^ `&u8` is not an iterator
+9 | |     }
+  | |_____- required by a bound introduced by this call
+  |
+  = help: the trait `Iterator` is not implemented for `&u8`
+  = note: required for `&u8` to implement `IntoIterator`
+  = note: required for `&u8` to implement `Parties_Should_Be_Address_Or_Address_Collection<'_>`
+note: required by a bound in `liquid_lang::acquire_addrs`
+ --> src/traits.rs
+  |
+  |             T: Parties_Should_Be_Address_Or_Address_Collection<'a>,
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `acquire_addrs`

@@ -14,13 +14,8 @@ use liquid_prelude::vec::Vec;
 
 #[derive(PartialEq, Eq, scale::Decode, scale::Encode, Clone)]
 #[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Default)]
 pub struct Bytes(Vec<u8>);
-
-impl Default for Bytes {
-    fn default() -> Self {
-        Bytes(Vec::new())
-    }
-}
 
 impl Bytes {
     pub fn new() -> Self {

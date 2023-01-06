@@ -127,7 +127,7 @@ fn substitute_number(var: &Ident, number: u64, body: TokenStream2) -> TokenStrea
                             actual_number -= num;
                         }
 
-                        let concat = format!("{}{}", prefix, actual_number);
+                        let concat = format!("{prefix}{actual_number}");
                         let ident = Ident::new(&concat, prefix.span());
                         tokens.splice(i..i + 6, iter::once(TokenTree::Ident(ident)));
                         i += 1;
@@ -175,7 +175,7 @@ fn substitute_number(var: &Ident, number: u64, body: TokenStream2) -> TokenStrea
                 _ => None,
             };
             if let Some(prefix) = prefix {
-                let concat = format!("{}{}", prefix, number);
+                let concat = format!("{prefix}{number}");
                 let ident = Ident::new(&concat, prefix.span());
                 tokens.splice(i..i + 3, iter::once(TokenTree::Ident(ident)));
                 i += 1;

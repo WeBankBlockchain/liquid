@@ -37,7 +37,7 @@ pub fn expect_keyword(iter: &mut TokenIter, keyword: &str) -> Result<()> {
             return Ok(());
         }
     }
-    Err(SyntaxError::new(format!("expected `{}`", keyword), &token))
+    Err(SyntaxError::new(format!("expected `{keyword}`"), &token))
 }
 
 pub fn expect_integer(iter: &mut TokenIter) -> Result<u64> {
@@ -78,7 +78,7 @@ pub fn expect_punct(iter: &mut TokenIter, ch: char) -> Result<()> {
         }
     }
 
-    Err(SyntaxError::new(format!("expected `{}`", ch), &token))
+    Err(SyntaxError::new(format!("expected `{ch}`"), &token))
 }
 
 pub fn expect_optional_punct(iter: &mut TokenIter, ch: char) -> Result<bool> {

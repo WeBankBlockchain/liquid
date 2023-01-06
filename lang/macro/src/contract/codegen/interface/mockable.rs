@@ -93,7 +93,7 @@ fn generate_mock_common(foreign_fn: &ForeignFn) -> TokenStream2 {
         .iter()
         .enumerate()
         .map(|(i, _)| {
-            let generic_param = format!("T{}", i);
+            let generic_param = format!("T{i}");
             Ident::new(&generic_param, span)
         })
         .collect::<Vec<_>>();
@@ -224,7 +224,7 @@ fn generate_trivial_fn(foreign_fn: &ForeignFn, interface_ident: &Ident) -> Token
 
     let mock_context_getter = match &foreign_fn.mock_context_getter {
         Some(getter) => getter.clone(),
-        None => Ident::new(&format!("{}_context", fn_ident.to_string()), span),
+        None => Ident::new(&format!("{fn_ident}_context"), span),
     };
 
     let common = generate_mock_common(foreign_fn);
@@ -319,8 +319,8 @@ impl<'a> Mockable<'a> {
 
         let trivial_mocks = interface
             .foreign_fns
-            .iter()
-            .map(|(_, foreign_fn)| generate_trivial_fn(foreign_fn, interface_ident))
+            .values()
+            .map(|foreign_fn| generate_trivial_fn(foreign_fn, interface_ident))
             .collect::<Vec<_>>();
 
         quote_spanned! { span =>

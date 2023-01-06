@@ -57,7 +57,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
                     .iter()
                     .enumerate()
                     .map(|(i, field)| {
-                        (Ident::new(&format!("_{}", i), field.span()), &field.ty)
+                        (Ident::new(&format!("_{i}"), field.span()), &field.ty)
                     })
                     .unzip(),
                 Fields::Unit => (Vec::new(), Vec::new()),
@@ -87,10 +87,8 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
 
             let mut field_checkers = Vec::new();
             for (i, ty) in field_tys.iter().enumerate() {
-                let field_checker = Ident::new(
-                    &format!("__LIQUID_FIELD_CHECKER_{}", i),
-                    Span::call_site(),
-                );
+                let field_checker =
+                    Ident::new(&format!("__LIQUID_FIELD_CHECKER_{i}"), Span::call_site());
                 field_checkers.push(quote_spanned! { ty.span() =>
                     #[allow(non_camel_case_types)]
                     struct #field_checker(<#ty as liquid_lang::You_Should_Use_An_Valid_Input_Type>::T, <#ty as liquid_lang::You_Should_Use_An_Valid_Output_Type>::T);
@@ -168,7 +166,7 @@ fn generate_impl(input: TokenStream2) -> Result<TokenStream2> {
                                     struct #field_checker(<#ty as liquid_lang::You_Should_Use_An_Valid_Input_Type>::T, <#ty as liquid_lang::You_Should_Use_An_Valid_Output_Type>::T);
                                 });
 
-                                (Ident::new(&format!("_{}", i), field.span()), ty)
+                                (Ident::new(&format!("_{i}"), field.span()), ty)
                             })
                             .unzip(),
                         Fields::Unit => {
