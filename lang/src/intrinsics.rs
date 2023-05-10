@@ -21,5 +21,6 @@ where
         let err_info = String::from(msg.as_ref());
         // `revert` will terminate the execution of contract immediately.
         env::revert(&err_info);
+        core::panic!("{}", &err_info);
     }
 }
